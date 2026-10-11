@@ -1,0 +1,3 @@
+# Prevent Claude from auto-loading Graphify outputs and invalidate cache
+graphify-out/
+graph.json
