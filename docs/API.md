@@ -427,7 +427,8 @@ Messages:
 | `{ role: "assistant", content?, tool_calls? }` | `content` string <= 8,000 or `null`; `tool_calls` <= 16 of `{ id, type: "function", function: { name, arguments } }`, `id` 1-128, `arguments` (JSON string) <= 20,000 |
 | `{ role: "tool", tool_call_id, name?, content }` | `tool_call_id` 1-128, `content` <= 20,000 |
 
-The server always sets `model` (`GROQ_MODEL`), `max_completion_tokens` (requested value capped at
+The server always sets `model` (`GROQ_MODEL`; on a provider 429/498 the same request goes to each
+`GROQ_FALLBACK_MODELS` entry in turn, and a model is skipped while its `retry-after` lasts), `max_completion_tokens` (requested value capped at
 `AGENT_MAX_OUTPUT_TOKENS`, or the cap), `reasoning_effort` (`GROQ_REASONING_EFFORT`; not sent when `off`) and `user`
 (hash of the user id). `tools`/`tool_choice`/`parallel_tool_calls` are omitted when `tools` is empty.
 
@@ -445,7 +446,7 @@ Errors:
 |---|---|---|---|---|
 | `GROQ_API_KEY` not set | `unavailable` | 503 | false | `{ reason: "notConfigured" }` "The assistant is not configured on this server." |
 | Per-user limit (`AGENT_RATE_LIMIT_PER_MINUTE`, `AGENT_DAILY_REQUEST_LIMIT`; in-memory, per server instance) | `unavailable` | 503 | true | `{ reason: "rateLimited", retryAfterSeconds }` |
-| Provider 429 or 498 (capacity) | `unavailable` | 503 | true | `{ reason: "providerRateLimited", retryAfterSeconds? }` (from `retry-after`, 1-3600) |
+| Provider 429 or 498 (capacity) on the main model and every fallback | `unavailable` | 503 | true | `{ reason: "providerRateLimited", retryAfterSeconds? }` (soonest `retry-after` or remaining cooldown, 1-3600) |
 | Provider 400 `tool_use_failed` (model produced an invalid tool call) | `unknown` | 500 | true | `{ reason: "toolCallFailed" }` "The assistant made a malformed request. Please try again." |
 | Provider 413 | `validation` | 422 | false | `{ reason: "tooLarge" }` "This conversation is too long. Start a new chat." |
 | Provider timeout (`GROQ_TIMEOUT_MS`) or network error | `unavailable` | 503 | true | `{ reason: "timeout" \| "network" }` |

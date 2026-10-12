@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.stubEnv('GROQ_API_KEY', KEY);
   vi.stubEnv('GROQ_BASE_URL', 'https://groq.test/openai/v1/');
   vi.stubEnv('GROQ_MODEL', 'test-model');
+  vi.stubEnv('GROQ_FALLBACK_MODELS', 'fallback-model');
   vi.stubEnv('GROQ_REASONING_EFFORT', 'low');
   vi.stubEnv('GROQ_TIMEOUT_MS', '60000');
   vi.stubEnv('AGENT_MAX_OUTPUT_TOKENS', '1000');
@@ -271,7 +272,7 @@ describe('POST /agent/completions', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('maps provider 429 and 498 to retryable unavailable with providerRateLimited', async () => {
+  it('maps provider 429 and 498 on every model to retryable unavailable with providerRateLimited', async () => {
     const u = await t.createUser();
     mockFetch(async () => jsonResponse({ error: { message: 'slow down', key: KEY } }, 429, { 'retry-after': '7' }));
     const r429 = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
@@ -281,11 +282,70 @@ describe('POST /agent/completions', () => {
     expect(JSON.stringify(r429.body)).not.toContain('slow down');
 
     vi.restoreAllMocks();
+    resetAgentRateLimits();
     mockFetch(async () => jsonResponse({ error: { message: 'flex capacity exceeded' } }, 498));
     const r498 = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
     expect(r498.status).toBe(503);
     expect(r498.body.error).toMatchObject({ code: 'unavailable', retryable: true, details: { reason: 'providerRateLimited' } });
     expect(r498.body.error?.details).not.toHaveProperty('retryAfterSeconds');
+  });
+
+  it('falls back to the next model when one is rate limited, and skips it while it cools down', async () => {
+    const models: string[] = [];
+    mockFetch(async (_url, init) => {
+      const model = JSON.parse(String(init.body)).model as string;
+      models.push(model);
+      return model === 'test-model'
+        ? jsonResponse({ error: { message: 'tokens per minute' } }, 429, { 'retry-after': '30' })
+        : jsonResponse({ ...upstreamOk, model });
+    });
+    const u = await t.createUser();
+    const first = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(first.status).toBe(200);
+    expect(first.body.data.id).toBe('chatcmpl_1');
+    expect(models).toEqual(['test-model', 'fallback-model']);
+
+    // The primary is cooling down: only the fallback is called.
+    const second = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(second.status).toBe(200);
+    expect(models).toEqual(['test-model', 'fallback-model', 'fallback-model']);
+  });
+
+  it('reports the soonest wait when every model is limited, without calling cooling models again', async () => {
+    const fetchSpy = mockFetch(async (_url, init) => {
+      const model = JSON.parse(String(init.body)).model as string;
+      return jsonResponse({ error: { message: 'slow down' } }, 429, { 'retry-after': model === 'test-model' ? '20' : '9' });
+    });
+    const u = await t.createUser();
+    const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(res.status).toBe(503);
+    expect(res.body.error).toMatchObject({ details: { reason: 'providerRateLimited', retryAfterSeconds: 9 } });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    const again = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(again.status).toBe(503);
+    const details = again.body.error?.details as { reason: string; retryAfterSeconds: number };
+    expect(details.reason).toBe('providerRateLimited');
+    expect(details.retryAfterSeconds).toBeLessThanOrEqual(9);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not fall back when fallback is disabled or the failure is not a rate limit', async () => {
+    vi.stubEnv('GROQ_FALLBACK_MODELS', 'none');
+    const fetchSpy = mockFetch(async () => jsonResponse({ error: { message: 'slow down' } }, 429, { 'retry-after': '3' }));
+    const u = await t.createUser();
+    const limited = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(limited.body.error).toMatchObject({ details: { reason: 'providerRateLimited', retryAfterSeconds: 3 } });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    vi.restoreAllMocks();
+    resetAgentRateLimits();
+    vi.stubEnv('GROQ_FALLBACK_MODELS', 'fallback-model');
+    const outage = mockFetch(async () => new Response('busy', { status: 503 }));
+    const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(res.status).toBe(503);
+    expect(res.body.error).toMatchObject({ code: 'unavailable', retryable: true });
+    expect(outage).toHaveBeenCalledTimes(1);
   });
 
   it('maps a provider tool_use_failed 400 to a retryable unknown failure', async () => {

@@ -93,7 +93,31 @@ export function takeTranscriptionRequest(userId: string, limits: RateLimits, now
   return transcriptionsLimiter.take(userId, limits, now);
 }
 
-/** Test-only: forget every recorded request, in every limiter. */
+/**
+ * When each upstream model may be called again after the provider rate limited
+ * it (epoch ms). Per server instance, like the limiters above: it only saves a
+ * call that would certainly fail; the provider stays the authority.
+ */
+const modelCooldowns = new Map<string, number>();
+
+/** Records that the provider asked to wait [seconds] before using [model] again. */
+export function noteModelRateLimited(model: string, seconds: number, now = Date.now()): void {
+  modelCooldowns.set(model, now + seconds * 1000);
+}
+
+/** Whole seconds until [model] may be called again; 0 when it is available. */
+export function modelCooldownSeconds(model: string, now = Date.now()): number {
+  const until = modelCooldowns.get(model);
+  if (until === undefined) return 0;
+  if (until <= now) {
+    modelCooldowns.delete(model);
+    return 0;
+  }
+  return Math.ceil((until - now) / 1000);
+}
+
+/** Test-only: forget every recorded request, in every limiter, and every model cooldown. */
 export function resetAgentRateLimits(): void {
   for (const l of limiters) l.reset();
+  modelCooldowns.clear();
 }

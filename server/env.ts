@@ -37,6 +37,22 @@ const agentSchema = z.object({
     .transform((v) => v.replace(/\/+$/, '')),
   /** Model id the server always uses; clients cannot choose it. */
   GROQ_MODEL: z.string().trim().min(1).max(100).default('openai/gpt-oss-20b'),
+  /**
+   * Comma-separated models tried in order when the model before them is rate
+   * limited (429/498). Groq meters each model separately, so every fallback adds
+   * its own per-minute budget. They receive the same request, including
+   * reasoning_effort, so they must accept it. `none` disables fallback.
+   */
+  GROQ_FALLBACK_MODELS: emptyToUndefined(z.string().default('openai/gpt-oss-120b'))
+    .transform((v) =>
+      v.trim().toLowerCase() === 'none'
+        ? []
+        : v
+            .split(',')
+            .map((m) => m.trim())
+            .filter((m) => m.length > 0),
+    )
+    .pipe(z.array(z.string().max(100)).max(5)),
   /** `reasoning_effort` sent upstream; `off` = the parameter is not sent at all. */
   GROQ_REASONING_EFFORT: z.enum(['off', 'none', 'default', 'low', 'medium', 'high']).default('low'),
   /** Upstream request timeout in milliseconds. */

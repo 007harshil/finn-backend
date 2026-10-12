@@ -48,6 +48,7 @@ Environment variables (server-only; see `.env.example`):
 | `GROQ_API_KEY` | for the agent | Groq key for `POST /agent/completions`; unset = assistant disabled (503), rest of the API unaffected |
 | `GROQ_BASE_URL` | no | Default `https://api.groq.com/openai/v1` |
 | `GROQ_MODEL` | no | Model used by the relay (default `openai/gpt-oss-20b`) |
+| `GROQ_FALLBACK_MODELS` | no | Comma-separated models tried in order when the one before is rate limited (429/498); each has its own Groq per-minute budget (default `openai/gpt-oss-120b`; `none` = no fallback) |
 | `GROQ_REASONING_EFFORT` | no | `off`/`none`/`default`/`low`/`medium`/`high` (default `low`; `off` = not sent) |
 | `GROQ_TIMEOUT_MS` | no | Provider timeout (default 60000, 100-300000) |
 | `AGENT_MAX_OUTPUT_TOKENS` | no | Default and ceiling for `max_completion_tokens` (default 2048) |

@@ -12,7 +12,7 @@ import { AppFailure } from '../core/failure';
 import { agentEnv, type AgentEnv } from '../env';
 import { parseWith, readJson, type RequestContext } from '../http/handler';
 import { logger } from '../http/logger';
-import { takeAgentRequest } from './rate-limit';
+import { modelCooldownSeconds, noteModelRateLimited, takeAgentRequest } from './rate-limit';
 import { AGENT_MAX_BODY_BYTES, completionRequestSchema, type CompletionRequest } from './schema';
 
 export interface CompletionToolCall {
@@ -30,6 +30,9 @@ export interface CompletionResult {
 
 const UNAVAILABLE = 'The assistant is unavailable right now. Please try again.';
 const MALFORMED = 'The assistant returned an unexpected response. Please try again.';
+
+/** Cooldown for a rate-limited model when the provider sends no `retry-after`. */
+const DEFAULT_MODEL_COOLDOWN_SECONDS = 5;
 
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -61,9 +64,19 @@ function retryAfterSeconds(header: string | null, now = Date.now()): number | un
   return Math.min(3600, Math.max(1, seconds));
 }
 
-export function buildUpstreamBody(req: CompletionRequest, config: AgentEnv, userId: string): Record<string, unknown> {
+/** The primary model, then each distinct fallback, in order. */
+export function upstreamModels(config: AgentEnv): string[] {
+  return [...new Set([config.GROQ_MODEL, ...config.GROQ_FALLBACK_MODELS])];
+}
+
+export function buildUpstreamBody(
+  req: CompletionRequest,
+  config: AgentEnv,
+  userId: string,
+  model: string = config.GROQ_MODEL,
+): Record<string, unknown> {
   const body: Record<string, unknown> = {
-    model: config.GROQ_MODEL,
+    model,
     messages: req.messages,
     max_completion_tokens: Math.min(req.max_completion_tokens ?? config.AGENT_MAX_OUTPUT_TOKENS, config.AGENT_MAX_OUTPUT_TOKENS),
     user: safetyIdentifier(userId),
@@ -163,18 +176,57 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   // Also stop paying for the call if the app disconnects.
   const signal = ctx.request.signal ? AbortSignal.any([timeout, ctx.request.signal]) : timeout;
 
-  let res: Response;
-  try {
-    res = await fetch(`${config.GROQ_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${config.GROQ_API_KEY}`, 'content-type': 'application/json' },
-      body: JSON.stringify(buildUpstreamBody(req, config, ctx.user.userId)),
-      signal,
+  // Free tiers meter tokens per minute per model, so a rate-limited model is
+  // skipped for the next one instead of making the user wait. Models known to
+  // be cooling down are not called at all.
+  let res: Response | undefined;
+  let model = config.GROQ_MODEL;
+  let soonest: number | undefined;
+  const noteWait = (seconds: number) => {
+    soonest = soonest === undefined ? seconds : Math.min(soonest, seconds);
+  };
+  for (const candidate of upstreamModels(config)) {
+    const cooling = modelCooldownSeconds(candidate);
+    if (cooling > 0) {
+      noteWait(cooling);
+      continue;
+    }
+    let attempt: Response;
+    try {
+      attempt = await fetch(`${config.GROQ_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${config.GROQ_API_KEY}`, 'content-type': 'application/json' },
+        body: JSON.stringify(buildUpstreamBody(req, config, ctx.user.userId, candidate)),
+        signal,
+      });
+    } catch (err) {
+      const reason = err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'network';
+      logger.warn('agent.upstream', { requestId: ctx.requestId, user, model: candidate, outcome: reason, ms: Date.now() - started });
+      throw new AppFailure('unavailable', UNAVAILABLE, { retryable: true, details: { reason } });
+    }
+    if (attempt.status === 429 || attempt.status === 498) {
+      await attempt.body?.cancel().catch(() => undefined);
+      const retry = retryAfterSeconds(attempt.headers.get('retry-after'));
+      noteModelRateLimited(candidate, retry ?? DEFAULT_MODEL_COOLDOWN_SECONDS);
+      if (retry !== undefined) noteWait(retry);
+      logger.warn('agent.upstream', {
+        requestId: ctx.requestId,
+        user,
+        model: candidate,
+        upstreamStatus: attempt.status,
+        ms: Date.now() - started,
+      });
+      continue;
+    }
+    res = attempt;
+    model = candidate;
+    break;
+  }
+  if (!res) {
+    throw new AppFailure('unavailable', UNAVAILABLE, {
+      retryable: true,
+      details: { reason: 'providerRateLimited', ...(soonest !== undefined ? { retryAfterSeconds: soonest } : {}) },
     });
-  } catch (err) {
-    const reason = err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'network';
-    logger.warn('agent.upstream', { requestId: ctx.requestId, user, outcome: reason, ms: Date.now() - started });
-    throw new AppFailure('unavailable', UNAVAILABLE, { retryable: true, details: { reason } });
   }
 
   const ms = Date.now() - started;
@@ -185,14 +237,6 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     const errorText = upstreamStatus === 400 ? await res.text().catch(() => '') : '';
     if (upstreamStatus !== 400) await res.body?.cancel().catch(() => undefined);
 
-    if (upstreamStatus === 429 || upstreamStatus === 498) {
-      const retry = retryAfterSeconds(res.headers.get('retry-after'));
-      logger.warn('agent.upstream', { requestId: ctx.requestId, user, upstreamStatus, ms });
-      throw new AppFailure('unavailable', UNAVAILABLE, {
-        retryable: true,
-        details: { reason: 'providerRateLimited', ...(retry !== undefined ? { retryAfterSeconds: retry } : {}) },
-      });
-    }
     if (upstreamStatus === 400 && isToolUseFailure(errorText)) {
       logger.warn('agent.upstream', { requestId: ctx.requestId, user, upstreamStatus, ms, outcome: 'toolCallFailed' });
       throw new AppFailure('unknown', 'The assistant made a malformed request. Please try again.', {
@@ -231,6 +275,6 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     throw new AppFailure('unknown', MALFORMED, { retryable: true });
   }
 
-  logger.info('agent.upstream', { requestId: ctx.requestId, user, upstreamStatus, ms, ...usageCounts(payload) });
+  logger.info('agent.upstream', { requestId: ctx.requestId, user, model, upstreamStatus, ms, ...usageCounts(payload) });
   return result;
 }
