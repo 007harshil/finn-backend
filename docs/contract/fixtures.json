@@ -1,0 +1,5950 @@
+{
+  "generatedAt": "2026-10-12T03:52:10.683Z",
+  "actions": [
+    {
+      "actionId": "profile.update",
+      "input": {
+        "displayName": "Alice",
+        "openingBalance": "20000",
+        "openingDate": "2026-01-01"
+      },
+      "result": {
+        "exists": true,
+        "displayName": "Alice",
+        "openingPaise": 2000000,
+        "openingDate": "2026-01-01",
+        "monthlyIncomeEstimatePaise": null
+      }
+    },
+    {
+      "actionId": "profile.update",
+      "input": {
+        "displayName": "Bob",
+        "openingBalance": "5000",
+        "openingDate": "2026-01-01"
+      },
+      "result": {
+        "exists": true,
+        "displayName": "Bob",
+        "openingPaise": 500000,
+        "openingDate": "2026-01-01",
+        "monthlyIncomeEstimatePaise": null
+      }
+    },
+    {
+      "actionId": "transactions.create",
+      "input": {
+        "type": "income",
+        "amount": "100000",
+        "categoryId": "cat_salary",
+        "date": "2026-10-01",
+        "paymentMethod": "bankTransfer",
+        "counterparty": "Acme Corp"
+      },
+      "result": {
+        "id": "tx_1",
+        "type": "income",
+        "amountPaise": 10000000,
+        "categoryId": "cat_salary",
+        "date": "2026-10-01",
+        "paymentMethod": "bankTransfer",
+        "counterparty": "Acme Corp",
+        "note": null,
+        "origin": "manual",
+        "originRefId": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "transactions.create",
+      "input": {
+        "type": "expense",
+        "amount": "1250.50",
+        "categoryId": "cat_food",
+        "date": "2026-10-05",
+        "paymentMethod": "upi",
+        "counterparty": "Swiggy",
+        "note": "Dinner"
+      },
+      "result": {
+        "id": "tx_2",
+        "type": "expense",
+        "amountPaise": 125050,
+        "categoryId": "cat_food",
+        "date": "2026-10-05",
+        "paymentMethod": "upi",
+        "counterparty": "Swiggy",
+        "note": "Dinner",
+        "origin": "manual",
+        "originRefId": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "transactions.update",
+      "input": {
+        "id": "tx_2",
+        "expectedVersion": 1,
+        "type": "expense",
+        "amount": "1300.25",
+        "categoryId": "cat_food",
+        "date": "2026-10-05",
+        "paymentMethod": "upi",
+        "counterparty": "Swiggy",
+        "note": "Dinner + tip"
+      },
+      "result": {
+        "id": "tx_2",
+        "type": "expense",
+        "amountPaise": 130025,
+        "categoryId": "cat_food",
+        "date": "2026-10-05",
+        "paymentMethod": "upi",
+        "counterparty": "Swiggy",
+        "note": "Dinner + tip",
+        "origin": "manual",
+        "originRefId": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "transactions.create",
+      "input": {
+        "type": "expense",
+        "amount": "99",
+        "categoryId": "cat_food",
+        "date": "2026-10-06"
+      },
+      "result": {
+        "id": "tx_3",
+        "type": "expense",
+        "amountPaise": 9900,
+        "categoryId": "cat_food",
+        "date": "2026-10-06",
+        "paymentMethod": null,
+        "counterparty": null,
+        "note": null,
+        "origin": "manual",
+        "originRefId": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "transactions.delete",
+      "input": {
+        "id": "tx_3"
+      },
+      "result": {
+        "id": "tx_3",
+        "type": "expense",
+        "amountPaise": 9900,
+        "categoryId": "cat_food",
+        "date": "2026-10-06",
+        "paymentMethod": null,
+        "counterparty": null,
+        "note": null,
+        "origin": "manual",
+        "originRefId": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "categories.create",
+      "input": {
+        "name": "Pets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 3,
+        "description": "Pet care",
+        "isEssential": false
+      },
+      "result": {
+        "id": "cat_1",
+        "name": "Pets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 3,
+        "description": "Pet care",
+        "isSystem": false,
+        "isArchived": false,
+        "isEssential": false,
+        "version": 1
+      }
+    },
+    {
+      "actionId": "categories.update",
+      "input": {
+        "id": "cat_1",
+        "expectedVersion": 1,
+        "name": "Pets & vets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 4,
+        "description": "Pet care",
+        "isEssential": true
+      },
+      "result": {
+        "id": "cat_1",
+        "name": "Pets & vets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 4,
+        "description": "Pet care",
+        "isSystem": false,
+        "isArchived": false,
+        "isEssential": true,
+        "version": 2
+      }
+    },
+    {
+      "actionId": "categories.toggleArchive",
+      "input": {
+        "id": "cat_1"
+      },
+      "result": {
+        "id": "cat_1",
+        "name": "Pets & vets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 4,
+        "description": "Pet care",
+        "isSystem": false,
+        "isArchived": true,
+        "isEssential": true,
+        "version": 3
+      }
+    },
+    {
+      "actionId": "categories.toggleArchive",
+      "input": {
+        "id": "cat_1"
+      },
+      "result": {
+        "id": "cat_1",
+        "name": "Pets & vets",
+        "type": "expense",
+        "iconKey": "dog",
+        "colorIndex": 4,
+        "description": "Pet care",
+        "isSystem": false,
+        "isArchived": false,
+        "isEssential": true,
+        "version": 4
+      }
+    },
+    {
+      "actionId": "categories.create",
+      "input": {
+        "name": "Temp",
+        "type": "expense",
+        "iconKey": "tag",
+        "colorIndex": 1
+      },
+      "result": {
+        "id": "cat_2",
+        "name": "Temp",
+        "type": "expense",
+        "iconKey": "tag",
+        "colorIndex": 1,
+        "description": "",
+        "isSystem": false,
+        "isArchived": false,
+        "isEssential": false,
+        "version": 1
+      }
+    },
+    {
+      "actionId": "categories.delete",
+      "input": {
+        "id": "cat_2"
+      },
+      "result": {
+        "id": "cat_2",
+        "name": "Temp",
+        "type": "expense",
+        "iconKey": "tag",
+        "colorIndex": 1,
+        "description": "",
+        "isSystem": false,
+        "isArchived": false,
+        "isEssential": false,
+        "version": 1
+      }
+    },
+    {
+      "actionId": "budgets.create",
+      "input": {
+        "categoryId": "cat_food",
+        "limit": "8000",
+        "warningThresholdBps": 8000
+      },
+      "result": {
+        "id": "bud_1",
+        "categoryId": "cat_food",
+        "limitPaise": 800000,
+        "previousLimits": [],
+        "status": "active",
+        "warningThresholdBps": 8000,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "budgets.update",
+      "input": {
+        "id": "bud_1",
+        "expectedVersion": 1,
+        "categoryId": "cat_food",
+        "limit": "9000",
+        "warningThresholdBps": 8500
+      },
+      "result": {
+        "id": "bud_1",
+        "categoryId": "cat_food",
+        "limitPaise": 900000,
+        "previousLimits": [],
+        "status": "active",
+        "warningThresholdBps": 8500,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "budgets.setPaused",
+      "input": {
+        "id": "bud_1",
+        "paused": true
+      },
+      "result": {
+        "id": "bud_1",
+        "categoryId": "cat_food",
+        "limitPaise": 900000,
+        "previousLimits": [],
+        "status": "paused",
+        "warningThresholdBps": 8500,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 3
+      }
+    },
+    {
+      "actionId": "budgets.setPaused",
+      "input": {
+        "id": "bud_1",
+        "paused": false
+      },
+      "result": {
+        "id": "bud_1",
+        "categoryId": "cat_food",
+        "limitPaise": 900000,
+        "previousLimits": [],
+        "status": "active",
+        "warningThresholdBps": 8500,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 4
+      }
+    },
+    {
+      "actionId": "budgets.create",
+      "input": {
+        "categoryId": "cat_travel",
+        "limit": "1000"
+      },
+      "result": {
+        "id": "bud_2",
+        "categoryId": "cat_travel",
+        "limitPaise": 100000,
+        "previousLimits": [],
+        "status": "active",
+        "warningThresholdBps": 8000,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "budgets.delete",
+      "input": {
+        "id": "bud_2"
+      },
+      "result": {
+        "id": "bud_2",
+        "categoryId": "cat_travel",
+        "limitPaise": 100000,
+        "previousLimits": [],
+        "status": "active",
+        "warningThresholdBps": 8000,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "pending.create",
+      "input": {
+        "counterparty": "Rahul Verma",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "amount": "6500",
+        "purpose": "Goa trip hotel share",
+        "createdDate": "2026-10-01"
+      },
+      "result": {
+        "id": "pend_1",
+        "counterparty": "Rahul Verma",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "originalPaise": 650000,
+        "purpose": "Goa trip hotel share",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.update",
+      "input": {
+        "id": "pend_1",
+        "expectedVersion": 1,
+        "counterparty": "Rahul Verma",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "amount": "7000",
+        "purpose": "Goa trip hotel share (updated)",
+        "createdDate": "2026-10-01"
+      },
+      "result": {
+        "id": "pend_1",
+        "counterparty": "Rahul Verma",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "originalPaise": 700000,
+        "purpose": "Goa trip hotel share (updated)",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.settle",
+      "input": {
+        "pendingId": "pend_1",
+        "amount": "1200",
+        "date": "2026-10-05",
+        "method": "upi",
+        "recordCashMovement": true,
+        "note": "Part payment"
+      },
+      "result": {
+        "id": "set_1",
+        "pendingId": "pend_1",
+        "amountPaise": 120000,
+        "date": "2026-10-05",
+        "method": "upi",
+        "transactionId": "tx_4",
+        "note": "Part payment",
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "pending.settle",
+      "input": {
+        "pendingId": "pend_1",
+        "amount": "300",
+        "date": "2026-10-06",
+        "recordCashMovement": false
+      },
+      "result": {
+        "id": "set_2",
+        "pendingId": "pend_1",
+        "amountPaise": 30000,
+        "date": "2026-10-06",
+        "method": null,
+        "transactionId": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "pending.create",
+      "input": {
+        "counterparty": "Meera",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "amount": "800",
+        "purpose": "Cab",
+        "createdDate": "2026-10-01"
+      },
+      "result": {
+        "id": "pend_2",
+        "counterparty": "Meera",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "originalPaise": 80000,
+        "purpose": "Cab",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.cancel",
+      "input": {
+        "id": "pend_2"
+      },
+      "result": {
+        "id": "pend_2",
+        "counterparty": "Meera",
+        "direction": "owedToMe",
+        "kind": "lent",
+        "originalPaise": 80000,
+        "purpose": "Cab",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": true,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.create",
+      "input": {
+        "counterparty": "Dev",
+        "direction": "iOwe",
+        "kind": "borrowed",
+        "amount": "150",
+        "purpose": "Coffee",
+        "createdDate": "2026-10-01"
+      },
+      "result": {
+        "id": "pend_3",
+        "counterparty": "Dev",
+        "direction": "iOwe",
+        "kind": "borrowed",
+        "originalPaise": 15000,
+        "purpose": "Coffee",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.delete",
+      "input": {
+        "id": "pend_3"
+      },
+      "result": {
+        "id": "pend_3",
+        "counterparty": "Dev",
+        "direction": "iOwe",
+        "kind": "borrowed",
+        "originalPaise": 15000,
+        "purpose": "Coffee",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1,
+        "link": null,
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.split",
+      "input": {
+        "direction": "owedToMe",
+        "total": "3000",
+        "purpose": "Weekend cabin",
+        "createdDate": "2026-10-10",
+        "method": "equally",
+        "includeMe": true,
+        "people": [
+          {
+            "counterparty": "Asha"
+          },
+          {
+            "counterparty": "Bina"
+          }
+        ]
+      },
+      "result": [
+        {
+          "id": "pend_4",
+          "counterparty": "Asha",
+          "direction": "owedToMe",
+          "kind": "sharedExpense",
+          "originalPaise": 100000,
+          "purpose": "Weekend cabin",
+          "createdDate": "2026-10-10",
+          "notes": null,
+          "isCancelled": false,
+          "createdAt": "2026-10-10T03:30:00.000Z",
+          "updatedAt": "2026-10-10T03:30:00.000Z",
+          "version": 1,
+          "link": null,
+          "split": {
+            "id": "spl_1",
+            "method": "equally",
+            "includesMe": true,
+            "mySharePaise": 100000,
+            "part": null
+          }
+        },
+        {
+          "id": "pend_5",
+          "counterparty": "Bina",
+          "direction": "owedToMe",
+          "kind": "sharedExpense",
+          "originalPaise": 100000,
+          "purpose": "Weekend cabin",
+          "createdDate": "2026-10-10",
+          "notes": null,
+          "isCancelled": false,
+          "createdAt": "2026-10-10T03:30:00.001Z",
+          "updatedAt": "2026-10-10T03:30:00.001Z",
+          "version": 1,
+          "link": null,
+          "split": {
+            "id": "spl_1",
+            "method": "equally",
+            "includesMe": true,
+            "mySharePaise": 100000,
+            "part": null
+          }
+        }
+      ]
+    },
+    {
+      "actionId": "pending.create",
+      "input": {
+        "counterparty": "x",
+        "direction": "iOwe",
+        "kind": "borrowed",
+        "amount": "1000",
+        "purpose": "Dinner",
+        "createdDate": "2026-10-01",
+        "linkedUserId": "00000000-0000-4000-8000-00000000000b"
+      },
+      "result": {
+        "id": "pend_6",
+        "counterparty": "Bob",
+        "direction": "iOwe",
+        "kind": "borrowed",
+        "originalPaise": 100000,
+        "purpose": "Dinner",
+        "createdDate": "2026-10-01",
+        "notes": null,
+        "isCancelled": false,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1,
+        "link": {
+          "userId": "00000000-0000-4000-8000-00000000000b",
+          "handle": "@bob",
+          "sharedId": "shr_1",
+          "createdByMe": true
+        },
+        "split": null
+      }
+    },
+    {
+      "actionId": "pending.settle",
+      "input": {
+        "pendingId": "pend_6",
+        "amount": "300",
+        "date": "2026-10-09",
+        "method": "upi"
+      },
+      "result": {
+        "id": "set_3",
+        "pendingId": "pend_6",
+        "amountPaise": 30000,
+        "date": "2026-10-09",
+        "method": "upi",
+        "transactionId": "tx_5",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "pending.settle",
+      "input": {
+        "pendingId": "mir_shr_1",
+        "amount": "400",
+        "date": "2026-10-10",
+        "method": "upi"
+      },
+      "result": {
+        "id": "set_4",
+        "pendingId": "mir_shr_1",
+        "amountPaise": 40000,
+        "date": "2026-10-10",
+        "method": "upi",
+        "transactionId": "tx_6",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "loans.create",
+      "input": {
+        "name": "Car loan",
+        "counterparty": "HDFC Bank",
+        "direction": "borrowed",
+        "structure": "amortizing",
+        "principal": "600000",
+        "rateBps": 950,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 60,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "recordDisbursement": true,
+        "note": null
+      },
+      "result": {
+        "id": "loan_1",
+        "name": "Car loan",
+        "counterparty": "HDFC Bank",
+        "direction": "borrowed",
+        "structure": "amortizing",
+        "principalPaise": 60000000,
+        "rateBps": 950,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 60,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "status": "active",
+        "disbursementTransactionId": "tx_7",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "loans.update",
+      "input": {
+        "id": "loan_1",
+        "expectedVersion": 1,
+        "name": "Swift car loan",
+        "counterparty": "HDFC Bank",
+        "direction": "borrowed",
+        "structure": "amortizing",
+        "principal": "600000",
+        "rateBps": 950,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 60,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "recordDisbursement": false,
+        "note": null
+      },
+      "result": {
+        "id": "loan_1",
+        "name": "Swift car loan",
+        "counterparty": "HDFC Bank",
+        "direction": "borrowed",
+        "structure": "amortizing",
+        "principalPaise": 60000000,
+        "rateBps": 950,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 60,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "status": "active",
+        "disbursementTransactionId": "tx_7",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "loans.recordPayment",
+      "input": {
+        "loanId": "loan_1",
+        "kind": "installment",
+        "amount": "12602",
+        "date": "2026-10-05",
+        "recordCashMovement": true
+      },
+      "result": {
+        "id": "lp_1",
+        "loanId": "loan_1",
+        "kind": "installment",
+        "date": "2026-10-05",
+        "interestPaise": 475000,
+        "principalPaise": 785200,
+        "periodNumber": 1,
+        "transactionId": "tx_8",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "loans.create",
+      "input": {
+        "name": "Lent to Ravi",
+        "counterparty": "Ravi",
+        "direction": "lent",
+        "structure": "amortizing",
+        "principal": "12000",
+        "rateBps": 0,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 12,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "recordDisbursement": false,
+        "note": null
+      },
+      "result": {
+        "id": "loan_2",
+        "name": "Lent to Ravi",
+        "counterparty": "Ravi",
+        "direction": "lent",
+        "structure": "amortizing",
+        "principalPaise": 1200000,
+        "rateBps": 0,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 12,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "status": "active",
+        "disbursementTransactionId": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "loans.delete",
+      "input": {
+        "id": "loan_2"
+      },
+      "result": {
+        "id": "loan_2",
+        "name": "Lent to Ravi",
+        "counterparty": "Ravi",
+        "direction": "lent",
+        "structure": "amortizing",
+        "principalPaise": 1200000,
+        "rateBps": 0,
+        "startDate": "2026-09-01",
+        "firstDueDate": "2026-10-05",
+        "frequency": "monthly",
+        "tenureInstallments": 12,
+        "maturityDate": null,
+        "prepaymentStrategy": "reduceTenure",
+        "status": "active",
+        "disbursementTransactionId": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "subscriptions.create",
+      "input": {
+        "name": "Netflix",
+        "amount": "499",
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-08"
+      },
+      "result": {
+        "id": "sub_1",
+        "name": "Netflix",
+        "amountPaise": 49900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-08",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "subscriptions.update",
+      "input": {
+        "id": "sub_1",
+        "expectedVersion": 1,
+        "name": "Netflix",
+        "amount": "649",
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-08",
+        "paymentMethod": "upi"
+      },
+      "result": {
+        "id": "sub_1",
+        "name": "Netflix",
+        "amountPaise": 64900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-08",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": "upi",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "subscriptions.markPaid",
+      "input": {
+        "subscriptionId": "sub_1"
+      },
+      "result": {
+        "id": "tx_9",
+        "type": "expense",
+        "amountPaise": 64900,
+        "categoryId": "cat_food",
+        "date": "2026-10-08",
+        "paymentMethod": "upi",
+        "counterparty": "Netflix",
+        "note": "Monthly renewal · for 8 Oct 2026",
+        "origin": "subscription",
+        "originRefId": "sub_1",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "subscriptions.skipCycle",
+      "input": {
+        "subscriptionId": "sub_1"
+      },
+      "result": {
+        "id": "sub_1",
+        "name": "Netflix",
+        "amountPaise": 64900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-12-08",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": "upi",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 4
+      }
+    },
+    {
+      "actionId": "subscriptions.setStatus",
+      "input": {
+        "id": "sub_1",
+        "status": "paused"
+      },
+      "result": {
+        "id": "sub_1",
+        "name": "Netflix",
+        "amountPaise": 64900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-12-08",
+        "startDate": null,
+        "status": "paused",
+        "autoRenews": true,
+        "paymentMethod": "upi",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 5
+      }
+    },
+    {
+      "actionId": "subscriptions.setStatus",
+      "input": {
+        "id": "sub_1",
+        "status": "active"
+      },
+      "result": {
+        "id": "sub_1",
+        "name": "Netflix",
+        "amountPaise": 64900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-12-08",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": "upi",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 6
+      }
+    },
+    {
+      "actionId": "subscriptions.create",
+      "input": {
+        "name": "Old gym",
+        "amount": "499",
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-20"
+      },
+      "result": {
+        "id": "sub_2",
+        "name": "Old gym",
+        "amountPaise": 49900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-20",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "subscriptions.delete",
+      "input": {
+        "id": "sub_2"
+      },
+      "result": {
+        "id": "sub_2",
+        "name": "Old gym",
+        "amountPaise": 49900,
+        "categoryId": "cat_food",
+        "frequency": "monthly",
+        "nextDueDate": "2026-10-20",
+        "startDate": null,
+        "status": "active",
+        "autoRenews": true,
+        "paymentMethod": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "goals.create",
+      "input": {
+        "name": "Japan trip",
+        "category": "travel",
+        "target": "200000",
+        "colorIndex": 2,
+        "initialAllocation": "10000"
+      },
+      "result": {
+        "id": "goal_1",
+        "name": "Japan trip",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": null,
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "active",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "goals.update",
+      "input": {
+        "id": "goal_1",
+        "expectedVersion": 1,
+        "name": "Japan trip 2027",
+        "category": "travel",
+        "target": "200000",
+        "colorIndex": 2,
+        "targetDate": "2027-04-10"
+      },
+      "result": {
+        "id": "goal_1",
+        "name": "Japan trip 2027",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": "2027-04-10",
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "active",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "goals.contribute",
+      "input": {
+        "goalId": "goal_1",
+        "amount": "5000",
+        "date": "2026-10-10"
+      },
+      "result": {
+        "id": "sv_2",
+        "bucketType": "goal",
+        "bucketId": "goal_1",
+        "kind": "contribution",
+        "amountPaise": 500000,
+        "date": "2026-10-10",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "goals.withdraw",
+      "input": {
+        "goalId": "goal_1",
+        "amount": "1000",
+        "date": "2026-10-10"
+      },
+      "result": {
+        "id": "sv_3",
+        "bucketType": "goal",
+        "bucketId": "goal_1",
+        "kind": "withdrawal",
+        "amountPaise": 100000,
+        "date": "2026-10-10",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "goals.toggleArchive",
+      "input": {
+        "id": "goal_1"
+      },
+      "result": {
+        "id": "goal_1",
+        "name": "Japan trip 2027",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": "2027-04-10",
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "archived",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 3
+      }
+    },
+    {
+      "actionId": "goals.toggleArchive",
+      "input": {
+        "id": "goal_1"
+      },
+      "result": {
+        "id": "goal_1",
+        "name": "Japan trip 2027",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": "2027-04-10",
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "active",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 4
+      }
+    },
+    {
+      "actionId": "goals.create",
+      "input": {
+        "name": "Doomed",
+        "category": "travel",
+        "target": "200000",
+        "colorIndex": 2
+      },
+      "result": {
+        "id": "goal_2",
+        "name": "Doomed",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": null,
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "active",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "goals.delete",
+      "input": {
+        "id": "goal_2"
+      },
+      "result": {
+        "id": "goal_2",
+        "name": "Doomed",
+        "category": "travel",
+        "targetPaise": 20000000,
+        "targetDate": null,
+        "plannedMonthlyPaise": null,
+        "colorIndex": 2,
+        "status": "active",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "emergencyFund.configure",
+      "input": {
+        "essentialMonthlyExpenses": "40000",
+        "targetMonths": 6
+      },
+      "result": {
+        "configured": true,
+        "essentialMonthlyPaise": 4000000,
+        "targetMonths": 6,
+        "targetOverridePaise": null,
+        "updatedAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "emergencyFund.contribute",
+      "input": {
+        "amount": "3000",
+        "date": "2026-10-10"
+      },
+      "result": {
+        "id": "sv_4",
+        "bucketType": "emergencyFund",
+        "bucketId": "emergency_fund",
+        "kind": "contribution",
+        "amountPaise": 300000,
+        "date": "2026-10-10",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "emergencyFund.withdraw",
+      "input": {
+        "amount": "500",
+        "date": "2026-10-10"
+      },
+      "result": {
+        "id": "sv_5",
+        "bucketType": "emergencyFund",
+        "bucketId": "emergency_fund",
+        "kind": "withdrawal",
+        "amountPaise": 50000,
+        "date": "2026-10-10",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z"
+      }
+    },
+    {
+      "actionId": "assets.create",
+      "input": {
+        "name": "Gold coins",
+        "type": "gold",
+        "value": "80000.50",
+        "valuedOn": "2026-10-01"
+      },
+      "result": {
+        "id": "asset_1",
+        "name": "Gold coins",
+        "type": "gold",
+        "valuePaise": 8000050,
+        "valuedOn": "2026-10-01",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "assets.update",
+      "input": {
+        "id": "asset_1",
+        "expectedVersion": 1,
+        "name": "Gold coins",
+        "type": "gold",
+        "value": "82000",
+        "valuedOn": "2026-10-09"
+      },
+      "result": {
+        "id": "asset_1",
+        "name": "Gold coins",
+        "type": "gold",
+        "valuePaise": 8200000,
+        "valuedOn": "2026-10-09",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "assets.create",
+      "input": {
+        "name": "Old bike",
+        "type": "vehicle",
+        "value": "80000.50",
+        "valuedOn": "2026-10-01"
+      },
+      "result": {
+        "id": "asset_2",
+        "name": "Old bike",
+        "type": "vehicle",
+        "valuePaise": 8000050,
+        "valuedOn": "2026-10-01",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "assets.delete",
+      "input": {
+        "id": "asset_2"
+      },
+      "result": {
+        "id": "asset_2",
+        "name": "Old bike",
+        "type": "vehicle",
+        "valuePaise": 8000050,
+        "valuedOn": "2026-10-01",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    }
+  ],
+  "http": {
+    "actionCompleted": {
+      "status": 200,
+      "body": {
+        "data": {
+          "status": "completed",
+          "actionId": "transactions.create",
+          "result": {
+            "id": "tx_10",
+            "type": "expense",
+            "amountPaise": 4275,
+            "categoryId": "cat_food",
+            "date": "2026-10-07",
+            "paymentMethod": "cash",
+            "counterparty": null,
+            "note": null,
+            "origin": "manual",
+            "originRefId": null,
+            "createdAt": "2026-10-10T03:30:00.000Z",
+            "updatedAt": "2026-10-10T03:30:00.000Z",
+            "version": 1
+          },
+          "preview": {
+            "actionId": "transactions.create",
+            "title": "Record expense",
+            "summary": "Spent ₹42.75",
+            "lines": [
+              {
+                "label": "Type",
+                "value": "Expense"
+              },
+              {
+                "label": "Amount",
+                "value": "₹42.75",
+                "emphasis": true
+              },
+              {
+                "label": "Category",
+                "value": "Food & Dining"
+              },
+              {
+                "label": "Date",
+                "value": "7 Oct 2026"
+              },
+              {
+                "label": "Paid via",
+                "value": "Cash"
+              }
+            ],
+            "warnings": [],
+            "fingerprint": "8c85dc3f865e73ee",
+            "requiresConfirmation": false
+          },
+          "replayed": false,
+          "changes": {
+            "cursor": "195",
+            "hasMore": false,
+            "collections": {
+              "transactions": {
+                "upserted": [
+                  {
+                    "id": "tx_10",
+                    "type": "expense",
+                    "amountPaise": 4275,
+                    "categoryId": "cat_food",
+                    "date": "2026-10-07",
+                    "paymentMethod": "cash",
+                    "counterparty": null,
+                    "note": null,
+                    "origin": "manual",
+                    "originRefId": null,
+                    "createdAt": "2026-10-10T03:30:00.000Z",
+                    "updatedAt": "2026-10-10T03:30:00.000Z",
+                    "version": 1
+                  }
+                ],
+                "deleted": []
+              }
+            },
+            "values": {}
+          }
+        }
+      }
+    },
+    "actionNeedsConfirmation": {
+      "status": 200,
+      "body": {
+        "data": {
+          "status": "needsConfirmation",
+          "actionId": "transactions.delete",
+          "preview": {
+            "actionId": "transactions.delete",
+            "title": "Delete transaction?",
+            "summary": "Delete ₹1,300.25 expense on 5 Oct 2026",
+            "lines": [
+              {
+                "label": "Category",
+                "value": "Food & Dining"
+              },
+              {
+                "label": "Balance effect",
+                "value": "+₹1,300.25",
+                "emphasis": true
+              }
+            ],
+            "warnings": [
+              "This cannot be undone."
+            ],
+            "fingerprint": "be40cebd63f28c17.9d193d6e1dfee9e3",
+            "requiresConfirmation": true
+          }
+        }
+      }
+    },
+    "actionsList": {
+      "status": 200,
+      "body": {
+        "data": {
+          "actions": [
+            {
+              "id": "transactions.create",
+              "module": "transactions",
+              "title": "Record a transaction",
+              "description": "Records completed income or an expense. Changes the cash balance.",
+              "risk": "low",
+              "movesMoney": true,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "income or expense",
+                  "required": true,
+                  "allowedValues": [
+                    "income",
+                    "expense"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Category id matching the type",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date the money moved (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "paymentMethod",
+                  "kind": "enumeration",
+                  "description": "How it was paid",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Merchant or person",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "transactions.update",
+              "module": "transactions",
+              "title": "Edit a transaction",
+              "description": "Changes a manual transaction. Balances, budgets and analytics update automatically.",
+              "risk": "low",
+              "movesMoney": true,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Transaction id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "income or expense",
+                  "required": true,
+                  "allowedValues": [
+                    "income",
+                    "expense"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Category id matching the type",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date the money moved (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "paymentMethod",
+                  "kind": "enumeration",
+                  "description": "How it was paid",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Merchant or person",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "transactions.delete",
+              "module": "transactions",
+              "title": "Delete a transaction",
+              "description": "Permanently removes a manual transaction and reverses its effect on balances.",
+              "risk": "consequential",
+              "reversible": false,
+              "movesMoney": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Transaction id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "categories.create",
+              "module": "categories",
+              "title": "Create a category",
+              "description": "Adds a custom income or expense category. Does not move money.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Category name, 2–30 characters, unique per type",
+                  "required": true
+                },
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "income or expense",
+                  "required": true,
+                  "allowedValues": [
+                    "income",
+                    "expense"
+                  ]
+                },
+                {
+                  "name": "iconKey",
+                  "kind": "string",
+                  "description": "Icon key, e.g. utensils",
+                  "required": true
+                },
+                {
+                  "name": "colorIndex",
+                  "kind": "integer",
+                  "description": "Colour swatch index, 0–13",
+                  "required": true
+                },
+                {
+                  "name": "description",
+                  "kind": "string",
+                  "description": "What belongs here",
+                  "required": false
+                },
+                {
+                  "name": "isEssential",
+                  "kind": "boolean",
+                  "description": "Essential spending (used for the emergency-fund suggestion)",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "categories.update",
+              "module": "categories",
+              "title": "Edit a category",
+              "description": "Renames or restyles a category. System categories only allow icon and colour changes.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Category id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Category name, 2–30 characters, unique per type",
+                  "required": true
+                },
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "income or expense",
+                  "required": true,
+                  "allowedValues": [
+                    "income",
+                    "expense"
+                  ]
+                },
+                {
+                  "name": "iconKey",
+                  "kind": "string",
+                  "description": "Icon key, e.g. utensils",
+                  "required": true
+                },
+                {
+                  "name": "colorIndex",
+                  "kind": "integer",
+                  "description": "Colour swatch index, 0–13",
+                  "required": true
+                },
+                {
+                  "name": "description",
+                  "kind": "string",
+                  "description": "What belongs here",
+                  "required": false
+                },
+                {
+                  "name": "isEssential",
+                  "kind": "boolean",
+                  "description": "Essential spending (used for the emergency-fund suggestion)",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "categories.toggleArchive",
+              "module": "categories",
+              "title": "Archive or restore a category",
+              "description": "Hides a category from pickers (or restores it). Past transactions keep their category.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Category id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "categories.delete",
+              "module": "categories",
+              "title": "Delete a category",
+              "description": "Permanently removes a category that no transaction, budget or subscription uses.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Category id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "budgets.create",
+              "module": "budgets",
+              "title": "Create a budget",
+              "description": "Sets a spending limit for an expense category. Budgets hold no money; spending is derived from transactions.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Expense category id",
+                  "required": true
+                },
+                {
+                  "name": "limit",
+                  "kind": "money",
+                  "description": "Monthly spending limit in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "warningThresholdBps",
+                  "kind": "integer",
+                  "description": "Warning threshold in basis points (5000–9500)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "budgets.update",
+              "module": "budgets",
+              "title": "Edit a budget",
+              "description": "Changes a budget's category, monthly limit or warning level. Earlier months keep the limit they had.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Budget id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Expense category id",
+                  "required": true
+                },
+                {
+                  "name": "limit",
+                  "kind": "money",
+                  "description": "Monthly spending limit in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "warningThresholdBps",
+                  "kind": "integer",
+                  "description": "Warning threshold in basis points (5000–9500)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "budgets.setPaused",
+              "module": "budgets",
+              "title": "Pause or resume a budget",
+              "description": "A paused budget keeps its settings but stops tracking warnings and alerts.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Budget id",
+                  "required": true
+                },
+                {
+                  "name": "paused",
+                  "kind": "boolean",
+                  "description": "true to pause, false to resume",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "budgets.delete",
+              "module": "budgets",
+              "title": "Delete a budget",
+              "description": "Removes a spending limit. Transactions and balances are not affected.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Budget id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "pending.create",
+              "module": "pending",
+              "title": "Track money owed",
+              "description": "Records an obligation between you and someone else. Does not change your cash balance.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Person or organisation",
+                  "required": true
+                },
+                {
+                  "name": "direction",
+                  "kind": "enumeration",
+                  "description": "iOwe = I must pay; owedToMe = I will receive",
+                  "required": true,
+                  "allowedValues": [
+                    "iOwe",
+                    "owedToMe"
+                  ]
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "Reason",
+                  "required": false,
+                  "allowedValues": [
+                    "borrowed",
+                    "lent",
+                    "sharedExpense",
+                    "reimbursement",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Original amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "purpose",
+                  "kind": "string",
+                  "description": "Short description",
+                  "required": true
+                },
+                {
+                  "name": "createdDate",
+                  "kind": "date",
+                  "description": "When the obligation arose",
+                  "required": true
+                },
+                {
+                  "name": "notes",
+                  "kind": "string",
+                  "description": "Notes",
+                  "required": false
+                },
+                {
+                  "name": "linkedUserId",
+                  "kind": "id",
+                  "description": "FiNN user to share with; the item then also appears in their account. Find ids with the user directory.",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "pending.split",
+              "module": "pending",
+              "title": "Split money owed",
+              "description": "Splits one bill between several people: equally, by exact amounts, percentages, shares or adjustments. Creates one item per person. Does not change your cash balance.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "direction",
+                  "kind": "enumeration",
+                  "description": "owedToMe = I paid and they owe me their shares; iOwe = I owe each person their share",
+                  "required": true,
+                  "allowedValues": [
+                    "iOwe",
+                    "owedToMe"
+                  ]
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "Reason (default sharedExpense)",
+                  "required": false,
+                  "allowedValues": [
+                    "borrowed",
+                    "lent",
+                    "sharedExpense",
+                    "reimbursement",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "total",
+                  "kind": "money",
+                  "description": "Whole bill in rupees, your own share included when includeMe",
+                  "required": true
+                },
+                {
+                  "name": "purpose",
+                  "kind": "string",
+                  "description": "Short description",
+                  "required": true
+                },
+                {
+                  "name": "createdDate",
+                  "kind": "date",
+                  "description": "When the bill was paid",
+                  "required": true
+                },
+                {
+                  "name": "method",
+                  "kind": "enumeration",
+                  "description": "equally; exact (value = rupees, must add up to total); percent (value = %, must add up to 100); shares (value = whole parts); adjustment (value = rupees added (+) or taken off (−) an equal share)",
+                  "required": true,
+                  "allowedValues": [
+                    "equally",
+                    "exact",
+                    "percent",
+                    "shares",
+                    "adjustment"
+                  ]
+                },
+                {
+                  "name": "includeMe",
+                  "kind": "boolean",
+                  "description": "You were part of the bill too; your share is not owed. Only with owedToMe",
+                  "required": false
+                },
+                {
+                  "name": "myValue",
+                  "kind": "string",
+                  "description": "Your own value when includeMe (same unit as people[].value)",
+                  "required": false
+                },
+                {
+                  "name": "people",
+                  "kind": "string",
+                  "description": "List of {counterparty, linkedUserId?, value?}, 2 to 20 people, you not included",
+                  "required": true
+                },
+                {
+                  "name": "notes",
+                  "kind": "string",
+                  "description": "Notes",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "pending.update",
+              "module": "pending",
+              "title": "Edit money owed",
+              "description": "Edits the details of a pending payment. The original amount cannot go below what was already settled.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Pending payment id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Person or organisation",
+                  "required": true
+                },
+                {
+                  "name": "direction",
+                  "kind": "enumeration",
+                  "description": "iOwe = I must pay; owedToMe = I will receive",
+                  "required": true,
+                  "allowedValues": [
+                    "iOwe",
+                    "owedToMe"
+                  ]
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "Reason",
+                  "required": false,
+                  "allowedValues": [
+                    "borrowed",
+                    "lent",
+                    "sharedExpense",
+                    "reimbursement",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Original amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "purpose",
+                  "kind": "string",
+                  "description": "Short description",
+                  "required": true
+                },
+                {
+                  "name": "createdDate",
+                  "kind": "date",
+                  "description": "When the obligation arose",
+                  "required": true
+                },
+                {
+                  "name": "notes",
+                  "kind": "string",
+                  "description": "Notes",
+                  "required": false
+                },
+                {
+                  "name": "linkedUserId",
+                  "kind": "id",
+                  "description": "FiNN user to share with; the item then also appears in their account. Find ids with the user directory.",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "pending.settle",
+              "module": "pending",
+              "title": "Settle money owed",
+              "description": "Records a full or partial settlement. Creates the matching cash movement once (never twice).",
+              "risk": "consequential",
+              "movesMoney": true,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "pendingId",
+                  "kind": "id",
+                  "description": "Exact pending payment id. Use pending.resolve to find it by name; never guess.",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount settled now (≤ outstanding)",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Settlement date",
+                  "required": true
+                },
+                {
+                  "name": "method",
+                  "kind": "enumeration",
+                  "description": "Payment method",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "recordCashMovement",
+                  "kind": "boolean",
+                  "description": "Create the matching cash transaction (default true)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Reference",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "pending.cancel",
+              "module": "pending",
+              "title": "Write off money owed",
+              "description": "Marks the remaining amount as no longer expected. Recorded settlements are kept.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Pending payment id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "pending.delete",
+              "module": "pending",
+              "title": "Delete pending item",
+              "description": "Removes an item created by mistake. Items with settlements must be written off instead.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Pending payment id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "loans.create",
+              "module": "loans",
+              "title": "Add a loan",
+              "description": "Adds a borrowed or lent loan (EMI or interest-only). Optionally records the disbursement as cash.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Label, e.g. \"Car loan\"",
+                  "required": true
+                },
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Bank or person",
+                  "required": true
+                },
+                {
+                  "name": "direction",
+                  "kind": "enumeration",
+                  "description": "borrowed or lent",
+                  "required": true,
+                  "allowedValues": [
+                    "borrowed",
+                    "lent"
+                  ]
+                },
+                {
+                  "name": "structure",
+                  "kind": "enumeration",
+                  "description": "amortizing (EMI) or interestOnly",
+                  "required": true,
+                  "allowedValues": [
+                    "amortizing",
+                    "interestOnly"
+                  ]
+                },
+                {
+                  "name": "principal",
+                  "kind": "money",
+                  "description": "Loan amount",
+                  "required": true
+                },
+                {
+                  "name": "rateBps",
+                  "kind": "rate",
+                  "description": "Annual interest in basis points (10.5% = 1050)",
+                  "required": true
+                },
+                {
+                  "name": "startDate",
+                  "kind": "date",
+                  "description": "Disbursement date",
+                  "required": true
+                },
+                {
+                  "name": "firstDueDate",
+                  "kind": "date",
+                  "description": "First instalment/interest due date",
+                  "required": true
+                },
+                {
+                  "name": "frequency",
+                  "kind": "enumeration",
+                  "description": "Repayment frequency",
+                  "required": true,
+                  "allowedValues": [
+                    "monthly",
+                    "quarterly",
+                    "halfYearly",
+                    "yearly"
+                  ]
+                },
+                {
+                  "name": "tenureInstallments",
+                  "kind": "integer",
+                  "description": "Number of EMIs (amortizing only)",
+                  "required": false
+                },
+                {
+                  "name": "maturityDate",
+                  "kind": "date",
+                  "description": "Principal due date (interest-only, optional)",
+                  "required": false
+                },
+                {
+                  "name": "recordDisbursement",
+                  "kind": "boolean",
+                  "description": "Record the disbursement as a cash movement",
+                  "required": false
+                },
+                {
+                  "name": "prepaymentStrategy",
+                  "kind": "enumeration",
+                  "description": "What a prepayment changes (default reduceTenure)",
+                  "required": false,
+                  "allowedValues": [
+                    "reduceTenure",
+                    "reduceEmi"
+                  ]
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "loans.update",
+              "module": "loans",
+              "title": "Edit a loan",
+              "description": "Edits loan details. Terms are locked once payments exist.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Loan id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version read",
+                  "required": true
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Label, e.g. \"Car loan\"",
+                  "required": true
+                },
+                {
+                  "name": "counterparty",
+                  "kind": "string",
+                  "description": "Bank or person",
+                  "required": true
+                },
+                {
+                  "name": "direction",
+                  "kind": "enumeration",
+                  "description": "borrowed or lent",
+                  "required": true,
+                  "allowedValues": [
+                    "borrowed",
+                    "lent"
+                  ]
+                },
+                {
+                  "name": "structure",
+                  "kind": "enumeration",
+                  "description": "amortizing (EMI) or interestOnly",
+                  "required": true,
+                  "allowedValues": [
+                    "amortizing",
+                    "interestOnly"
+                  ]
+                },
+                {
+                  "name": "principal",
+                  "kind": "money",
+                  "description": "Loan amount",
+                  "required": true
+                },
+                {
+                  "name": "rateBps",
+                  "kind": "rate",
+                  "description": "Annual interest in basis points (10.5% = 1050)",
+                  "required": true
+                },
+                {
+                  "name": "startDate",
+                  "kind": "date",
+                  "description": "Disbursement date",
+                  "required": true
+                },
+                {
+                  "name": "firstDueDate",
+                  "kind": "date",
+                  "description": "First instalment/interest due date",
+                  "required": true
+                },
+                {
+                  "name": "frequency",
+                  "kind": "enumeration",
+                  "description": "Repayment frequency",
+                  "required": true,
+                  "allowedValues": [
+                    "monthly",
+                    "quarterly",
+                    "halfYearly",
+                    "yearly"
+                  ]
+                },
+                {
+                  "name": "tenureInstallments",
+                  "kind": "integer",
+                  "description": "Number of EMIs (amortizing only)",
+                  "required": false
+                },
+                {
+                  "name": "maturityDate",
+                  "kind": "date",
+                  "description": "Principal due date (interest-only, optional)",
+                  "required": false
+                },
+                {
+                  "name": "recordDisbursement",
+                  "kind": "boolean",
+                  "description": "Record the disbursement as a cash movement",
+                  "required": false
+                },
+                {
+                  "name": "prepaymentStrategy",
+                  "kind": "enumeration",
+                  "description": "What a prepayment changes (default reduceTenure)",
+                  "required": false,
+                  "allowedValues": [
+                    "reduceTenure",
+                    "reduceEmi"
+                  ]
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "loans.recordPayment",
+              "module": "loans",
+              "title": "Record a loan payment",
+              "description": "Records an EMI, an interest payment, or a principal prepayment. Interest due is paid first; the rest reduces principal.",
+              "risk": "consequential",
+              "movesMoney": true,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "loanId",
+                  "kind": "id",
+                  "description": "Loan id",
+                  "required": true
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "installment, interest, or principal",
+                  "required": true,
+                  "allowedValues": [
+                    "installment",
+                    "interest",
+                    "principal"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount paid (or received for lent loans)",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Payment date",
+                  "required": true
+                },
+                {
+                  "name": "method",
+                  "kind": "enumeration",
+                  "description": "Payment method",
+                  "required": false
+                },
+                {
+                  "name": "recordCashMovement",
+                  "kind": "boolean",
+                  "description": "Create the matching cash transaction (default true)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "loans.delete",
+              "module": "loans",
+              "title": "Delete a loan",
+              "description": "Removes a loan added by mistake. Loans with payments cannot be deleted.",
+              "risk": "consequential",
+              "reversible": false,
+              "movesMoney": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Loan id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.create",
+              "module": "subscriptions",
+              "title": "Add a subscription",
+              "description": "Tracks a recurring cost. Upcoming charges are projections; nothing is paid automatically.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Service name, e.g. \"Netflix\"",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount per cycle in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Expense category id",
+                  "required": true
+                },
+                {
+                  "name": "frequency",
+                  "kind": "enumeration",
+                  "description": "Billing frequency",
+                  "required": true,
+                  "allowedValues": [
+                    "weekly",
+                    "monthly",
+                    "quarterly",
+                    "halfYearly",
+                    "yearly"
+                  ]
+                },
+                {
+                  "name": "nextDueDate",
+                  "kind": "date",
+                  "description": "Next renewal date",
+                  "required": true
+                },
+                {
+                  "name": "startDate",
+                  "kind": "date",
+                  "description": "When the subscription started",
+                  "required": false
+                },
+                {
+                  "name": "autoRenews",
+                  "kind": "boolean",
+                  "description": "Renews automatically (informational)",
+                  "required": false
+                },
+                {
+                  "name": "paymentMethod",
+                  "kind": "enumeration",
+                  "description": "Usual payment method",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.update",
+              "module": "subscriptions",
+              "title": "Edit a subscription",
+              "description": "Changes a subscription. Past payments are not affected.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Subscription id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Service name, e.g. \"Netflix\"",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount per cycle in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "categoryId",
+                  "kind": "id",
+                  "description": "Expense category id",
+                  "required": true
+                },
+                {
+                  "name": "frequency",
+                  "kind": "enumeration",
+                  "description": "Billing frequency",
+                  "required": true,
+                  "allowedValues": [
+                    "weekly",
+                    "monthly",
+                    "quarterly",
+                    "halfYearly",
+                    "yearly"
+                  ]
+                },
+                {
+                  "name": "nextDueDate",
+                  "kind": "date",
+                  "description": "Next renewal date",
+                  "required": true
+                },
+                {
+                  "name": "startDate",
+                  "kind": "date",
+                  "description": "When the subscription started",
+                  "required": false
+                },
+                {
+                  "name": "autoRenews",
+                  "kind": "boolean",
+                  "description": "Renews automatically (informational)",
+                  "required": false
+                },
+                {
+                  "name": "paymentMethod",
+                  "kind": "enumeration",
+                  "description": "Usual payment method",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.setStatus",
+              "module": "subscriptions",
+              "title": "Pause, resume or cancel a subscription",
+              "description": "Changes whether a subscription counts towards your monthly commitment. Past payments are kept.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Subscription id",
+                  "required": true
+                },
+                {
+                  "name": "status",
+                  "kind": "enumeration",
+                  "description": "New status",
+                  "required": true,
+                  "allowedValues": [
+                    "active",
+                    "paused",
+                    "cancelled"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.markPaid",
+              "module": "subscriptions",
+              "title": "Mark a subscription as paid",
+              "description": "Records one renewal payment as an expense and moves the next due date forward by one cycle. Each cycle can be paid only once.",
+              "risk": "consequential",
+              "movesMoney": true,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "subscriptionId",
+                  "kind": "id",
+                  "description": "Subscription id",
+                  "required": true
+                },
+                {
+                  "name": "cycleDate",
+                  "kind": "date",
+                  "description": "Due date of the cycle being paid (defaults to next due date)",
+                  "required": false
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Payment date, not in the future (defaults to the due date)",
+                  "required": false
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount paid (defaults to the subscription amount)",
+                  "required": false
+                },
+                {
+                  "name": "method",
+                  "kind": "enumeration",
+                  "description": "Payment method",
+                  "required": false,
+                  "allowedValues": [
+                    "upi",
+                    "card",
+                    "cash",
+                    "bankTransfer",
+                    "wallet",
+                    "other"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.skipCycle",
+              "module": "subscriptions",
+              "title": "Skip a renewal",
+              "description": "Moves the next due date forward by one cycle without recording a payment (for example a free month or a waived charge).",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "subscriptionId",
+                  "kind": "id",
+                  "description": "Subscription id",
+                  "required": true
+                },
+                {
+                  "name": "cycleDate",
+                  "kind": "date",
+                  "description": "Due date of the cycle being skipped",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "subscriptions.delete",
+              "module": "subscriptions",
+              "title": "Delete a subscription",
+              "description": "Removes a subscription. Payments already recorded stay in your transactions.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Subscription id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "goals.create",
+              "module": "goals",
+              "title": "Create a savings goal",
+              "description": "Creates a goal. An optional starting amount is earmarked from available cash (not spent).",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Goal name, up to 50 characters, unique among active goals",
+                  "required": true
+                },
+                {
+                  "name": "category",
+                  "kind": "enumeration",
+                  "description": "Goal type",
+                  "required": false,
+                  "allowedValues": [
+                    "travel",
+                    "purchase",
+                    "education",
+                    "investment",
+                    "home",
+                    "vehicle",
+                    "wedding",
+                    "health",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "target",
+                  "kind": "money",
+                  "description": "Target amount",
+                  "required": true
+                },
+                {
+                  "name": "targetDate",
+                  "kind": "date",
+                  "description": "Target date (in the future)",
+                  "required": false
+                },
+                {
+                  "name": "plannedMonthlyContribution",
+                  "kind": "money",
+                  "description": "Planned monthly amount",
+                  "required": false
+                },
+                {
+                  "name": "initialAllocation",
+                  "kind": "money",
+                  "description": "Amount to earmark now (create only; ignored on update)",
+                  "required": false
+                },
+                {
+                  "name": "colorIndex",
+                  "kind": "integer",
+                  "description": "Colour swatch index (default 5)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "goals.update",
+              "module": "goals",
+              "title": "Edit a goal",
+              "description": "Changes goal details. The saved amount only changes through contributions and withdrawals.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Goal id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version read",
+                  "required": true
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Goal name, up to 50 characters, unique among active goals",
+                  "required": true
+                },
+                {
+                  "name": "category",
+                  "kind": "enumeration",
+                  "description": "Goal type",
+                  "required": false,
+                  "allowedValues": [
+                    "travel",
+                    "purchase",
+                    "education",
+                    "investment",
+                    "home",
+                    "vehicle",
+                    "wedding",
+                    "health",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "target",
+                  "kind": "money",
+                  "description": "Target amount",
+                  "required": true
+                },
+                {
+                  "name": "targetDate",
+                  "kind": "date",
+                  "description": "Target date (in the future)",
+                  "required": false
+                },
+                {
+                  "name": "plannedMonthlyContribution",
+                  "kind": "money",
+                  "description": "Planned monthly amount",
+                  "required": false
+                },
+                {
+                  "name": "initialAllocation",
+                  "kind": "money",
+                  "description": "Amount to earmark now (create only; ignored on update)",
+                  "required": false
+                },
+                {
+                  "name": "colorIndex",
+                  "kind": "integer",
+                  "description": "Colour swatch index (default 5)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "goals.contribute",
+              "module": "goals",
+              "title": "Add money to a goal",
+              "description": "Earmarks available cash for a goal. Not an expense; net worth is unchanged.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "goalId",
+                  "kind": "id",
+                  "description": "Goal id",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "goals.withdraw",
+              "module": "goals",
+              "title": "Withdraw from a goal",
+              "description": "Releases earmarked money back to available cash. Not income.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "goalId",
+                  "kind": "id",
+                  "description": "Goal id",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "goals.toggleArchive",
+              "module": "goals",
+              "title": "Archive or restore a goal",
+              "description": "Hides a goal from the active list (or restores it). Earmarked money is unaffected.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Goal id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "goals.delete",
+              "module": "goals",
+              "title": "Delete a goal",
+              "description": "Deletes a goal. Any saved amount is released back to available cash.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Goal id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "emergencyFund.configure",
+              "module": "emergencyFund",
+              "title": "Set up the emergency fund plan",
+              "description": "Sets essential monthly expenses and the months of cover to aim for. No money moves.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "essentialMonthlyExpenses",
+                  "kind": "money",
+                  "description": "Essential spending per month",
+                  "required": true
+                },
+                {
+                  "name": "targetMonths",
+                  "kind": "integer",
+                  "description": "Months of cover (1–24)",
+                  "required": true
+                },
+                {
+                  "name": "targetOverride",
+                  "kind": "money",
+                  "description": "Custom target amount",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "emergencyFund.contribute",
+              "module": "emergencyFund",
+              "title": "Add to the emergency fund",
+              "description": "Earmarks available cash for emergencies. Not an expense; net worth is unchanged.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "emergencyFund.withdraw",
+              "module": "emergencyFund",
+              "title": "Withdraw from the emergency fund",
+              "description": "Releases earmarked emergency money back to available cash. Not income.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "assets.create",
+              "module": "net_worth",
+              "title": "Add an asset",
+              "description": "Adds an estimated asset value (investments, gold, property…) to net worth. Does not change the cash balance.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Asset name, 2–40 characters",
+                  "required": true
+                },
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "Kind of asset",
+                  "required": true,
+                  "allowedValues": [
+                    "bankDeposit",
+                    "investment",
+                    "retirement",
+                    "gold",
+                    "property",
+                    "vehicle",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "value",
+                  "kind": "money",
+                  "description": "Estimated current value in rupees (zero or more)",
+                  "required": true
+                },
+                {
+                  "name": "valuedOn",
+                  "kind": "date",
+                  "description": "Date of the valuation (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "assets.update",
+              "module": "net_worth",
+              "title": "Update an asset",
+              "description": "Changes an asset's name, type or estimated value. Net worth updates automatically.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Asset id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read",
+                  "required": true
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Asset name, 2–40 characters",
+                  "required": true
+                },
+                {
+                  "name": "type",
+                  "kind": "enumeration",
+                  "description": "Kind of asset",
+                  "required": true,
+                  "allowedValues": [
+                    "bankDeposit",
+                    "investment",
+                    "retirement",
+                    "gold",
+                    "property",
+                    "vehicle",
+                    "other"
+                  ]
+                },
+                {
+                  "name": "value",
+                  "kind": "money",
+                  "description": "Estimated current value in rupees (zero or more)",
+                  "required": true
+                },
+                {
+                  "name": "valuedOn",
+                  "kind": "date",
+                  "description": "Date of the valuation (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "assets.delete",
+              "module": "net_worth",
+              "title": "Delete an asset",
+              "description": "Removes an asset valuation. Net worth goes down by its value. Cash is not affected.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Asset id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "profile.update",
+              "module": "settings",
+              "title": "Update profile",
+              "description": "Changes your name, opening balance, start date or income estimate. Changing the opening balance or start date recalculates every balance.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "displayName",
+                  "kind": "string",
+                  "description": "Name, 1–40 characters",
+                  "required": true
+                },
+                {
+                  "name": "openingBalance",
+                  "kind": "money",
+                  "description": "Cash when tracking started, zero or more",
+                  "required": true
+                },
+                {
+                  "name": "openingDate",
+                  "kind": "date",
+                  "description": "Date tracking started (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "monthlyIncomeEstimate",
+                  "kind": "money",
+                  "description": "Typical monthly income",
+                  "required": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "actionValidationError": {
+      "status": 422,
+      "body": {
+        "error": {
+          "code": "validation",
+          "message": "Enter an amount greater than zero",
+          "fieldErrors": {
+            "amount": "Enter an amount greater than zero"
+          },
+          "retryable": false
+        }
+      }
+    },
+    "alertsInbox": {
+      "status": 200,
+      "body": {
+        "data": {
+          "read": [],
+          "dismissed": []
+        }
+      }
+    },
+    "audit": {
+      "status": 200,
+      "body": {
+        "data": {
+          "items": [
+            {
+              "id": "60",
+              "actionId": "transactions.create",
+              "summary": "Spent ₹42.75",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_10"
+              ],
+              "at": "2026-10-12T03:52:10.628Z"
+            },
+            {
+              "id": "59",
+              "actionId": "assets.delete",
+              "summary": "Deleted Old bike",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "asset_2"
+              ],
+              "at": "2026-10-12T03:52:10.600Z"
+            },
+            {
+              "id": "58",
+              "actionId": "assets.create",
+              "summary": "Added Old bike at ₹80,000.50",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "asset_2"
+              ],
+              "at": "2026-10-12T03:52:10.589Z"
+            },
+            {
+              "id": "57",
+              "actionId": "assets.update",
+              "summary": "Updated Gold coins to ₹82,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "asset_1"
+              ],
+              "at": "2026-10-12T03:52:10.579Z"
+            },
+            {
+              "id": "56",
+              "actionId": "assets.create",
+              "summary": "Added Gold coins at ₹80,000.50",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "asset_1"
+              ],
+              "at": "2026-10-12T03:52:10.569Z"
+            },
+            {
+              "id": "55",
+              "actionId": "emergencyFund.withdraw",
+              "summary": "Release ₹500 from your emergency fund",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sv_5"
+              ],
+              "at": "2026-10-12T03:52:10.558Z"
+            },
+            {
+              "id": "54",
+              "actionId": "emergencyFund.contribute",
+              "summary": "Set aside ₹3,000 for emergencies",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sv_4"
+              ],
+              "at": "2026-10-12T03:52:10.542Z"
+            },
+            {
+              "id": "53",
+              "actionId": "emergencyFund.configure",
+              "summary": "Emergency fund target ₹2,40,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "emergency_plan"
+              ],
+              "at": "2026-10-12T03:52:10.529Z"
+            },
+            {
+              "id": "52",
+              "actionId": "goals.delete",
+              "summary": "Delete Doomed",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_2"
+              ],
+              "at": "2026-10-12T03:52:10.519Z"
+            },
+            {
+              "id": "51",
+              "actionId": "goals.create",
+              "summary": "New goal: Doomed · ₹2,00,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_2"
+              ],
+              "at": "2026-10-12T03:52:10.508Z"
+            },
+            {
+              "id": "50",
+              "actionId": "goals.toggleArchive",
+              "summary": "Restore Japan trip 2027",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_1"
+              ],
+              "at": "2026-10-12T03:52:10.499Z"
+            },
+            {
+              "id": "49",
+              "actionId": "goals.toggleArchive",
+              "summary": "Archive Japan trip 2027",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_1"
+              ],
+              "at": "2026-10-12T03:52:10.489Z"
+            },
+            {
+              "id": "48",
+              "actionId": "goals.withdraw",
+              "summary": "Release ₹1,000 from Japan trip 2027",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sv_3"
+              ],
+              "at": "2026-10-12T03:52:10.477Z"
+            },
+            {
+              "id": "47",
+              "actionId": "goals.contribute",
+              "summary": "Set aside ₹5,000 for Japan trip 2027",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sv_2"
+              ],
+              "at": "2026-10-12T03:52:10.463Z"
+            },
+            {
+              "id": "46",
+              "actionId": "goals.update",
+              "summary": "Update Japan trip",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_1"
+              ],
+              "at": "2026-10-12T03:52:10.449Z"
+            },
+            {
+              "id": "45",
+              "actionId": "goals.create",
+              "summary": "New goal: Japan trip · ₹2,00,000",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "goal_1",
+                "sv_1"
+              ],
+              "at": "2026-10-12T03:52:10.437Z"
+            },
+            {
+              "id": "44",
+              "actionId": "subscriptions.delete",
+              "summary": "Old gym deleted",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_2"
+              ],
+              "at": "2026-10-12T03:52:10.422Z"
+            },
+            {
+              "id": "43",
+              "actionId": "subscriptions.create",
+              "summary": "Old gym added · ₹499 monthly",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_2"
+              ],
+              "at": "2026-10-12T03:52:10.409Z"
+            },
+            {
+              "id": "42",
+              "actionId": "subscriptions.setStatus",
+              "summary": "Netflix resumed",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.400Z"
+            },
+            {
+              "id": "41",
+              "actionId": "subscriptions.setStatus",
+              "summary": "Netflix paused",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.390Z"
+            },
+            {
+              "id": "40",
+              "actionId": "subscriptions.skipCycle",
+              "summary": "Skipped the 8 Nov renewal of Netflix",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.380Z"
+            },
+            {
+              "id": "39",
+              "actionId": "subscriptions.markPaid",
+              "summary": "Paid ₹649 · Netflix",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_9",
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.368Z"
+            },
+            {
+              "id": "38",
+              "actionId": "subscriptions.update",
+              "summary": "Netflix updated",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.353Z"
+            },
+            {
+              "id": "37",
+              "actionId": "subscriptions.create",
+              "summary": "Netflix added · ₹499 monthly",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "sub_1"
+              ],
+              "at": "2026-10-12T03:52:10.341Z"
+            },
+            {
+              "id": "36",
+              "actionId": "loans.delete",
+              "summary": "Delete Lent to Ravi with Ravi",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "loan_2"
+              ],
+              "at": "2026-10-12T03:52:10.329Z"
+            },
+            {
+              "id": "35",
+              "actionId": "loans.create",
+              "summary": "I lent ₹12,000 to Ravi",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "loan_2"
+              ],
+              "at": "2026-10-12T03:52:10.316Z"
+            },
+            {
+              "id": "34",
+              "actionId": "loans.recordPayment",
+              "summary": "Pay ₹12,602 · Swift car loan",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_8",
+                "lp_1"
+              ],
+              "at": "2026-10-12T03:52:10.303Z"
+            },
+            {
+              "id": "33",
+              "actionId": "loans.update",
+              "summary": "Update Car loan",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "loan_1",
+                "tx_7"
+              ],
+              "at": "2026-10-12T03:52:10.285Z"
+            },
+            {
+              "id": "32",
+              "actionId": "loans.create",
+              "summary": "I borrowed ₹6,00,000 from HDFC Bank",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_7",
+                "loan_1"
+              ],
+              "at": "2026-10-12T03:52:10.274Z"
+            },
+            {
+              "id": "30",
+              "actionId": "pending.settle",
+              "summary": "Pay Bob ₹300",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_5",
+                "set_3",
+                "pend_6"
+              ],
+              "at": "2026-10-12T03:52:10.236Z"
+            },
+            {
+              "id": "29",
+              "actionId": "pending.create",
+              "summary": "Owe ₹1,000 · Dinner",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_6"
+              ],
+              "at": "2026-10-12T03:52:10.219Z"
+            },
+            {
+              "id": "28",
+              "actionId": "pending.split",
+              "summary": "Collect ₹2,000 from 2 people · Weekend cabin",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_4",
+                "pend_5"
+              ],
+              "at": "2026-10-12T03:52:10.208Z"
+            },
+            {
+              "id": "27",
+              "actionId": "pending.delete",
+              "summary": "Delete Coffee with Dev",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_3"
+              ],
+              "at": "2026-10-12T03:52:10.192Z"
+            },
+            {
+              "id": "26",
+              "actionId": "pending.create",
+              "summary": "Owe ₹150 · Coffee",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_3"
+              ],
+              "at": "2026-10-12T03:52:10.179Z"
+            },
+            {
+              "id": "25",
+              "actionId": "pending.cancel",
+              "summary": "Write off ₹800 with Meera",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_2"
+              ],
+              "at": "2026-10-12T03:52:10.168Z"
+            },
+            {
+              "id": "24",
+              "actionId": "pending.create",
+              "summary": "Collect ₹800 · Cab",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_2"
+              ],
+              "at": "2026-10-12T03:52:10.154Z"
+            },
+            {
+              "id": "23",
+              "actionId": "pending.settle",
+              "summary": "Receive ₹300 from Rahul Verma",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "set_2",
+                "pend_1"
+              ],
+              "at": "2026-10-12T03:52:10.141Z"
+            },
+            {
+              "id": "22",
+              "actionId": "pending.settle",
+              "summary": "Receive ₹1,200 from Rahul Verma",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "tx_4",
+                "set_1",
+                "pend_1"
+              ],
+              "at": "2026-10-12T03:52:10.123Z"
+            },
+            {
+              "id": "21",
+              "actionId": "pending.update",
+              "summary": "Update Goa trip hotel share with Rahul Verma",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_1"
+              ],
+              "at": "2026-10-12T03:52:10.104Z"
+            },
+            {
+              "id": "20",
+              "actionId": "pending.create",
+              "summary": "Collect ₹6,500 · Goa trip hotel share",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "pend_1"
+              ],
+              "at": "2026-10-12T03:52:10.092Z"
+            },
+            {
+              "id": "19",
+              "actionId": "budgets.delete",
+              "summary": "Delete the Travel budget",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_2"
+              ],
+              "at": "2026-10-12T03:52:10.080Z"
+            },
+            {
+              "id": "18",
+              "actionId": "budgets.create",
+              "summary": "Budget for Travel · ₹1,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_2"
+              ],
+              "at": "2026-10-12T03:52:10.065Z"
+            },
+            {
+              "id": "17",
+              "actionId": "budgets.setPaused",
+              "summary": "Food & Dining budget resumed",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_1"
+              ],
+              "at": "2026-10-12T03:52:10.053Z"
+            },
+            {
+              "id": "16",
+              "actionId": "budgets.setPaused",
+              "summary": "Food & Dining budget paused",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_1"
+              ],
+              "at": "2026-10-12T03:52:10.040Z"
+            },
+            {
+              "id": "15",
+              "actionId": "budgets.update",
+              "summary": "Update Food & Dining budget to ₹9,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_1"
+              ],
+              "at": "2026-10-12T03:52:10.026Z"
+            },
+            {
+              "id": "14",
+              "actionId": "budgets.create",
+              "summary": "Budget for Food & Dining · ₹8,000",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "bud_1"
+              ],
+              "at": "2026-10-12T03:52:10.012Z"
+            },
+            {
+              "id": "13",
+              "actionId": "categories.delete",
+              "summary": "Temp deleted",
+              "channel": "ui",
+              "confirmedBy": "user",
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "cat_2"
+              ],
+              "at": "2026-10-12T03:52:10.000Z"
+            },
+            {
+              "id": "12",
+              "actionId": "categories.create",
+              "summary": "Category \"Temp\" created",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "cat_2"
+              ],
+              "at": "2026-10-12T03:52:09.987Z"
+            },
+            {
+              "id": "11",
+              "actionId": "categories.toggleArchive",
+              "summary": "Pets & vets restored",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "cat_1"
+              ],
+              "at": "2026-10-12T03:52:09.975Z"
+            },
+            {
+              "id": "10",
+              "actionId": "categories.toggleArchive",
+              "summary": "Pets & vets archived",
+              "channel": "ui",
+              "confirmedBy": null,
+              "succeeded": true,
+              "failure": null,
+              "recordIds": [
+                "cat_1"
+              ],
+              "at": "2026-10-12T03:52:09.959Z"
+            }
+          ],
+          "nextBefore": "10"
+        }
+      }
+    },
+    "import": {
+      "status": 200,
+      "body": {
+        "data": {
+          "cursor": "231",
+          "hasMore": false,
+          "collections": {
+            "transactions": {
+              "upserted": [
+                {
+                  "id": "tx_a",
+                  "type": "income",
+                  "amountPaise": 5000000,
+                  "categoryId": "cat_salary",
+                  "date": "2026-09-01",
+                  "paymentMethod": null,
+                  "counterparty": null,
+                  "note": null,
+                  "origin": "manual",
+                  "originRefId": null,
+                  "createdAt": "2026-09-01T10:00:00.000Z",
+                  "updatedAt": "2026-09-01T10:00:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_b",
+                  "type": "expense",
+                  "amountPaise": 120000,
+                  "categoryId": "cat_custom_1",
+                  "date": "2026-09-03",
+                  "paymentMethod": "upi",
+                  "counterparty": null,
+                  "note": null,
+                  "origin": "manual",
+                  "originRefId": null,
+                  "createdAt": "2026-09-01T10:00:00.000Z",
+                  "updatedAt": "2026-09-01T10:00:00.000Z",
+                  "version": 1
+                }
+              ],
+              "deleted": []
+            },
+            "categories": {
+              "upserted": [
+                {
+                  "id": "cat_food",
+                  "name": "Food & Dining",
+                  "type": "expense",
+                  "iconKey": "utensils",
+                  "colorIndex": 12,
+                  "description": "Restaurants, cafés, Swiggy, Zomato",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_groceries",
+                  "name": "Groceries",
+                  "type": "expense",
+                  "iconKey": "shoppingCart",
+                  "colorIndex": 2,
+                  "description": "BigBasket, DMart, kirana, vegetables",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rent",
+                  "name": "Rent & Housing",
+                  "type": "expense",
+                  "iconKey": "home",
+                  "colorIndex": 9,
+                  "description": "Rent, maintenance, society charges",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_utilities",
+                  "name": "Bills & Utilities",
+                  "type": "expense",
+                  "iconKey": "zap",
+                  "colorIndex": 3,
+                  "description": "Electricity, water, gas, broadband, mobile",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_transport",
+                  "name": "Transport",
+                  "type": "expense",
+                  "iconKey": "car",
+                  "colorIndex": 0,
+                  "description": "Fuel, Uber, Ola, metro, parking",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_shopping",
+                  "name": "Shopping",
+                  "type": "expense",
+                  "iconKey": "shoppingBag",
+                  "colorIndex": 1,
+                  "description": "Amazon, Flipkart, Myntra, electronics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_entertainment",
+                  "name": "Entertainment",
+                  "type": "expense",
+                  "iconKey": "clapperboard",
+                  "colorIndex": 13,
+                  "description": "Movies, concerts, events, games",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_health",
+                  "name": "Health & Medical",
+                  "type": "expense",
+                  "iconKey": "heartPulse",
+                  "colorIndex": 4,
+                  "description": "Doctor, pharmacy, diagnostics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_education",
+                  "name": "Education",
+                  "type": "expense",
+                  "iconKey": "graduationCap",
+                  "colorIndex": 5,
+                  "description": "Courses, books, fees",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_travel",
+                  "name": "Travel",
+                  "type": "expense",
+                  "iconKey": "plane",
+                  "colorIndex": 10,
+                  "description": "Flights, trains, hotels, holidays",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_personal_care",
+                  "name": "Personal Care",
+                  "type": "expense",
+                  "iconKey": "sparkles",
+                  "colorIndex": 8,
+                  "description": "Salon, grooming, Urban Company",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts",
+                  "name": "Gifts & Donations",
+                  "type": "expense",
+                  "iconKey": "gift",
+                  "colorIndex": 4,
+                  "description": "Gifts, festivals, charity",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_insurance",
+                  "name": "Insurance",
+                  "type": "expense",
+                  "iconKey": "shieldCheck",
+                  "colorIndex": 11,
+                  "description": "Health, term and vehicle insurance",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_subscriptions",
+                  "name": "Subscriptions",
+                  "type": "expense",
+                  "iconKey": "repeat",
+                  "colorIndex": 1,
+                  "description": "OTT, music, cloud storage, apps",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_family",
+                  "name": "Family Support",
+                  "type": "expense",
+                  "iconKey": "users",
+                  "colorIndex": 7,
+                  "description": "Money sent to parents and family",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_fitness",
+                  "name": "Fitness",
+                  "type": "expense",
+                  "iconKey": "dumbbell",
+                  "colorIndex": 2,
+                  "description": "Gym, yoga, sports",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_salary",
+                  "name": "Salary",
+                  "type": "income",
+                  "iconKey": "briefcase",
+                  "colorIndex": 11,
+                  "description": "Monthly salary and bonuses",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_freelance",
+                  "name": "Freelance",
+                  "type": "income",
+                  "iconKey": "laptop",
+                  "colorIndex": 5,
+                  "description": "Side projects and consulting",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_interest",
+                  "name": "Interest & Dividends",
+                  "type": "income",
+                  "iconKey": "percent",
+                  "colorIndex": 2,
+                  "description": "Savings interest, FD payouts, dividends",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_refunds",
+                  "name": "Refunds & Cashback",
+                  "type": "income",
+                  "iconKey": "receipt",
+                  "colorIndex": 0,
+                  "description": "Refunds, cashback, rewards",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts_in",
+                  "name": "Gifts Received",
+                  "type": "income",
+                  "iconKey": "gift",
+                  "colorIndex": 8,
+                  "description": "Money received as gifts",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rental",
+                  "name": "Rental Income",
+                  "type": "income",
+                  "iconKey": "building",
+                  "colorIndex": 9,
+                  "description": "Rent received",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_emi",
+                  "name": "EMI & Loan Repayment",
+                  "type": "expense",
+                  "iconKey": "scale",
+                  "colorIndex": 10,
+                  "description": "Recorded from the Loans module",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_out",
+                  "name": "Loan Given",
+                  "type": "expense",
+                  "iconKey": "handCoins",
+                  "colorIndex": 6,
+                  "description": "Money lent, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_out",
+                  "name": "Settlement Paid",
+                  "type": "expense",
+                  "iconKey": "handshake",
+                  "colorIndex": 13,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_out",
+                  "name": "Other Expense",
+                  "type": "expense",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_in",
+                  "name": "Loan Received",
+                  "type": "income",
+                  "iconKey": "landmark",
+                  "colorIndex": 6,
+                  "description": "Loan disbursement, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_repay_in",
+                  "name": "Loan Repayment Received",
+                  "type": "income",
+                  "iconKey": "handCoins",
+                  "colorIndex": 11,
+                  "description": "Repayments of money you lent",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_in",
+                  "name": "Settlement Received",
+                  "type": "income",
+                  "iconKey": "handshake",
+                  "colorIndex": 2,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_in",
+                  "name": "Other Income",
+                  "type": "income",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_custom_1",
+                  "name": "Pets",
+                  "type": "expense",
+                  "iconKey": "dog",
+                  "colorIndex": 3,
+                  "description": "",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                }
+              ],
+              "deleted": []
+            }
+          },
+          "values": {
+            "profile": {
+              "exists": true,
+              "displayName": "Aarav",
+              "openingPaise": 1000000,
+              "openingDate": "2026-09-01",
+              "monthlyIncomeEstimatePaise": null
+            },
+            "me": {
+              "id": "00000000-0000-4000-8000-00000000000c",
+              "name": "Aarav",
+              "handle": "@device",
+              "phoneHint": null
+            },
+            "preferences": {
+              "monthStartDay": 1,
+              "emiReminderDays": 5,
+              "subscriptionReminderDays": 3,
+              "lowEmergencyCoverageMonths": 3,
+              "defaultBudgetWarningBps": 8000,
+              "disabledAlertTypes": [],
+              "timeZone": "Asia/Kolkata"
+            },
+            "emergencyPlan": {
+              "configured": false
+            },
+            "alertInbox": {
+              "read": [],
+              "dismissed": []
+            }
+          },
+          "replayed": false
+        }
+      }
+    },
+    "me": {
+      "status": 200,
+      "body": {
+        "data": {
+          "user": {
+            "id": "00000000-0000-4000-8000-00000000000a",
+            "name": "Alice",
+            "handle": "@alice",
+            "phoneHint": null,
+            "email": "alice@example.com"
+          },
+          "profile": {
+            "exists": true,
+            "displayName": "Alice",
+            "openingPaise": 2000000,
+            "openingDate": "2026-01-01",
+            "monthlyIncomeEstimatePaise": null
+          },
+          "preferences": {
+            "monthStartDay": 1,
+            "emiReminderDays": 5,
+            "subscriptionReminderDays": 3,
+            "lowEmergencyCoverageMonths": 3,
+            "defaultBudgetWarningBps": 8000,
+            "disabledAlertTypes": [],
+            "timeZone": "Asia/Kolkata"
+          }
+        }
+      }
+    },
+    "preferences": {
+      "status": 200,
+      "body": {
+        "data": {
+          "monthStartDay": 1,
+          "emiReminderDays": 5,
+          "subscriptionReminderDays": 3,
+          "lowEmergencyCoverageMonths": 3,
+          "defaultBudgetWarningBps": 8000,
+          "disabledAlertTypes": [],
+          "timeZone": "Asia/Kolkata"
+        }
+      }
+    },
+    "syncAlice": {
+      "status": 200,
+      "body": {
+        "data": {
+          "cursor": "195",
+          "hasMore": false,
+          "collections": {
+            "transactions": {
+              "upserted": [
+                {
+                  "id": "tx_1",
+                  "type": "income",
+                  "amountPaise": 10000000,
+                  "categoryId": "cat_salary",
+                  "date": "2026-10-01",
+                  "paymentMethod": "bankTransfer",
+                  "counterparty": "Acme Corp",
+                  "note": null,
+                  "origin": "manual",
+                  "originRefId": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_2",
+                  "type": "expense",
+                  "amountPaise": 130025,
+                  "categoryId": "cat_food",
+                  "date": "2026-10-05",
+                  "paymentMethod": "upi",
+                  "counterparty": "Swiggy",
+                  "note": "Dinner + tip",
+                  "origin": "manual",
+                  "originRefId": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2
+                },
+                {
+                  "id": "tx_4",
+                  "type": "income",
+                  "amountPaise": 120000,
+                  "categoryId": "cat_sys_settle_in",
+                  "date": "2026-10-05",
+                  "paymentMethod": "upi",
+                  "counterparty": "Rahul Verma",
+                  "note": "Settlement · Goa trip hotel share (updated)",
+                  "origin": "pendingSettlement",
+                  "originRefId": "pend_1",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_5",
+                  "type": "expense",
+                  "amountPaise": 30000,
+                  "categoryId": "cat_sys_settle_out",
+                  "date": "2026-10-09",
+                  "paymentMethod": "upi",
+                  "counterparty": "Bob",
+                  "note": "Settlement · Dinner",
+                  "origin": "pendingSettlement",
+                  "originRefId": "pend_6",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_7",
+                  "type": "income",
+                  "amountPaise": 60000000,
+                  "categoryId": "cat_sys_loan_in",
+                  "date": "2026-09-01",
+                  "paymentMethod": "bankTransfer",
+                  "counterparty": "HDFC Bank",
+                  "note": "Swift car loan · disbursement",
+                  "origin": "loanDisbursement",
+                  "originRefId": "loan_1",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2
+                },
+                {
+                  "id": "tx_8",
+                  "type": "expense",
+                  "amountPaise": 1260200,
+                  "categoryId": "cat_sys_emi",
+                  "date": "2026-10-05",
+                  "paymentMethod": null,
+                  "counterparty": "HDFC Bank",
+                  "note": "Swift car loan · EMI instalment #1",
+                  "origin": "loanRepayment",
+                  "originRefId": "loan_1",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_9",
+                  "type": "expense",
+                  "amountPaise": 64900,
+                  "categoryId": "cat_food",
+                  "date": "2026-10-08",
+                  "paymentMethod": "upi",
+                  "counterparty": "Netflix",
+                  "note": "Monthly renewal · for 8 Oct 2026",
+                  "origin": "subscription",
+                  "originRefId": "sub_1",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "tx_10",
+                  "type": "expense",
+                  "amountPaise": 4275,
+                  "categoryId": "cat_food",
+                  "date": "2026-10-07",
+                  "paymentMethod": "cash",
+                  "counterparty": null,
+                  "note": null,
+                  "origin": "manual",
+                  "originRefId": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                }
+              ],
+              "deleted": [
+                "tx_3"
+              ]
+            },
+            "categories": {
+              "upserted": [
+                {
+                  "id": "cat_food",
+                  "name": "Food & Dining",
+                  "type": "expense",
+                  "iconKey": "utensils",
+                  "colorIndex": 12,
+                  "description": "Restaurants, cafés, Swiggy, Zomato",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_groceries",
+                  "name": "Groceries",
+                  "type": "expense",
+                  "iconKey": "shoppingCart",
+                  "colorIndex": 2,
+                  "description": "BigBasket, DMart, kirana, vegetables",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rent",
+                  "name": "Rent & Housing",
+                  "type": "expense",
+                  "iconKey": "home",
+                  "colorIndex": 9,
+                  "description": "Rent, maintenance, society charges",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_utilities",
+                  "name": "Bills & Utilities",
+                  "type": "expense",
+                  "iconKey": "zap",
+                  "colorIndex": 3,
+                  "description": "Electricity, water, gas, broadband, mobile",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_transport",
+                  "name": "Transport",
+                  "type": "expense",
+                  "iconKey": "car",
+                  "colorIndex": 0,
+                  "description": "Fuel, Uber, Ola, metro, parking",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_shopping",
+                  "name": "Shopping",
+                  "type": "expense",
+                  "iconKey": "shoppingBag",
+                  "colorIndex": 1,
+                  "description": "Amazon, Flipkart, Myntra, electronics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_entertainment",
+                  "name": "Entertainment",
+                  "type": "expense",
+                  "iconKey": "clapperboard",
+                  "colorIndex": 13,
+                  "description": "Movies, concerts, events, games",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_health",
+                  "name": "Health & Medical",
+                  "type": "expense",
+                  "iconKey": "heartPulse",
+                  "colorIndex": 4,
+                  "description": "Doctor, pharmacy, diagnostics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_education",
+                  "name": "Education",
+                  "type": "expense",
+                  "iconKey": "graduationCap",
+                  "colorIndex": 5,
+                  "description": "Courses, books, fees",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_travel",
+                  "name": "Travel",
+                  "type": "expense",
+                  "iconKey": "plane",
+                  "colorIndex": 10,
+                  "description": "Flights, trains, hotels, holidays",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_personal_care",
+                  "name": "Personal Care",
+                  "type": "expense",
+                  "iconKey": "sparkles",
+                  "colorIndex": 8,
+                  "description": "Salon, grooming, Urban Company",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts",
+                  "name": "Gifts & Donations",
+                  "type": "expense",
+                  "iconKey": "gift",
+                  "colorIndex": 4,
+                  "description": "Gifts, festivals, charity",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_insurance",
+                  "name": "Insurance",
+                  "type": "expense",
+                  "iconKey": "shieldCheck",
+                  "colorIndex": 11,
+                  "description": "Health, term and vehicle insurance",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_subscriptions",
+                  "name": "Subscriptions",
+                  "type": "expense",
+                  "iconKey": "repeat",
+                  "colorIndex": 1,
+                  "description": "OTT, music, cloud storage, apps",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_family",
+                  "name": "Family Support",
+                  "type": "expense",
+                  "iconKey": "users",
+                  "colorIndex": 7,
+                  "description": "Money sent to parents and family",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_fitness",
+                  "name": "Fitness",
+                  "type": "expense",
+                  "iconKey": "dumbbell",
+                  "colorIndex": 2,
+                  "description": "Gym, yoga, sports",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_salary",
+                  "name": "Salary",
+                  "type": "income",
+                  "iconKey": "briefcase",
+                  "colorIndex": 11,
+                  "description": "Monthly salary and bonuses",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_freelance",
+                  "name": "Freelance",
+                  "type": "income",
+                  "iconKey": "laptop",
+                  "colorIndex": 5,
+                  "description": "Side projects and consulting",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_interest",
+                  "name": "Interest & Dividends",
+                  "type": "income",
+                  "iconKey": "percent",
+                  "colorIndex": 2,
+                  "description": "Savings interest, FD payouts, dividends",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_refunds",
+                  "name": "Refunds & Cashback",
+                  "type": "income",
+                  "iconKey": "receipt",
+                  "colorIndex": 0,
+                  "description": "Refunds, cashback, rewards",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts_in",
+                  "name": "Gifts Received",
+                  "type": "income",
+                  "iconKey": "gift",
+                  "colorIndex": 8,
+                  "description": "Money received as gifts",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rental",
+                  "name": "Rental Income",
+                  "type": "income",
+                  "iconKey": "building",
+                  "colorIndex": 9,
+                  "description": "Rent received",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_emi",
+                  "name": "EMI & Loan Repayment",
+                  "type": "expense",
+                  "iconKey": "scale",
+                  "colorIndex": 10,
+                  "description": "Recorded from the Loans module",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_out",
+                  "name": "Loan Given",
+                  "type": "expense",
+                  "iconKey": "handCoins",
+                  "colorIndex": 6,
+                  "description": "Money lent, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_out",
+                  "name": "Settlement Paid",
+                  "type": "expense",
+                  "iconKey": "handshake",
+                  "colorIndex": 13,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_out",
+                  "name": "Other Expense",
+                  "type": "expense",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_in",
+                  "name": "Loan Received",
+                  "type": "income",
+                  "iconKey": "landmark",
+                  "colorIndex": 6,
+                  "description": "Loan disbursement, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_repay_in",
+                  "name": "Loan Repayment Received",
+                  "type": "income",
+                  "iconKey": "handCoins",
+                  "colorIndex": 11,
+                  "description": "Repayments of money you lent",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_in",
+                  "name": "Settlement Received",
+                  "type": "income",
+                  "iconKey": "handshake",
+                  "colorIndex": 2,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_in",
+                  "name": "Other Income",
+                  "type": "income",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_1",
+                  "name": "Pets & vets",
+                  "type": "expense",
+                  "iconKey": "dog",
+                  "colorIndex": 4,
+                  "description": "Pet care",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 4
+                }
+              ],
+              "deleted": [
+                "cat_2"
+              ]
+            },
+            "budgets": {
+              "upserted": [
+                {
+                  "id": "bud_1",
+                  "categoryId": "cat_food",
+                  "limitPaise": 900000,
+                  "previousLimits": [],
+                  "status": "active",
+                  "warningThresholdBps": 8500,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 4
+                }
+              ],
+              "deleted": [
+                "bud_2"
+              ]
+            },
+            "goals": {
+              "upserted": [
+                {
+                  "id": "goal_1",
+                  "name": "Japan trip 2027",
+                  "category": "travel",
+                  "targetPaise": 20000000,
+                  "targetDate": "2027-04-10",
+                  "plannedMonthlyPaise": null,
+                  "colorIndex": 2,
+                  "status": "active",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 4
+                }
+              ],
+              "deleted": [
+                "goal_2"
+              ]
+            },
+            "savingsMovements": {
+              "upserted": [
+                {
+                  "id": "sv_1",
+                  "bucketType": "goal",
+                  "bucketId": "goal_1",
+                  "kind": "contribution",
+                  "amountPaise": 1000000,
+                  "date": "2026-10-10",
+                  "note": "Starting amount",
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "sv_2",
+                  "bucketType": "goal",
+                  "bucketId": "goal_1",
+                  "kind": "contribution",
+                  "amountPaise": 500000,
+                  "date": "2026-10-10",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "sv_3",
+                  "bucketType": "goal",
+                  "bucketId": "goal_1",
+                  "kind": "withdrawal",
+                  "amountPaise": 100000,
+                  "date": "2026-10-10",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "sv_4",
+                  "bucketType": "emergencyFund",
+                  "bucketId": "emergency_fund",
+                  "kind": "contribution",
+                  "amountPaise": 300000,
+                  "date": "2026-10-10",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "sv_5",
+                  "bucketType": "emergencyFund",
+                  "bucketId": "emergency_fund",
+                  "kind": "withdrawal",
+                  "amountPaise": 50000,
+                  "date": "2026-10-10",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                }
+              ],
+              "deleted": []
+            },
+            "loans": {
+              "upserted": [
+                {
+                  "id": "loan_1",
+                  "name": "Swift car loan",
+                  "counterparty": "HDFC Bank",
+                  "direction": "borrowed",
+                  "structure": "amortizing",
+                  "principalPaise": 60000000,
+                  "rateBps": 950,
+                  "startDate": "2026-09-01",
+                  "firstDueDate": "2026-10-05",
+                  "frequency": "monthly",
+                  "tenureInstallments": 60,
+                  "maturityDate": null,
+                  "prepaymentStrategy": "reduceTenure",
+                  "status": "active",
+                  "disbursementTransactionId": "tx_7",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2
+                }
+              ],
+              "deleted": [
+                "loan_2"
+              ]
+            },
+            "loanPayments": {
+              "upserted": [
+                {
+                  "id": "lp_1",
+                  "loanId": "loan_1",
+                  "kind": "installment",
+                  "date": "2026-10-05",
+                  "interestPaise": 475000,
+                  "principalPaise": 785200,
+                  "periodNumber": 1,
+                  "transactionId": "tx_8",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                }
+              ],
+              "deleted": []
+            },
+            "subscriptions": {
+              "upserted": [
+                {
+                  "id": "sub_1",
+                  "name": "Netflix",
+                  "amountPaise": 64900,
+                  "categoryId": "cat_food",
+                  "frequency": "monthly",
+                  "nextDueDate": "2026-12-08",
+                  "startDate": null,
+                  "status": "active",
+                  "autoRenews": true,
+                  "paymentMethod": "upi",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 6
+                }
+              ],
+              "deleted": [
+                "sub_2"
+              ]
+            },
+            "assets": {
+              "upserted": [
+                {
+                  "id": "asset_1",
+                  "name": "Gold coins",
+                  "type": "gold",
+                  "valuePaise": 8200000,
+                  "valuedOn": "2026-10-09",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2
+                }
+              ],
+              "deleted": [
+                "asset_2"
+              ]
+            },
+            "pending": {
+              "upserted": [
+                {
+                  "id": "pend_1",
+                  "counterparty": "Rahul Verma",
+                  "direction": "owedToMe",
+                  "kind": "lent",
+                  "originalPaise": 700000,
+                  "purpose": "Goa trip hotel share (updated)",
+                  "createdDate": "2026-10-01",
+                  "notes": null,
+                  "isCancelled": false,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2,
+                  "link": null,
+                  "split": null
+                },
+                {
+                  "id": "pend_2",
+                  "counterparty": "Meera",
+                  "direction": "owedToMe",
+                  "kind": "lent",
+                  "originalPaise": 80000,
+                  "purpose": "Cab",
+                  "createdDate": "2026-10-01",
+                  "notes": null,
+                  "isCancelled": true,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2,
+                  "link": null,
+                  "split": null
+                },
+                {
+                  "id": "pend_4",
+                  "counterparty": "Asha",
+                  "direction": "owedToMe",
+                  "kind": "sharedExpense",
+                  "originalPaise": 100000,
+                  "purpose": "Weekend cabin",
+                  "createdDate": "2026-10-10",
+                  "notes": null,
+                  "isCancelled": false,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1,
+                  "link": null,
+                  "split": {
+                    "id": "spl_1",
+                    "method": "equally",
+                    "includesMe": true,
+                    "mySharePaise": 100000,
+                    "part": null
+                  }
+                },
+                {
+                  "id": "pend_5",
+                  "counterparty": "Bina",
+                  "direction": "owedToMe",
+                  "kind": "sharedExpense",
+                  "originalPaise": 100000,
+                  "purpose": "Weekend cabin",
+                  "createdDate": "2026-10-10",
+                  "notes": null,
+                  "isCancelled": false,
+                  "createdAt": "2026-10-10T03:30:00.001Z",
+                  "updatedAt": "2026-10-10T03:30:00.001Z",
+                  "version": 1,
+                  "link": null,
+                  "split": {
+                    "id": "spl_1",
+                    "method": "equally",
+                    "includesMe": true,
+                    "mySharePaise": 100000,
+                    "part": null
+                  }
+                },
+                {
+                  "id": "pend_6",
+                  "counterparty": "Bob",
+                  "direction": "iOwe",
+                  "kind": "borrowed",
+                  "originalPaise": 100000,
+                  "purpose": "Dinner",
+                  "createdDate": "2026-10-01",
+                  "notes": null,
+                  "isCancelled": false,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 3,
+                  "link": {
+                    "userId": "00000000-0000-4000-8000-00000000000b",
+                    "handle": "@bob",
+                    "sharedId": "shr_1",
+                    "createdByMe": true
+                  },
+                  "split": null
+                }
+              ],
+              "deleted": [
+                "pend_3"
+              ]
+            },
+            "settlements": {
+              "upserted": [
+                {
+                  "id": "set_1",
+                  "pendingId": "pend_1",
+                  "amountPaise": 120000,
+                  "date": "2026-10-05",
+                  "method": "upi",
+                  "transactionId": "tx_4",
+                  "note": "Part payment",
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "set_2",
+                  "pendingId": "pend_1",
+                  "amountPaise": 30000,
+                  "date": "2026-10-06",
+                  "method": null,
+                  "transactionId": null,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "set_3",
+                  "pendingId": "pend_6",
+                  "amountPaise": 30000,
+                  "date": "2026-10-09",
+                  "method": "upi",
+                  "transactionId": "tx_5",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "mir_set_4",
+                  "pendingId": "pend_6",
+                  "amountPaise": 40000,
+                  "date": "2026-10-10",
+                  "method": "upi",
+                  "transactionId": null,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                }
+              ],
+              "deleted": []
+            }
+          },
+          "values": {
+            "profile": {
+              "exists": true,
+              "displayName": "Alice",
+              "openingPaise": 2000000,
+              "openingDate": "2026-01-01",
+              "monthlyIncomeEstimatePaise": null
+            },
+            "me": {
+              "id": "00000000-0000-4000-8000-00000000000a",
+              "name": "Alice",
+              "handle": "@alice",
+              "phoneHint": null
+            },
+            "emergencyPlan": {
+              "configured": true,
+              "essentialMonthlyPaise": 4000000,
+              "targetMonths": 6,
+              "targetOverridePaise": null,
+              "updatedAt": "2026-10-10T03:30:00.000Z"
+            },
+            "preferences": {
+              "monthStartDay": 1,
+              "emiReminderDays": 5,
+              "subscriptionReminderDays": 3,
+              "lowEmergencyCoverageMonths": 3,
+              "defaultBudgetWarningBps": 8000,
+              "disabledAlertTypes": [],
+              "timeZone": "Asia/Kolkata"
+            },
+            "alertInbox": {
+              "read": [],
+              "dismissed": []
+            }
+          }
+        }
+      }
+    },
+    "syncBob": {
+      "status": 200,
+      "body": {
+        "data": {
+          "cursor": "132",
+          "hasMore": false,
+          "collections": {
+            "transactions": {
+              "upserted": [
+                {
+                  "id": "tx_6",
+                  "type": "income",
+                  "amountPaise": 40000,
+                  "categoryId": "cat_sys_settle_in",
+                  "date": "2026-10-10",
+                  "paymentMethod": "upi",
+                  "counterparty": "Alice",
+                  "note": "Settlement · Dinner",
+                  "origin": "pendingSettlement",
+                  "originRefId": "mir_shr_1",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                }
+              ],
+              "deleted": []
+            },
+            "categories": {
+              "upserted": [
+                {
+                  "id": "cat_food",
+                  "name": "Food & Dining",
+                  "type": "expense",
+                  "iconKey": "utensils",
+                  "colorIndex": 12,
+                  "description": "Restaurants, cafés, Swiggy, Zomato",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_groceries",
+                  "name": "Groceries",
+                  "type": "expense",
+                  "iconKey": "shoppingCart",
+                  "colorIndex": 2,
+                  "description": "BigBasket, DMart, kirana, vegetables",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rent",
+                  "name": "Rent & Housing",
+                  "type": "expense",
+                  "iconKey": "home",
+                  "colorIndex": 9,
+                  "description": "Rent, maintenance, society charges",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_utilities",
+                  "name": "Bills & Utilities",
+                  "type": "expense",
+                  "iconKey": "zap",
+                  "colorIndex": 3,
+                  "description": "Electricity, water, gas, broadband, mobile",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_transport",
+                  "name": "Transport",
+                  "type": "expense",
+                  "iconKey": "car",
+                  "colorIndex": 0,
+                  "description": "Fuel, Uber, Ola, metro, parking",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_shopping",
+                  "name": "Shopping",
+                  "type": "expense",
+                  "iconKey": "shoppingBag",
+                  "colorIndex": 1,
+                  "description": "Amazon, Flipkart, Myntra, electronics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_entertainment",
+                  "name": "Entertainment",
+                  "type": "expense",
+                  "iconKey": "clapperboard",
+                  "colorIndex": 13,
+                  "description": "Movies, concerts, events, games",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_health",
+                  "name": "Health & Medical",
+                  "type": "expense",
+                  "iconKey": "heartPulse",
+                  "colorIndex": 4,
+                  "description": "Doctor, pharmacy, diagnostics",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_education",
+                  "name": "Education",
+                  "type": "expense",
+                  "iconKey": "graduationCap",
+                  "colorIndex": 5,
+                  "description": "Courses, books, fees",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_travel",
+                  "name": "Travel",
+                  "type": "expense",
+                  "iconKey": "plane",
+                  "colorIndex": 10,
+                  "description": "Flights, trains, hotels, holidays",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_personal_care",
+                  "name": "Personal Care",
+                  "type": "expense",
+                  "iconKey": "sparkles",
+                  "colorIndex": 8,
+                  "description": "Salon, grooming, Urban Company",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts",
+                  "name": "Gifts & Donations",
+                  "type": "expense",
+                  "iconKey": "gift",
+                  "colorIndex": 4,
+                  "description": "Gifts, festivals, charity",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_insurance",
+                  "name": "Insurance",
+                  "type": "expense",
+                  "iconKey": "shieldCheck",
+                  "colorIndex": 11,
+                  "description": "Health, term and vehicle insurance",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_subscriptions",
+                  "name": "Subscriptions",
+                  "type": "expense",
+                  "iconKey": "repeat",
+                  "colorIndex": 1,
+                  "description": "OTT, music, cloud storage, apps",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_family",
+                  "name": "Family Support",
+                  "type": "expense",
+                  "iconKey": "users",
+                  "colorIndex": 7,
+                  "description": "Money sent to parents and family",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": true,
+                  "version": 1
+                },
+                {
+                  "id": "cat_fitness",
+                  "name": "Fitness",
+                  "type": "expense",
+                  "iconKey": "dumbbell",
+                  "colorIndex": 2,
+                  "description": "Gym, yoga, sports",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_salary",
+                  "name": "Salary",
+                  "type": "income",
+                  "iconKey": "briefcase",
+                  "colorIndex": 11,
+                  "description": "Monthly salary and bonuses",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_freelance",
+                  "name": "Freelance",
+                  "type": "income",
+                  "iconKey": "laptop",
+                  "colorIndex": 5,
+                  "description": "Side projects and consulting",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_interest",
+                  "name": "Interest & Dividends",
+                  "type": "income",
+                  "iconKey": "percent",
+                  "colorIndex": 2,
+                  "description": "Savings interest, FD payouts, dividends",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_refunds",
+                  "name": "Refunds & Cashback",
+                  "type": "income",
+                  "iconKey": "receipt",
+                  "colorIndex": 0,
+                  "description": "Refunds, cashback, rewards",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_gifts_in",
+                  "name": "Gifts Received",
+                  "type": "income",
+                  "iconKey": "gift",
+                  "colorIndex": 8,
+                  "description": "Money received as gifts",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_rental",
+                  "name": "Rental Income",
+                  "type": "income",
+                  "iconKey": "building",
+                  "colorIndex": 9,
+                  "description": "Rent received",
+                  "isSystem": false,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_emi",
+                  "name": "EMI & Loan Repayment",
+                  "type": "expense",
+                  "iconKey": "scale",
+                  "colorIndex": 10,
+                  "description": "Recorded from the Loans module",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_out",
+                  "name": "Loan Given",
+                  "type": "expense",
+                  "iconKey": "handCoins",
+                  "colorIndex": 6,
+                  "description": "Money lent, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_out",
+                  "name": "Settlement Paid",
+                  "type": "expense",
+                  "iconKey": "handshake",
+                  "colorIndex": 13,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_out",
+                  "name": "Other Expense",
+                  "type": "expense",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_in",
+                  "name": "Loan Received",
+                  "type": "income",
+                  "iconKey": "landmark",
+                  "colorIndex": 6,
+                  "description": "Loan disbursement, recorded from Loans",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_loan_repay_in",
+                  "name": "Loan Repayment Received",
+                  "type": "income",
+                  "iconKey": "handCoins",
+                  "colorIndex": 11,
+                  "description": "Repayments of money you lent",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_settle_in",
+                  "name": "Settlement Received",
+                  "type": "income",
+                  "iconKey": "handshake",
+                  "colorIndex": 2,
+                  "description": "Recorded from Pending payments",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                },
+                {
+                  "id": "cat_sys_other_in",
+                  "name": "Other Income",
+                  "type": "income",
+                  "iconKey": "circleDot",
+                  "colorIndex": 6,
+                  "description": "Anything else",
+                  "isSystem": true,
+                  "isArchived": false,
+                  "isEssential": false,
+                  "version": 1
+                }
+              ],
+              "deleted": []
+            },
+            "pending": {
+              "upserted": [
+                {
+                  "id": "mir_shr_1",
+                  "counterparty": "Alice",
+                  "direction": "owedToMe",
+                  "kind": "lent",
+                  "originalPaise": 100000,
+                  "purpose": "Dinner",
+                  "createdDate": "2026-10-01",
+                  "notes": null,
+                  "isCancelled": false,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 3,
+                  "link": {
+                    "userId": "00000000-0000-4000-8000-00000000000a",
+                    "handle": "@alice",
+                    "sharedId": "shr_1",
+                    "createdByMe": false
+                  },
+                  "split": null
+                }
+              ],
+              "deleted": []
+            },
+            "settlements": {
+              "upserted": [
+                {
+                  "id": "mir_set_3",
+                  "pendingId": "mir_shr_1",
+                  "amountPaise": 30000,
+                  "date": "2026-10-09",
+                  "method": "upi",
+                  "transactionId": null,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                },
+                {
+                  "id": "set_4",
+                  "pendingId": "mir_shr_1",
+                  "amountPaise": 40000,
+                  "date": "2026-10-10",
+                  "method": "upi",
+                  "transactionId": "tx_6",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z"
+                }
+              ],
+              "deleted": []
+            }
+          },
+          "values": {
+            "profile": {
+              "exists": true,
+              "displayName": "Bob",
+              "openingPaise": 500000,
+              "openingDate": "2026-01-01",
+              "monthlyIncomeEstimatePaise": null
+            },
+            "me": {
+              "id": "00000000-0000-4000-8000-00000000000b",
+              "name": "Bob",
+              "handle": "@bob",
+              "phoneHint": null
+            },
+            "preferences": {
+              "monthStartDay": 1,
+              "emiReminderDays": 5,
+              "subscriptionReminderDays": 3,
+              "lowEmergencyCoverageMonths": 3,
+              "defaultBudgetWarningBps": 8000,
+              "disabledAlertTypes": [],
+              "timeZone": "Asia/Kolkata"
+            },
+            "emergencyPlan": {
+              "configured": false
+            },
+            "alertInbox": {
+              "read": [],
+              "dismissed": []
+            }
+          }
+        }
+      }
+    },
+    "usersSearch": {
+      "status": 200,
+      "body": {
+        "data": {
+          "items": [
+            {
+              "id": "00000000-0000-4000-8000-00000000000b",
+              "name": "Bob",
+              "handle": "@bob",
+              "phoneHint": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}
