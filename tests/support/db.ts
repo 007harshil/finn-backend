@@ -83,7 +83,7 @@ export async function createTestDb(): Promise<TestDb> {
     async createUser(email) {
       const id = randomUUID();
       const mail = email ?? `user${users.size + 1}@example.com`;
-      await pglite.query('insert into auth.users (id, email) values ($1, $2)', [id, mail]);
+      await pglite.query('insert into finn_auth.users (id, email) values ($1, $2)', [id, mail]);
       const user: AuthUser = { userId: id, email: mail, claims: { sub: id, role: 'authenticated', email: mail } };
       users.set(`token-${id}`, user);
       // Same bootstrap the HTTP layer runs on a user's first request.

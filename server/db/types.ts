@@ -281,6 +281,34 @@ export interface DeletedRecordsTable {
   deleted_at: Ts;
 }
 
+export interface AuthUsersTable {
+  id: Generated<string>;
+  email: string;
+  created_at: Ts;
+  last_sign_in_at: Date | null;
+}
+
+export interface AuthEmailOtpsTable {
+  id: Generated<number>;
+  email: string;
+  code_hash: string;
+  expires_at: Ts;
+  attempts: Generated<number>;
+  consumed_at: Date | null;
+  created_at: Ts;
+}
+
+export interface AuthRefreshTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  family_id: string;
+  token_hash: string;
+  expires_at: Ts;
+  rotated_at: Date | null;
+  revoked_at: Date | null;
+  created_at: Ts;
+}
+
 export interface Database {
   profiles: ProfilesTable;
   user_preferences: UserPreferencesTable;
@@ -301,4 +329,7 @@ export interface Database {
   idempotency_keys: IdempotencyKeysTable;
   audit_log: AuditLogTable;
   deleted_records: DeletedRecordsTable;
+  'finn_auth.users': AuthUsersTable;
+  'finn_auth.email_otps': AuthEmailOtpsTable;
+  'finn_auth.refresh_tokens': AuthRefreshTokensTable;
 }

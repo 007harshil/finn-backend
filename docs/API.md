@@ -9,9 +9,14 @@ Audience: Flutter/mobile engineers and agent developers. Sources: `app/api/v1/**
 - CORS: only origins listed in `CORS_ORIGINS` get headers. Allowed request headers: `authorization, content-type, idempotency-key, x-confirmation-fingerprint, x-channel`; methods `GET, POST, PUT, PATCH, DELETE, OPTIONS`; max-age 600. Native mobile clients are unaffected.
 
 ### 1.2 Authentication
-- Supabase Auth, passwordless email OTP (`signInWithOtp` then `verifyOTP`). Send the access token on every request except `GET /health`: `Authorization: Bearer <access_token>`.
-- Token is verified locally (JWKS ES256/RS256, or HS256 secret; HS256 without secret falls back to Supabase `/auth/v1/user`, cached 60 s). `sub` must be a UUID and `role` must be `authenticated`.
-- Missing/invalid/expired token: HTTP 401, `code: "unauthenticated"`. Client: refresh the session once, retry, else sign out. Auth-server unreachable on the HS256 fallback: 503 `unavailable` (retryable).
+- FiNN's own passwordless email OTP (no Supabase Auth). Public endpoints, no `Authorization` header:
+  - `POST /api/v1/auth/otp` `{email}` -> `{sent: true, expiresInSeconds: 600, resendAfterSeconds: 60}`. Emails a 6-digit code (nodemailer/SMTP). A new code replaces any earlier unused one. Limits: 1 code per email per 60 s, 5 per hour; 10 requests per client IP per 10 min. Bad email: 422 `validation` (`fieldErrors.email`). Limited: 503 `unavailable`, retryable, `details.retryAfterSeconds`. Mail failure: 503 `unavailable`.
+  - `POST /api/v1/auth/verify` `{email, code}` -> Session. Creates the account on first sign-in. Wrong/expired/used code: 401 `unauthenticated` "The code was invalid or has expired."; 5 wrong guesses burn the code. Malformed code: 422 (`fieldErrors.code`). 30 requests per IP per 10 min.
+  - `POST /api/v1/auth/refresh` `{refreshToken}` -> Session with a **new** refresh token (rotation). Presenting an already-rotated token revokes the whole session (all tokens of that sign-in). Invalid/expired/revoked: 401 `unauthenticated`.
+  - `POST /api/v1/auth/logout` `{refreshToken}` -> `{signedOut: true}`. Always 200.
+  - Session: `{accessToken, refreshToken, tokenType: "Bearer", expiresIn: 900, expiresAt: ISO-8601, user: {id, email}}`.
+- Send the access token on every other request except `GET /health`: `Authorization: Bearer <accessToken>`. It is an HS256 JWT (`iss: finn-api`, `aud: authenticated`, `sub` = user UUID, `role: authenticated`, `email`), verified locally with `AUTH_JWT_SECRET`.
+- Missing/invalid/expired token: HTTP 401, `code: "unauthenticated"`. Client: call `/auth/refresh` once, retry, else sign out.
 - First authenticated request per user (per server instance) bootstraps the account: profile with generated `@handle`, preferences defaults, standard categories with fixed ids (`cat_food`, `cat_sys_emi`, ...). No explicit signup call.
 - All data is scoped to the token's user (RLS). There is no user id in any path.
 
@@ -98,6 +103,7 @@ Body field `channel` on actions/plans: `ui` (default) | `agent` | `voice` | `imp
 | Sync | `limit` 50-5000 |
 | Alerts inbox PUT | each key array max 500, key 1-200 chars |
 | Plans | 1-20 steps; `approvedFingerprints` max 20 |
+| Agent relay | body 600,000 bytes; `messages` 1-200; `tools` <= 64; `max_completion_tokens` <= `AGENT_MAX_OUTPUT_TOKENS`; per-user 20/min, 300/day (defaults); see 2.22 |
 | Users search | `q` max 60, min 2 effective chars; 10 results |
 | Export | range <= 3 years, <= 20,000 transactions, `categoryIds` max 200 |
 | Analytics custom range | <= 366 days |
@@ -394,3 +400,58 @@ More than 20,000 transactions in range: 422 with a "choose a shorter range" mess
 {"items":[{"id":"00000000-0000-4000-8000-00000000000b","name":"Bob","handle":"@bob","phoneHint":null}]}
 ```
 Use `id` as `linkedUserId` in `pending.create`/`pending.split`.
+
+### 2.22 Agent LLM relay
+**`POST /agent/completions`** (+ `OPTIONS` preflight). Relay for the in-app agent (orchestrated by the Flutter app in
+`lib/agent/`): the app sends an OpenAI-compatible Chat Completions request, the server adds the secret Groq key and
+forwards it to `POST {GROQ_BASE_URL}/chat/completions` (Groq). The server never executes tools, never stores the
+conversation and never logs prompt, message or output content (only request id, hashed user, upstream status, latency
+and token counts). Tool calls returned in `message.tool_calls` are run by the app through the normal action/plan
+endpoints. No streaming.
+
+Body (strict: any other top-level key, e.g. `model`, `user`, `service_tier`, `response_format`, `stream`,
+`reasoning_effort`, is 422; max 600,000 bytes):
+| Field | Type | Rules |
+|---|---|---|
+| `messages`* | array | 1-200 items, each one of the shapes below; a `system` message is only allowed as `messages[0]` |
+| `tools` | array | 0-64 `{ type: "function", function: { name, description, parameters } }`; `name` `^[a-zA-Z0-9_-]{1,64}$`, `description` <= 2,000, `parameters` JSON-schema object. Any other tool type (`browser_search`, `code_interpreter`, `mcp`, …) is 422 |
+| `tool_choice` | enum | `auto`, `none`, `required` (provider default when omitted) |
+| `parallel_tool_calls` | bool | forwarded only when sent |
+| `max_completion_tokens` | int | 1..`AGENT_MAX_OUTPUT_TOKENS` (default and ceiling) |
+
+Messages:
+| Shape | Limits |
+|---|---|
+| `{ role: "system", content }` | first message only; `content` 1-20,000 |
+| `{ role: "user", content }` | `content` <= 8,000 |
+| `{ role: "assistant", content?, tool_calls? }` | `content` string <= 8,000 or `null`; `tool_calls` <= 16 of `{ id, type: "function", function: { name, arguments } }`, `id` 1-128, `arguments` (JSON string) <= 20,000 |
+| `{ role: "tool", tool_call_id, name?, content }` | `tool_call_id` 1-128, `content` <= 20,000 |
+
+The server always sets `model` (`GROQ_MODEL`), `max_completion_tokens` (requested value capped at
+`AGENT_MAX_OUTPUT_TOKENS`, or the cap), `reasoning_effort` (`GROQ_REASONING_EFFORT`; not sent when `off`) and `user`
+(hash of the user id). `tools`/`tool_choice`/`parallel_tool_calls` are omitted when `tools` is empty.
+
+Response (trimmed from `choices[0]`; `reasoning` and any other provider fields are dropped):
+```json
+{"id":"chatcmpl_1","finish_reason":"tool_calls",
+ "message":{"content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"list_goals","arguments":"{}"}}]},
+ "usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}
+```
+`message.tool_calls` is always an array (empty when the model answered in text); `usage` may be `null`. Append the
+assistant message (with its `tool_calls`) and one `role: "tool"` message per call to `messages` for the next turn.
+
+Errors:
+| Situation | code | HTTP | retryable | details |
+|---|---|---|---|---|
+| `GROQ_API_KEY` not set | `unavailable` | 503 | false | `{ reason: "notConfigured" }` "The assistant is not configured on this server." |
+| Per-user limit (`AGENT_RATE_LIMIT_PER_MINUTE`, `AGENT_DAILY_REQUEST_LIMIT`; in-memory, per server instance) | `unavailable` | 503 | true | `{ reason: "rateLimited", retryAfterSeconds }` |
+| Provider 429 or 498 (capacity) | `unavailable` | 503 | true | `{ reason: "providerRateLimited", retryAfterSeconds? }` (from `retry-after`, 1-3600) |
+| Provider 400 `tool_use_failed` (model produced an invalid tool call) | `unknown` | 500 | true | `{ reason: "toolCallFailed" }` "The assistant made a malformed request. Please try again." |
+| Provider 413 | `validation` | 422 | false | `{ reason: "tooLarge" }` "This conversation is too long. Start a new chat." |
+| Provider timeout (`GROQ_TIMEOUT_MS`) or network error | `unavailable` | 503 | true | `{ reason: "timeout" \| "network" }` |
+| Provider 5xx | `unavailable` | 503 | true | — |
+| Provider 401/403 (bad server key) | `unavailable` | 503 | false | `{ reason: "notConfigured" }` |
+| Other provider 4xx | `unknown` | 500 | false | `{ upstreamStatus }` |
+| Provider 200 that is not JSON or has no `choices[0].message` | `unknown` | 500 | true | — |
+
+Provider error bodies are never passed through.

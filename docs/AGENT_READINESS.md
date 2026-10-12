@@ -1,7 +1,17 @@
-# Readiness for a future FiNN agent
+# FiNN agent integration
 
-Not implemented: no model, speech, tool-calling or agent endpoint exists. This document describes the stable interfaces
-a future conversational or voice agent will use, so it can be added without a backend rewrite.
+The conversational agent is orchestrated by the Flutter app (`lib/agent/`): it builds the prompt, exposes tools, runs the
+tool loop and asks the user to approve previews. The backend contributes two things:
+
+1. **LLM relay** — `POST /api/v1/agent/completions` (`server/agent/`, see `docs/API.md` §2.22). The app sends an
+   OpenAI-compatible Chat Completions request; the server validates it (function tools only; no client-chosen model,
+   streaming or response format), adds the secret `GROQ_API_KEY`, forwards it to Groq (`/chat/completions`) and
+   returns a trimmed `choices[0]` (`{ id, finish_reason, message: { content, tool_calls }, usage }`, reasoning
+   stripped). It never executes tools, never stores or logs conversation content, and applies a per-user rate limit
+   (in-memory, per instance). Without `GROQ_API_KEY` it answers 503 `unavailable` (not retryable).
+2. **The stable interfaces below**, which the app's tools call with the user's own token, exactly like the UI.
+
+There is no speech endpoint; voice, if added, reuses the same flow with `channel: "voice"`.
 
 ## One business-logic path
 

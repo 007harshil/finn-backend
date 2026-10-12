@@ -10,7 +10,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 60_000,
     hookTimeout: 120_000,
-    env: { FINN_LOG_SILENT: '1' },
+    env: { FINN_LOG_SILENT: '1', AUTH_JWT_SECRET: 'test-secret-test-secret-test-secret-0123' },
     pool: 'forks',
   },
 });

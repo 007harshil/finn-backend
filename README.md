@@ -1,7 +1,7 @@
 # FiNN API
 
 Backend for the FiNN personal finance app (Flutter frontend in `../finn`). Next.js 16 route handlers + TypeScript,
-PostgreSQL on the existing Supabase project (`FiNN`, ref `xeqhygypqyyyoortalod`), Supabase Auth (email OTP).
+PostgreSQL on the existing Supabase project (`FiNN`, ref `xeqhygypqyyyoortalod`), FiNN's own email-OTP auth (nodemailer).
 
 FiNN is a manual record-keeping app: every write records something the user did. The API never moves money, never
 talks to banks, UPI or payment providers.
@@ -14,7 +14,7 @@ talks to banks, UPI or payment providers.
 | [docs/DATABASE.md](docs/DATABASE.md) | Schema, ownership rules, constraints, RLS, migrations |
 | [docs/API.md](docs/API.md) | Every endpoint with examples, errors, auth, pagination |
 | [docs/CLIENT_CONTRACT.md](docs/CLIENT_CONTRACT.md) | Short contract the Flutter client implements (auth, envelope, sync, actions, import) |
-| [docs/AGENT_READINESS.md](docs/AGENT_READINESS.md) | How a future conversational/voice agent plugs into actions and plans |
+| [docs/AGENT_READINESS.md](docs/AGENT_READINESS.md) | How the in-app agent uses the LLM relay, actions and plans |
 | `../finn/docs/FINANCIAL_MODEL.md` | The financial rules (ledger, rounding, budgets, loans, …) the server implements |
 
 ## Requirements
@@ -26,7 +26,7 @@ talks to banks, UPI or payment providers.
 
 ```sh
 npm install
-cp .env.example .env.local   # fill DATABASE_URL and one token-verification option
+cp .env.example .env.local   # fill DATABASE_URL, AUTH_JWT_SECRET and SMTP_PASS
 npm run dev                  # http://localhost:3000/api/v1/health
 ```
 
@@ -35,17 +35,28 @@ Environment variables (server-only; see `.env.example`):
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | yes | Supavisor **transaction** pooler URL (port 6543) |
-| `SUPABASE_URL` | yes | `https://xeqhygypqyyyoortalod.supabase.co` |
-| `SUPABASE_JWT_SECRET` | one of | Verify the project's HS256 access tokens locally |
-| `SUPABASE_PUBLISHABLE_KEY` | one of | Otherwise ask Supabase Auth to verify tokens (cached 60 s) |
+| `AUTH_JWT_SECRET` | yes | ≥32-char random secret: signs access tokens, keys code/refresh-token hashes |
+| `AUTH_ACCESS_TTL_SECONDS` | no | Access token lifetime (default 900) |
+| `AUTH_REFRESH_TTL_DAYS` | no | Refresh token lifetime (default 30) |
+| `AUTH_OTP_TTL_SECONDS` | no | Sign-in code lifetime (default 600) |
+| `SMTP_USER` / `SMTP_PASS` | yes (for sign-in) | SMTP login; for Gmail the address and a 16-char App Password |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | no | Default `smtp.gmail.com` / 465 / true for 465 |
+| `MAIL_FROM` | no | From header (default `FiNN <SMTP_USER>`) |
 | `DATABASE_CA_CERT` | recommended | Supabase root CA (PEM) for verified TLS |
 | `DATABASE_POOL_MAX` | no | Pool size per instance (default 5) |
 | `CORS_ORIGINS` | no | Allowed browser origins (Flutter web only) |
+| `GROQ_API_KEY` | for the agent | Groq key for `POST /agent/completions`; unset = assistant disabled (503), rest of the API unaffected |
+| `GROQ_BASE_URL` | no | Default `https://api.groq.com/openai/v1` |
+| `GROQ_MODEL` | no | Model used by the relay (default `openai/gpt-oss-20b`) |
+| `GROQ_REASONING_EFFORT` | no | `off`/`none`/`default`/`low`/`medium`/`high` (default `low`; `off` = not sent) |
+| `GROQ_TIMEOUT_MS` | no | Provider timeout (default 60000, 100-300000) |
+| `AGENT_MAX_OUTPUT_TOKENS` | no | Default and ceiling for `max_completion_tokens` (default 2048) |
+| `AGENT_RATE_LIMIT_PER_MINUTE` | no | Relay requests per user per minute (default 20; in-memory, per instance) |
+| `AGENT_DAILY_REQUEST_LIMIT` | no | Relay requests per user per 24 h (default 300; in-memory, per instance) |
 
-If the project switches to asymmetric JWT signing keys, tokens are verified through JWKS and neither secret is needed.
-
-Supabase Auth must have the **Email** provider enabled with OTP codes (Dashboard → Authentication → Email templates:
-the magic-link template must include `{{ .Token }}` so users receive the 6-digit code the app asks for).
+Sign-in is FiNN's own email OTP (Supabase Auth is not used): `POST /api/v1/auth/otp` emails a 6-digit
+code through nodemailer, `POST /api/v1/auth/verify` returns an access token (HS256 JWT) and a rotating
+refresh token. Accounts live in the private `finn_auth` schema. See docs/API.md §1.2.
 
 ## Database migrations
 
@@ -91,6 +102,7 @@ server/
   db/                      Kysely client, table types, per-user transactions (RLS role + locks)
   auth/                    Supabase token verification
   http/                    route wrapper, error mapping, logger
+  agent/                   LLM relay for the in-app agent (request schema, Groq forwarding, rate limit)
   actions/                 action framework: types, input codecs, dispatcher, policy, registry, plans
   finance/                 domain records (= Flutter DTOs), snapshot loader, ledger aggregates
   modules/<feature>/       calculator.ts (pure rules), actions.ts, service.ts (reads), repo.ts

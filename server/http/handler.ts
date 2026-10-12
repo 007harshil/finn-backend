@@ -99,7 +99,7 @@ export function route(handler: Handler) {
   return (request: Request, ctx?: RouteParams) => run(request, ctx, handler, true);
 }
 
-/** Unauthenticated route handler (health checks). */
+/** Unauthenticated route handler (health checks, sign-in). */
 export function publicRoute(handler: Handler) {
   return (request: Request, ctx?: RouteParams) => run(request, ctx, handler, false);
 }

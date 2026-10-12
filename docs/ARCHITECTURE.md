@@ -72,8 +72,9 @@ Plans (`server/actions/plans.ts`) prepare and execute multi-step requests step b
 
 ## Security model
 
-- Authentication: Supabase access tokens (`Authorization: Bearer`). Verified locally with the HS256 secret or JWKS, or
-  through Supabase Auth with the publishable key (short cache keyed by a token hash). No server sessions.
+- Authentication: FiNN's own email OTP (`server/auth/service.ts`, codes mailed with nodemailer, stored as HMACs) issuing
+  HS256 access JWTs (`Authorization: Bearer`, verified locally with `AUTH_JWT_SECRET`) and rotating refresh tokens with
+  reuse detection. Accounts and tokens live in the `finn_auth` schema, invisible to every client-facing role.
 - Authorization, three layers:
   1. every query filters `user_id = caller`;
   2. the API runs queries as the dedicated `finn_api` role with the caller's claims, so Postgres RLS enforces

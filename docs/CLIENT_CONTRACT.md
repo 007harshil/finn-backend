@@ -3,11 +3,11 @@
 Base URL: `FINN_API_URL` (e.g. `https://api.example.com`), all paths under `/api/v1`.
 
 ## Authentication
-- Supabase Auth (project `https://xeqhygypqyyyoortalod.supabase.co`), passwordless **email OTP**:
-  `signInWithOtp(email)` then `verifyOTP(email, token, type: email)`. The Flutter client uses the
-  publishable key `sb_publishable_1iDr4zeoG6ykOvNETNF72w_HOTRv0tC` (public by design).
-- Every request: `Authorization: Bearer <access_token>`. On `401` (`code: unauthenticated`) refresh the session once,
-  then sign out.
+- FiNN's own passwordless **email OTP** (no Supabase Auth): `POST /api/v1/auth/otp {email}`, then
+  `POST /api/v1/auth/verify {email, code}` -> `{accessToken, refreshToken, tokenType, expiresIn, expiresAt, user}`.
+  `POST /api/v1/auth/refresh {refreshToken}` rotates the refresh token (store the new one; reusing an old one revokes
+  the session). `POST /api/v1/auth/logout {refreshToken}` signs out. Details: API.md §1.2.
+- Every request: `Authorization: Bearer <accessToken>`. On `401` (`code: unauthenticated`) refresh once, then sign out.
 - First authenticated request creates the account (profile with a generated `@handle`, preferences, standard categories with
   the same fixed ids as the app's seed: `cat_food`, `cat_sys_emi`, …).
 
@@ -62,6 +62,21 @@ deletions by id. Full load always includes `emergencyPlan` and `alertInbox`.
 `{items:[{id,name,handle,phoneHint}]}`), `GET /me`, `GET|PATCH /preferences`, module summaries (`/budgets`, `/goals`,
 `/emergency-fund`, `/loans`, `/subscriptions`, `/pending`, `/assets`, `/dashboard`, `/analytics/...`, `/alerts`,
 `/net-worth`) — the app may keep computing its own projections from synced records; the server uses the same rules.
+
+## Agent LLM relay — `POST /agent/completions`
+The in-app agent (`lib/agent/`) runs the tool loop on the device; the server only relays model calls with its secret key.
+The provider is Groq (OpenAI-compatible Chat Completions, no streaming). Body = Chat Completions request without
+server-owned fields: `{ messages, tools?, tool_choice?, parallel_tool_calls?, max_completion_tokens? }` (sending
+`model`, `user`, `service_tier`, `response_format`, `stream` or any other key → 422; only `type: "function"` tools as
+`{ type, function: { name, description, parameters } }`; a `system` message only as `messages[0]`). Response
+`{ id, finish_reason, message: { content, tool_calls }, usage }` (`tool_calls` always an array; `usage` may be null).
+For the next turn append the assistant message (`content`, `tool_calls`) and one `{ role: "tool", tool_call_id, content }`
+per call. Failures use the normal envelope: `unavailable` 503 (`retryable` false and `details.reason` `notConfigured` =
+not configured / server key rejected; `details.reason` `timeout`/`network` = provider unreachable; `details.reason`
+`rateLimited` or `providerRateLimited` with `retryAfterSeconds` → wait before retrying), `unknown` 500 (`details.reason`
+`toolCallFailed` = model produced an invalid tool call, retryable; malformed provider response, retryable; other
+provider rejection with `details.upstreamStatus`, not retryable), `validation` 422 with `details.reason` `tooLarge` =
+conversation too long, start a new chat. Limits in `docs/API.md` §2.22.
 
 ## Alert inbox
 `PUT /alerts/inbox` body `{ "read": [keys], "dismissed": [keys], "restore": [keys] }` (read/dismissed keys to ADD;
