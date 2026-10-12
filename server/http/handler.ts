@@ -30,13 +30,26 @@ type RouteParams = { params: Promise<Record<string, string | string[]>> };
 
 const bootstrapped = new Set<string>();
 
-function corsHeaders(request: Request): Record<string, string> {
-  const allowed = (process.env.CORS_ORIGINS ?? '')
+/**
+ * `CORS_ORIGINS` entries are exact origins or patterns where `*` matches one
+ * port or one subdomain label (no dots), e.g. `http://localhost:*` for
+ * Flutter web dev servers, which pick a random port on every run.
+ */
+export function originAllowed(origin: string, list: string): boolean {
+  return list
     .split(',')
     .map((s) => s.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .some((entry) => {
+      if (!entry.includes('*')) return entry === origin;
+      const pattern = entry.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[A-Za-z0-9-]+');
+      return new RegExp(`^${pattern}$`).test(origin);
+    });
+}
+
+function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('origin');
-  if (!origin || !allowed.includes(origin)) return {};
+  if (!origin || !originAllowed(origin, process.env.CORS_ORIGINS ?? '')) return {};
   return {
     'access-control-allow-origin': origin,
     vary: 'Origin',

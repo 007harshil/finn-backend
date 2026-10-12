@@ -6,7 +6,7 @@ Audience: Flutter/mobile engineers and agent developers. Sources: `app/api/v1/**
 
 ### 1.1 Base URL and transport
 - Base: `<FINN_API_URL>/api/v1`. JSON only (`content-type: application/json`). Responses carry `cache-control: no-store` and `x-request-id` (echo of the request's `x-request-id`, max 64 chars, else generated).
-- CORS: only origins listed in `CORS_ORIGINS` get headers. Allowed request headers: `authorization, content-type, idempotency-key, x-confirmation-fingerprint, x-channel`; methods `GET, POST, PUT, PATCH, DELETE, OPTIONS`; max-age 600. Native mobile clients are unaffected.
+- CORS: only origins listed in `CORS_ORIGINS` get headers (`*` matches one port or subdomain label, e.g. `http://localhost:*`). Allowed request headers: `authorization, content-type, idempotency-key, x-confirmation-fingerprint, x-channel`; methods `GET, POST, PUT, PATCH, DELETE, OPTIONS`; max-age 600. Native mobile clients are unaffected.
 
 ### 1.2 Authentication
 - FiNN's own passwordless email OTP (no Supabase Auth). Public endpoints, no `Authorization` header:

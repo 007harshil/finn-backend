@@ -53,6 +53,14 @@ Environment variables (server-only; see `.env.example`):
 | `AGENT_MAX_OUTPUT_TOKENS` | no | Default and ceiling for `max_completion_tokens` (default 2048) |
 | `AGENT_RATE_LIMIT_PER_MINUTE` | no | Relay requests per user per minute (default 20; in-memory, per instance) |
 | `AGENT_DAILY_REQUEST_LIMIT` | no | Relay requests per user per 24 h (default 300; in-memory, per instance) |
+| `GROQ_STT_MODEL` | no | Whisper model for `POST /agent/transcriptions` (default `whisper-large-v3`) |
+| `GROQ_STT_LANGUAGE` | no | Default ISO-639-1 language (e.g. `en`, `hi`); unset = Whisper auto-detects |
+| `GROQ_STT_PROMPT` | no | Vocabulary hint for finance terms (default: FiNN/rupee/UPI/EMI/... list) |
+| `GROQ_STT_TIMEOUT_MS` | no | Transcription provider timeout (default 30000, 100-300000) |
+| `AGENT_STT_RATE_LIMIT_PER_MINUTE` | no | Transcription requests per user per minute (default 10; in-memory, per instance) |
+| `AGENT_STT_DAILY_LIMIT` | no | Transcription requests per user per 24 h (default 200; in-memory, per instance) |
+
+Voice input: `POST /api/v1/agent/transcriptions` (authenticated) takes `{ "audio": "<base64, max 10 MB decoded>", "mimeType": "audio/mp4|m4a|aac|webm|ogg|wav|mpeg|flac", "language"?: "<2-letter ISO-639-1>" }`, forwards it to Groq Whisper with the server-held `GROQ_API_KEY`, and returns `{ "text", "language", "durationSeconds" }`. `text` is `""` when no speech is detected. Audio and transcripts are never logged or stored. Rate limited separately from completions.
 
 Sign-in is FiNN's own email OTP (Supabase Auth is not used): `POST /api/v1/auth/otp` emails a 6-digit
 code through nodemailer, `POST /api/v1/auth/verify` returns an access token (HS256 JWT) and a rotating
@@ -102,7 +110,7 @@ server/
   db/                      Kysely client, table types, per-user transactions (RLS role + locks)
   auth/                    Supabase token verification
   http/                    route wrapper, error mapping, logger
-  agent/                   LLM relay for the in-app agent (request schema, Groq forwarding, rate limit)
+  agent/                   LLM relay and speech-to-text relay for the in-app agent (schemas, Groq forwarding, rate limits)
   actions/                 action framework: types, input codecs, dispatcher, policy, registry, plans
   finance/                 domain records (= Flutter DTOs), snapshot loader, ledger aggregates
   modules/<feature>/       calculator.ts (pure rules), actions.ts, service.ts (reads), repo.ts

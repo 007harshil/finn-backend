@@ -19,6 +19,9 @@ export type Env = z.infer<typeof schema>;
  * the core schema so a missing or bad agent setting never stops the rest of
  * the API from booting: only the relay route reports it.
  */
+/** A blank env var (`NAME=`) counts as unset, so the default applies. */
+const emptyToUndefined = <T extends z.ZodType>(inner: T) => z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), inner);
+
 const agentSchema = z.object({
   /** Groq API key. Unset or empty = the relay answers `unavailable` (not configured). */
   GROQ_API_KEY: z
@@ -44,6 +47,31 @@ const agentSchema = z.object({
   AGENT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
   /** Relay requests per user per rolling 24 hours (per server instance). */
   AGENT_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(300),
+  /** Speech-to-text model (Groq Whisper). */
+  GROQ_STT_MODEL: emptyToUndefined(z.string().trim().min(1).max(100).default('whisper-large-v3')),
+  /** Default ISO-639-1 language for transcription; unset/empty = Whisper auto-detects. */
+  GROQ_STT_LANGUAGE: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined))
+    .pipe(z.string().regex(/^[a-z]{2}$/).optional()),
+  /** Vocabulary hint sent as Whisper `prompt` (keep under 224 tokens). */
+  GROQ_STT_PROMPT: emptyToUndefined(
+    z
+      .string()
+      .trim()
+      .max(1000)
+      .default(
+        'FiNN personal finance app. Indian rupees, ₹, lakh, crore, UPI, EMI, SIP, GST, Paytm, PhonePe, GPay, Swiggy, Zomato, Amazon, Flipkart, Netflix, budget, groceries, rent, salary, loan, goal, emergency fund.',
+      ),
+  ),
+  /** Transcription upstream timeout in milliseconds. */
+  GROQ_STT_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(30_000),
+  /** Transcription requests per user per rolling minute (per server instance). */
+  AGENT_STT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(10),
+  /** Transcription requests per user per rolling 24 hours (per server instance). */
+  AGENT_STT_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(200),
 });
 
 export type AgentEnv = z.infer<typeof agentSchema>;
