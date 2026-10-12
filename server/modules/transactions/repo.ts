@@ -8,12 +8,14 @@ import type { ActionContext } from '../../actions/types';
 import type { PaymentMethod } from '../../actions/input';
 import type { IsoDate } from '../../core/dates';
 import { AppFailure } from '../../core/failure';
+import { extendTrackingStart } from '../account/repo';
 import type { Paise } from '../../core/money';
 import type { Tx } from '../../db/tx';
 import { transactionFromRow, transactionToRow, type Transaction, type TransactionOrigin, type TransactionType } from '../../finance/models';
 
 export async function insertTransaction(tx: Tx, userId: string, t: Transaction): Promise<Transaction> {
   const row = await tx.insertInto('transactions').values(transactionToRow(userId, t)).returningAll().executeTakeFirstOrThrow();
+  await extendTrackingStart(tx, userId, t.date);
   return transactionFromRow(row);
 }
 
@@ -29,6 +31,7 @@ export async function updateTransaction(tx: Tx, userId: string, next: Transactio
     .returningAll()
     .executeTakeFirst();
   if (!row) throw AppFailure.stale('This transaction changed since you opened it. Reload and try again.');
+  await extendTrackingStart(tx, userId, next.date);
   return transactionFromRow(row);
 }
 
