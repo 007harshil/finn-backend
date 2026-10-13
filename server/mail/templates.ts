@@ -35,6 +35,26 @@ export function otpEmail(to: string, code: string, ttlMinutes: number): MailMess
   return { to, subject, text, html };
 }
 
+/** Code that confirms permanent account deletion. */
+export function accountDeletionCodeEmail(to: string, code: string, ttlMinutes: number): MailMessage {
+  const subject = `${code} is your FiNN account deletion code`;
+  const text = [
+    `Your FiNN account deletion code is ${code}.`,
+    '',
+    'Entering it permanently deletes your FiNN account and all of its data. This cannot be undone.',
+    `It expires in ${ttlMinutes} minutes and can be used once.`,
+    "If you didn't ask to delete your account, don't share this code with anyone. Your account stays as it is.",
+  ].join('\n');
+  const html = layout(
+    'Confirm account deletion',
+    `<p style="margin:0 0 16px;font-size:15px">Enter this code in FiNN to permanently delete your account and all of its data:</p>
+<p style="margin:0 0 16px;font-size:32px;letter-spacing:8px;font-weight:bold">${escapeHtml(code)}</p>
+<p style="margin:0 0 12px;font-size:14px;color:#b42318">This cannot be undone.</p>
+<p style="margin:0;font-size:14px;color:#4b5563">It expires in ${ttlMinutes} minutes and can be used once. If you didn't ask to delete your account, don't share this code with anyone. Your account stays as it is.</p>`,
+  );
+  return { to, subject, text, html };
+}
+
 /** Generic notice (alerts, reminders and other account email). */
 export function noticeEmail(to: string, subject: string, paragraphs: string[]): MailMessage {
   const text = paragraphs.join('\n\n');

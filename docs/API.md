@@ -146,6 +146,10 @@ Profile is changed through action `profile.update`, not here.
 
 **`PATCH /me/handle`** body `{ "handle": "@name" }` (trimmed, lowercased; `^@[a-z0-9._]{3,30}$`). Returns `{ "handle": "@name" }`. 409 `conflict` when taken (case-insensitive); 422 on format.
 
+**Account deletion** (permanent, confirmed by an emailed code):
+- **`POST /me/delete/code`** (no body) -> `{sent: true, expiresInSeconds: 600, resendAfterSeconds: 60}`. Emails a 6-digit deletion code to the account's address on record. Same limits and failures as `POST /auth/otp`. Deletion codes and sign-in codes are separate: neither works for the other purpose.
+- **`POST /me/delete`** `{code}` -> `{deleted: true}`. Deletes the account and every row it owns in one transaction (profile, preferences, sessions, all finance data, audit log, sign-in codes). Pending items shared with another person: theirs stay but are unlinked; they get tombstones for the deleting user's items and settlements. A goodbye email is sent (best effort). Wrong, expired or burned code: 422 `validation` (`fieldErrors.code` "The code was invalid or has expired.", not 401, so the session stays); 5 wrong guesses burn the code. Afterwards refresh tokens fail and any leftover access token gets 401. The same email can sign up again as a new, empty account.
+
 ### 2.3 Sync
 **`GET /sync?since=<cursor>&limit=<n>`**
 | Param | Type | Rules |

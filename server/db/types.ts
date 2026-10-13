@@ -296,7 +296,10 @@ export interface AuthEmailOtpsTable {
   attempts: Generated<number>;
   consumed_at: Date | null;
   created_at: Ts;
+  purpose: Generated<OtpPurpose>;
 }
+
+export type OtpPurpose = 'sign_in' | 'delete_account';
 
 export interface AuthRefreshTokensTable {
   id: Generated<string>;

@@ -16,9 +16,10 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import { getDb } from '../db/client';
 import type { Tx } from '../db/tx';
+import type { OtpPurpose } from '../db/types';
 import { authEnv } from '../env';
 import { AppFailure } from '../core/failure';
-import { sendMail } from '../mail/mailer';
+import { sendMail, type MailMessage } from '../mail/mailer';
 import { otpEmail } from '../mail/templates';
 import { hashesEqual, keyedHash, newOtpCode, newRefreshToken, signAccessToken } from './tokens';
 import { WindowLimiter } from './rate-limit';
@@ -66,22 +67,37 @@ function tooMany(retryAfterSeconds: number): AppFailure {
   });
 }
 
-function limit(limiter: WindowLimiter, ip: string): void {
+export function limit(limiter: WindowLimiter, ip: string): void {
   const decision = limiter.take(ip);
   if (!decision.allowed) throw tooMany(decision.retryAfterSeconds);
 }
 
-async function lockEmail(tx: Tx, email: string): Promise<void> {
+export async function lockEmail(tx: Tx, email: string): Promise<void> {
   await sql`select pg_advisory_xact_lock(hashtextextended(${email}, 11))`.execute(tx);
 }
 
-export async function requestOtp(
-  rawEmail: unknown,
-  ip: string,
-  now = new Date(),
-): Promise<{ sent: true; expiresInSeconds: number; resendAfterSeconds: number }> {
+export interface CodeSent {
+  sent: true;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+}
+
+export async function requestOtp(rawEmail: unknown, ip: string, now = new Date()): Promise<CodeSent> {
   const email = normaliseEmail(rawEmail);
   limit(limiters.otp, ip);
+  return issueCode(email, 'sign_in', (code, ttlMinutes) => otpEmail(email, code, ttlMinutes), now);
+}
+
+/**
+ * Emails a code for [purpose]. Resend gap and hourly limit apply per email and
+ * purpose; a new code replaces any earlier unused one for the same purpose.
+ */
+export async function issueCode(
+  email: string,
+  purpose: OtpPurpose,
+  message: (code: string, ttlMinutes: number) => MailMessage,
+  now = new Date(),
+): Promise<CodeSent> {
   const ttl = authEnv().AUTH_OTP_TTL_SECONDS;
   const code = newOtpCode();
 
@@ -94,6 +110,7 @@ export async function requestOtp(
         .selectFrom('finn_auth.email_otps')
         .select('created_at')
         .where('email', '=', email)
+        .where('purpose', '=', purpose)
         .where('created_at', '>', hourAgo)
         .orderBy('created_at', 'desc')
         .execute();
@@ -110,26 +127,76 @@ export async function requestOtp(
         .updateTable('finn_auth.email_otps')
         .set({ consumed_at: now })
         .where('email', '=', email)
+        .where('purpose', '=', purpose)
         .where('consumed_at', 'is', null)
         .execute();
       // Housekeeping: codes older than a day are useless.
       await tx.deleteFrom('finn_auth.email_otps').where('created_at', '<', new Date(now.getTime() - 86_400_000)).execute();
       const row = await tx
         .insertInto('finn_auth.email_otps')
-        .values({ email, code_hash: keyedHash('otp', `${email}:${code}`), expires_at: new Date(now.getTime() + ttl * 1000), created_at: now })
+        .values({
+          email,
+          purpose,
+          code_hash: codeHash(email, purpose, code),
+          expires_at: new Date(now.getTime() + ttl * 1000),
+          created_at: now,
+        })
         .returning('id')
         .executeTakeFirstOrThrow();
       return row.id;
     });
 
   try {
-    await sendMail(otpEmail(email, code, Math.round(ttl / 60)));
+    await sendMail(message(code, Math.round(ttl / 60)));
   } catch (err) {
     // Not delivered: drop the code so it neither works nor counts against the limit.
     await getDb().deleteFrom('finn_auth.email_otps').where('id', '=', otpId).execute().catch(() => undefined);
     throw err;
   }
   return { sent: true, expiresInSeconds: ttl, resendAfterSeconds: OTP_RESEND_SECONDS };
+}
+
+/** Sign-in codes keep their original hash input, so codes already sent stay valid. */
+function codeHash(email: string, purpose: OtpPurpose, code: string): string {
+  return keyedHash('otp', purpose === 'sign_in' ? `${email}:${code}` : `${purpose}:${email}:${code}`);
+}
+
+/** Reads a 6-digit code from user input, or fails with a field error. */
+export function readCode(raw: unknown): string {
+  const code = typeof raw === 'string' ? raw.trim() : '';
+  if (!/^\d{6}$/.test(code)) throw AppFailure.fields({ code: 'Please enter the 6-digit code.' });
+  return code;
+}
+
+/**
+ * Checks [code] against the newest live code for [email] and [purpose], and
+ * consumes it when it matches. A wrong guess counts an attempt (the code is
+ * burned after OTP_MAX_ATTEMPTS), so the caller must commit even on false.
+ * Call with the email lock held.
+ */
+export async function consumeCode(tx: Tx, email: string, purpose: OtpPurpose, code: string, now: Date): Promise<boolean> {
+  const otp = await tx
+    .selectFrom('finn_auth.email_otps')
+    .select(['id', 'code_hash', 'attempts'])
+    .where('email', '=', email)
+    .where('purpose', '=', purpose)
+    .where('consumed_at', 'is', null)
+    .where('expires_at', '>', now)
+    .orderBy('created_at', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (!otp) return false;
+  if (!hashesEqual(otp.code_hash, codeHash(email, purpose, code))) {
+    const attempts = otp.attempts + 1;
+    await tx
+      .updateTable('finn_auth.email_otps')
+      .set({ attempts, ...(attempts >= OTP_MAX_ATTEMPTS ? { consumed_at: now } : {}) })
+      .where('id', '=', otp.id)
+      .execute();
+    return false;
+  }
+  await tx.updateTable('finn_auth.email_otps').set({ consumed_at: now }).where('id', '=', otp.id).execute();
+  return true;
 }
 
 async function openSession(tx: Tx, user: { id: string; email: string }, familyId: string, now: Date): Promise<Session> {
@@ -157,8 +224,7 @@ async function openSession(tx: Tx, user: { id: string; email: string }, familyId
 
 export async function verifyOtp(rawEmail: unknown, rawCode: unknown, ip: string, now = new Date()): Promise<Session> {
   const email = normaliseEmail(rawEmail);
-  const code = typeof rawCode === 'string' ? rawCode.trim() : '';
-  if (!/^\d{6}$/.test(code)) throw AppFailure.fields({ code: 'Please enter the 6-digit code.' });
+  const code = readCode(rawCode);
   limit(limiters.verify, ip);
 
   // A wrong guess must be committed before failing, so the transaction
@@ -167,26 +233,7 @@ export async function verifyOtp(rawEmail: unknown, rawCode: unknown, ip: string,
     .transaction()
     .execute(async (tx): Promise<{ ok: true; session: Session } | { ok: false }> => {
       await lockEmail(tx, email);
-      const otp = await tx
-        .selectFrom('finn_auth.email_otps')
-        .select(['id', 'code_hash', 'attempts'])
-        .where('email', '=', email)
-        .where('consumed_at', 'is', null)
-        .where('expires_at', '>', now)
-        .orderBy('created_at', 'desc')
-        .limit(1)
-        .executeTakeFirst();
-      if (!otp) return { ok: false };
-      if (!hashesEqual(otp.code_hash, keyedHash('otp', `${email}:${code}`))) {
-        const attempts = otp.attempts + 1;
-        await tx
-          .updateTable('finn_auth.email_otps')
-          .set({ attempts, ...(attempts >= OTP_MAX_ATTEMPTS ? { consumed_at: now } : {}) })
-          .where('id', '=', otp.id)
-          .execute();
-        return { ok: false };
-      }
-      await tx.updateTable('finn_auth.email_otps').set({ consumed_at: now }).where('id', '=', otp.id).execute();
+      if (!(await consumeCode(tx, email, 'sign_in', code, now))) return { ok: false };
       const user = await tx
         .insertInto('finn_auth.users')
         .values({ email, last_sign_in_at: now, created_at: now })

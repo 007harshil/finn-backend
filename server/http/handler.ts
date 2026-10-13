@@ -14,6 +14,7 @@ import { fromZod, toFailure } from '../core/errors';
 export { fromZod, toFailure };
 import { ensureAccount } from '../modules/account/bootstrap';
 import { withUserTx } from '../db/tx';
+import { getDb } from '../db/client';
 import { logger } from './logger';
 
 export interface RequestContext {
@@ -81,6 +82,9 @@ async function run(request: Request, routeCtx: RouteParams | undefined, handler:
     if (authRequired) {
       user = await authenticate(request);
       if (!bootstrapped.has(user.userId)) {
+        // Access tokens outlive a deleted account by up to their lifetime.
+        const account = await getDb().selectFrom('finn_auth.users').select('id').where('id', '=', user.userId).executeTakeFirst();
+        if (!account) throw new AppFailure('unauthenticated', 'Your session has expired. Please sign in again.');
         await withUserTx(user, (tx) => ensureAccount(tx, user), { write: true });
         bootstrapped.add(user.userId);
         if (bootstrapped.size > 50_000) bootstrapped.clear();
@@ -169,4 +173,9 @@ export function param(ctx: RequestContext, name: string): string {
 
 export function resetBootstrapCache(): void {
   bootstrapped.clear();
+}
+
+/** After account deletion: the next request with a leftover access token checks the account again. */
+export function forgetBootstrap(userId: string): void {
+  bootstrapped.delete(userId);
 }
