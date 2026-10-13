@@ -4,12 +4,19 @@ The conversational agent is orchestrated by the Flutter app (`lib/agent/`): it b
 tool loop and asks the user to approve previews. The backend contributes two things:
 
 1. **LLM relay** — `POST /api/v1/agent/completions` (`server/agent/`, see `docs/API.md` §2.22). The app sends an
-   OpenAI-compatible Chat Completions request; the server validates it (function tools only; no client-chosen model,
-   streaming or response format), adds the secret `OPENAI_API_KEY`, forwards it to OpenAI (`/chat/completions`) and
-   returns a trimmed `choices[0]` (`{ id, finish_reason, message: { content, tool_calls }, usage }`, reasoning
-   stripped). It never executes tools, never stores or logs conversation content, and applies a per-user rate limit
-   (in-memory, per instance). Without `OPENAI_API_KEY` it answers 503 `unavailable` (not retryable).
-2. **The stable interfaces below**, which the app's tools call with the user's own token, exactly like the UI.
+   OpenAI-compatible Chat Completions request; the server validates it (function tools and JSON response formats only;
+   no client-chosen model, streaming or caching), adds the secret `OPENAI_API_KEY`, applies `reasoning_effort` and an
+   explicit prompt-cache breakpoint after the static system message, forwards it to OpenAI (`/chat/completions`) and
+   returns a trimmed `choices[0]` (`{ id, finish_reason, message: { content, tool_calls }, usage }` with cached,
+   cache-write and reasoning token counts; reasoning text stripped). It never executes tools, never stores or logs
+   conversation content, and applies a per-user rate limit (in-memory, per instance). Without `OPENAI_API_KEY` it
+   answers 503 `unavailable` (not retryable).
+2. **The stable interfaces below**, which the app calls with the user's own token, exactly like the UI.
+3. **Agent history** — `GET`/`DELETE /api/v1/agent/history` (§2.23), written by `POST /plans/execute` with `history`.
+
+The app's agent makes **one** model request per message: the model returns a JSON plan of every operation, and the
+app resolves it deterministically against synced data, previews all steps with one `POST /plans/preview` and runs the
+approved ones with one `POST /plans/execute` (which also records the history entry). See `../finn/docs/AGENT.md`.
 
 There is no speech endpoint; voice, if added, reuses the same flow with `channel: "voice"`.
 

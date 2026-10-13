@@ -21,11 +21,23 @@ export interface CompletionToolCall {
   function: { name: string; arguments: string };
 }
 
+export interface CompletionUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  /** Input tokens read from the prompt cache (billed at the cached rate). */
+  cached_tokens: number;
+  /** Input tokens written to the prompt cache. */
+  cache_write_tokens: number;
+  /** Output tokens spent on hidden reasoning (included in completion_tokens). */
+  reasoning_tokens: number;
+}
+
 export interface CompletionResult {
   id: string | null;
   finish_reason: string | null;
-  message: { content: string | null; tool_calls: CompletionToolCall[] };
-  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null;
+  message: { content: string | null; refusal?: string; tool_calls: CompletionToolCall[] };
+  usage: CompletionUsage | null;
 }
 
 const UNAVAILABLE = 'The assistant is unavailable right now. Please try again.';
@@ -75,19 +87,36 @@ export function buildUpstreamBody(
   userId: string,
   model: string = config.OPENAI_MODEL,
 ): Record<string, unknown> {
+  const explicitCache = config.OPENAI_PROMPT_CACHE === 'explicit';
   const body: Record<string, unknown> = {
     model,
-    messages: req.messages,
+    messages: explicitCache ? withSystemCacheBreakpoint(req.messages) : req.messages,
     max_completion_tokens: Math.min(req.max_completion_tokens ?? config.AGENT_MAX_OUTPUT_TOKENS, config.AGENT_MAX_OUTPUT_TOKENS),
     safety_identifier: safetyIdentifier(userId),
   };
   if (config.OPENAI_REASONING_EFFORT !== 'off') body.reasoning_effort = config.OPENAI_REASONING_EFFORT;
+  if (explicitCache) body.prompt_cache_options = { mode: 'explicit' };
+  if (req.response_format) body.response_format = req.response_format;
   if (req.tools.length > 0) {
     body.tools = req.tools;
     if (req.tool_choice !== undefined) body.tool_choice = req.tool_choice;
     if (req.parallel_tool_calls !== undefined) body.parallel_tool_calls = req.parallel_tool_calls;
   }
   return body;
+}
+
+/**
+ * Marks the end of the system message as the only prompt-cache breakpoint. The
+ * system message holds the agent's static instructions (identical for every
+ * user and day), so it is cached once and reused; everything after it is
+ * per-request and is never written to the cache.
+ */
+export function withSystemCacheBreakpoint(messages: CompletionRequest['messages']): unknown[] {
+  return messages.map((m, i) =>
+    i === 0 && m.role === 'system'
+      ? { role: 'system', content: [{ type: 'text', text: m.content, prompt_cache_breakpoint: { mode: 'explicit' } }] }
+      : m,
+  );
 }
 
 /** True when a 400 body reports a failed tool call generation (OpenAI-compatible providers such as Groq). */
@@ -119,18 +148,28 @@ function toResult(payload: unknown): CompletionResult | null {
     }
   }
 
-  const usage = isRecord(payload.usage)
+  const u = isRecord(payload.usage) ? payload.usage : null;
+  const inDetails = u && isRecord(u.prompt_tokens_details) ? u.prompt_tokens_details : null;
+  const outDetails = u && isRecord(u.completion_tokens_details) ? u.completion_tokens_details : null;
+  const usage = u
     ? {
-        prompt_tokens: num(payload.usage.prompt_tokens) ?? 0,
-        completion_tokens: num(payload.usage.completion_tokens) ?? 0,
-        total_tokens: num(payload.usage.total_tokens) ?? 0,
+        prompt_tokens: num(u.prompt_tokens) ?? 0,
+        completion_tokens: num(u.completion_tokens) ?? 0,
+        total_tokens: num(u.total_tokens) ?? 0,
+        cached_tokens: num(inDetails?.cached_tokens) ?? 0,
+        cache_write_tokens: num(inDetails?.cache_write_tokens) ?? 0,
+        reasoning_tokens: num(outDetails?.reasoning_tokens) ?? 0,
       }
     : null;
 
   return {
     id: typeof payload.id === 'string' ? payload.id : null,
     finish_reason: typeof choice.finish_reason === 'string' ? choice.finish_reason : null,
-    message: { content: typeof msg.content === 'string' ? msg.content : null, tool_calls: toolCalls },
+    message: {
+      content: typeof msg.content === 'string' ? msg.content : null,
+      ...(typeof msg.refusal === 'string' && msg.refusal ? { refusal: msg.refusal } : {}),
+      tool_calls: toolCalls,
+    },
     usage,
   };
 }
@@ -138,9 +177,12 @@ function toResult(payload: unknown): CompletionResult | null {
 function usageCounts(payload: unknown): Record<string, number | undefined> {
   const usage = isRecord(payload) && isRecord(payload.usage) ? payload.usage : null;
   const details = usage && isRecord(usage.completion_tokens_details) ? usage.completion_tokens_details : null;
+  const inDetails = usage && isRecord(usage.prompt_tokens_details) ? usage.prompt_tokens_details : null;
   // Field names avoid "token"/"key": the logger redacts those.
   return {
     usageIn: num(usage?.prompt_tokens),
+    usageCached: num(inDetails?.cached_tokens),
+    usageCacheWrite: num(inDetails?.cache_write_tokens),
     usageOut: num(usage?.completion_tokens),
     usageReasoning: num(details?.reasoning_tokens),
     usageTotal: num(usage?.total_tokens),

@@ -273,6 +273,19 @@ export interface AuditLogTable {
   at: Ts;
 }
 
+export interface AgentRunsTable {
+  user_id: string;
+  id: string;
+  seq: Generated<number>;
+  request: string;
+  status: string;
+  summary: string;
+  operations: ColumnType<unknown, string, string>;
+  notes: Generated<string[]>;
+  created_at: Ts;
+  updated_at: Ts;
+}
+
 export interface DeletedRecordsTable {
   user_id: string;
   collection: string;
@@ -331,6 +344,7 @@ export interface Database {
   alert_inbox: AlertInboxTable;
   idempotency_keys: IdempotencyKeysTable;
   audit_log: AuditLogTable;
+  agent_runs: AgentRunsTable;
   deleted_records: DeletedRecordsTable;
   'finn_auth.users': AuthUsersTable;
   'finn_auth.email_otps': AuthEmailOtpsTable;

@@ -32,6 +32,7 @@ PostgreSQL 17 on the Supabase project `FiNN` (`xeqhygypqyyyoortalod`). Source of
 | `alert_inbox` | Read/dismissed alert keys | Alerts themselves are derived |
 | `idempotency_keys` | Completed action results per (user, key) | Pruned after 30 days |
 | `audit_log` | Every attempted operation (summary, channel, confirmation, outcome) | Append-only for the owner |
+| `agent_runs` | Agent history: one row per agent turn that proposed changes (request ≤ 500 chars, status, summary, `operations` jsonb of {ref, actionId, summary, status, recordIds, message?}, notes) | Written by `POST /plans/execute` from step reports; keyed (user, run id) so retries update it; pruned after 180 days; never sent to the LLM |
 | `deleted_records` | Sync tombstones | Written by trigger |
 
 ## Linked records (who owns a cash movement)
@@ -65,7 +66,8 @@ cannot be used to bypass the API. Policies (all `to finn_api`, caller = `(select
 - `pending_settlements`: visible to recorder, item owner and shared user; insert only by the recorder on an item they
   can access (`private.can_access_pending`, security definer); the item owner may only set `shared_with_user_id`
   on earlier settlements when the item becomes shared (guard trigger);
-- `audit_log`, `deleted_records`: owner read/insert only.
+- `audit_log`, `deleted_records`: owner read/insert only;
+- `agent_runs`: owner-only `for all` (the API inserts/updates it in the caller's transaction; the owner can clear it).
 
 The API runs every query as `finn_api` with the caller's claims (`server/db/tx.ts`), so these policies also
 constrain the backend. New tables must be granted to `finn_api` and revoked from `authenticated` (Supabase's default

@@ -290,6 +290,8 @@ Response `{ steps: [{stepId, actionId, status: "ready"|"invalid", preview?, fail
 **`POST /plans/execute`** same body plus `approvedFingerprints` (string[] 1-200 chars each, max 20) and `stopOnFailure` (bool, default true). Runs steps in order; each commits on its own (no cross-step rollback). Idempotency key per step = `<planId>:<stepId>`, so retrying with the same `planId` only re-runs what is left. A step runs only if its request fingerprint matches an approved fingerprint (prefix match before `.`). `confirmedBy` = `plan:<planId>`.
 Response `{ steps: [{stepId, actionId, status, preview?, failure?, result?, replayed?}] }` with `status`: `succeeded | failed | skipped` (halted or dependency not succeeded) `| notApproved` (no approval, or state changed since approval, with `failure.code=staleData`) `| invalid`. Plan responses carry no `changes`; run a sync afterwards.
 
+Optional `history` (agent turns): `{ runId (^[A-Za-z0-9._\-]{8,64}$), request (1-2,000, stored trimmed to 500), notes?: string[] (<= 10 of <= 300), labels?: { [stepId]: summary (<= 300) } }`. After the steps run, the server records one agent history entry from its **own** step reports (see 2.23): each step's preview summary (or its label when the server did not run it), its status and the ids of the records it touched. The response then adds `history: { id, status, summary } | null` (null if the history write failed; the steps have committed regardless). The entry is keyed by `runId`: a retried call (lost reply) replays its steps and rewrites the same entry, and a later call with the same `runId` (a second wave of dependent steps) merges its steps into it by `stepId`.
+
 ### 2.7 Transactions
 **`GET /transactions`**
 | Param | Type | Rules |
@@ -413,8 +415,8 @@ conversation and never logs prompt, message or output content (only request id, 
 and token counts). Tool calls returned in `message.tool_calls` are run by the app through the normal action/plan
 endpoints. No streaming.
 
-Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`, `service_tier`, `response_format`, `stream`,
-`reasoning_effort`, is 422; max 600,000 bytes):
+Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`, `service_tier`, `stream`,
+`reasoning_effort`, `prompt_cache_options`, `prompt_cache_key`, is 422; max 600,000 bytes):
 | Field | Type | Rules |
 |---|---|---|
 | `messages`* | array | 1-200 items, each one of the shapes below; a `system` message is only allowed as `messages[0]` |
@@ -422,6 +424,7 @@ Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`
 | `tool_choice` | enum | `auto`, `none`, `required` (provider default when omitted) |
 | `parallel_tool_calls` | bool | forwarded only when sent |
 | `max_completion_tokens` | int | 1..`AGENT_MAX_OUTPUT_TOKENS` (default and ceiling) |
+| `response_format` | object | JSON output only: `{ type: "json_object" }` or `{ type: "json_schema", json_schema: { name, schema, strict?, description? } }` (the agent's plan uses `json_object`); anything else is 422 |
 
 Messages:
 | Shape | Limits |
@@ -435,13 +438,20 @@ The server always sets `model` (`OPENAI_MODEL`; on a provider 429 the same reque
 `OPENAI_FALLBACK_MODELS` entry in turn, and a model is skipped while its `retry-after` lasts), `max_completion_tokens` (requested value capped at
 `AGENT_MAX_OUTPUT_TOKENS`, or the cap), `reasoning_effort` (`OPENAI_REASONING_EFFORT`; not sent when `off`) and
 `safety_identifier` (hash of the user id). `tools`/`tool_choice`/`parallel_tool_calls` are omitted when `tools` is empty.
+Prompt caching (`OPENAI_PROMPT_CACHE`, default `explicit`): the server sends `prompt_cache_options: { mode: "explicit" }` and
+turns the system message into one text part carrying `prompt_cache_breakpoint: { mode: "explicit" }`. The agent's system
+message is static (identical for every user and day), so it is written to the cache once and read back at the cached
+rate; per-request messages after it are never written to the cache (on GPT-5.6+ a cache write costs 1.25× input).
+`implicit` leaves caching to the provider.
 
 Response (trimmed from `choices[0]`; `reasoning` and any other provider fields are dropped):
 ```json
 {"id":"chatcmpl_1","finish_reason":"tool_calls",
  "message":{"content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"list_goals","arguments":"{}"}}]},
- "usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}
+ "usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15,"cached_tokens":0,"cache_write_tokens":0,"reasoning_tokens":2}}
 ```
+`usage.cached_tokens` / `cache_write_tokens` / `reasoning_tokens` come from the provider's token details (0 when absent).
+`message.refusal` is present only when the model refused.
 `message.tool_calls` is always an array (empty when the model answered in text); `usage` may be `null`. Append the
 assistant message (with its `tool_calls`) and one `role: "tool"` message per call to `messages` for the next turn.
 
@@ -460,3 +470,22 @@ Errors:
 | Provider 200 that is not JSON or has no `choices[0].message` | `unknown` | 500 | true | — |
 
 Provider error bodies are never passed through.
+
+### 2.23 Agent history
+What the user asked the in-app agent to do and what actually happened, for the user's own review. Entries are written
+only by `POST /plans/execute` with `history` (2.6), from the server's step reports; they are never sent to the LLM.
+Kept 180 days (pruned on write) and removed with the account.
+
+**`GET /agent/history?limit=&before=&status=`**: newest first. `limit` 1-50 (default 20); `before` = `nextBefore` of the previous
+page; `status` = `completed | partial | failed | declined`. Response:
+```json
+{"items":[{"id":"run_m2x9k1","request":"got 5k salary yesterday, gave 300 to Utsav, protein powder 5000",
+  "status":"completed","summary":"3 of 3 saved","notes":[],
+  "operations":[{"ref":"1a2b3c-0","actionId":"transactions.create","summary":"Received ₹5,000","status":"saved","recordIds":["tx_9"]}],
+  "createdAt":"2026-10-13T15:02:11.000Z","updatedAt":"2026-10-13T15:02:11.000Z"}],"nextBefore":null}
+```
+Turn `status` is judged on the operations the user approved: `completed` (all saved), `partial` (some saved), `failed` (none
+saved), `declined` (none approved). Operation `status`: `saved | alreadySaved` (replayed) `| declined | failed | skipped`
+(a dependency was not saved) `| changed` (the record changed after approval); `message` explains failures.
+
+**`DELETE /agent/history`**: clears the caller's history; financial records are not touched. Response `{ deleted }`.

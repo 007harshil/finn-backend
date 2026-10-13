@@ -61,6 +61,15 @@ const agentSchema = z.object({
    * (it reasons by default, so `off` is rejected too).
    */
   OPENAI_REASONING_EFFORT: z.enum(['off', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh']).default('none'),
+  /**
+   * Prompt caching. `explicit` (default): one cache breakpoint at the end of the
+   * system message, the agent's stable instructions shared by every user, so
+   * only that prefix is written to the cache (writes cost 1.25x input on
+   * GPT-5.6+) and per-request content is billed at the plain input rate.
+   * `implicit`: the provider default, which also writes each request's tail.
+   * Fallback models must accept the same request (GPT-5.6 or later).
+   */
+  OPENAI_PROMPT_CACHE: z.enum(['explicit', 'implicit']).default('explicit'),
   /** Upstream request timeout in milliseconds. */
   OPENAI_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(60_000),
   /** Ceiling (and default) for `max_completion_tokens`. */

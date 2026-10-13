@@ -138,9 +138,10 @@ describe('POST /agent/completions', () => {
         content: null,
         tool_calls: [{ id: 'call_1', type: 'function', function: { name: 'list_goals', arguments: '{}' } }],
       },
-      usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 2 },
     });
-    expect(JSON.stringify(res.body)).not.toContain('reasoning');
+    // Reasoning text is never returned (only its token count).
+    expect(JSON.stringify(res.body)).not.toContain('The user wants');
 
     expect(seenUrl).toBe('https://openai.test/v1/chat/completions');
     const headers = new Headers(seenInit.headers);
@@ -149,7 +150,12 @@ describe('POST /agent/completions', () => {
     const sent = JSON.parse(String(seenInit.body));
     expect(sent).toMatchObject({
       model: 'test-model',
-      messages,
+      // The system message becomes the only prompt-cache breakpoint.
+      messages: [
+        { role: 'system', content: [{ type: 'text', text: 'You are FiNN.', prompt_cache_breakpoint: { mode: 'explicit' } }] },
+        ...messages.slice(1),
+      ],
+      prompt_cache_options: { mode: 'explicit' },
       tools: [tool],
       tool_choice: 'auto',
       max_completion_tokens: 999,
@@ -183,6 +189,7 @@ describe('POST /agent/completions', () => {
     const config = agentEnv();
     expect(config.OPENAI_BASE_URL).toBe('https://api.openai.com/v1');
     expect(config.OPENAI_REASONING_EFFORT).toBe('none');
+    expect(config.OPENAI_PROMPT_CACHE).toBe('explicit');
     expect(upstreamModels(config)).toEqual(['gpt-6-luna']);
   });
 
@@ -218,7 +225,10 @@ describe('POST /agent/completions', () => {
       { user: 'someone' },
       { safety_identifier: 'someone' },
       { service_tier: 'flex' },
-      { response_format: { type: 'json_object' } },
+      { response_format: { type: 'text' } },
+      { response_format: { type: 'json_object', extra: true } },
+      { prompt_cache_options: { mode: 'implicit' } },
+      { prompt_cache_key: 'mine' },
       { stream: true },
       { reasoning_effort: 'high' },
     ]) {
@@ -227,6 +237,60 @@ describe('POST /agent/completions', () => {
       expect(res.body.error?.code).toBe('validation');
     }
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('forwards JSON response formats and reports cache and reasoning usage', async () => {
+    const seen: any[] = [];
+    mockFetch(async (_url, init) => {
+      seen.push(JSON.parse(String(init.body)));
+      return jsonResponse({
+        id: 'chatcmpl_3',
+        choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: '{"ops":[]}' } }],
+        usage: {
+          prompt_tokens: 1500,
+          completion_tokens: 20,
+          total_tokens: 1520,
+          prompt_tokens_details: { cached_tokens: 1366, cache_write_tokens: 0 },
+          completion_tokens_details: { reasoning_tokens: 0 },
+        },
+      });
+    });
+    const u = await t.createUser();
+    const schema = { type: 'object', properties: { ops: { type: 'array' } }, required: ['ops'] };
+    for (const response_format of [
+      { type: 'json_object' },
+      { type: 'json_schema', json_schema: { name: 'plan', schema, strict: false } },
+    ]) {
+      const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body({ tools: [], response_format }) });
+      expect(res.status).toBe(200);
+      expect(res.body.data.message.content).toBe('{"ops":[]}');
+      expect(res.body.data.usage).toEqual({
+        prompt_tokens: 1500,
+        completion_tokens: 20,
+        total_tokens: 1520,
+        cached_tokens: 1366,
+        cache_write_tokens: 0,
+        reasoning_tokens: 0,
+      });
+    }
+    expect(seen.map((b) => b.response_format)).toEqual([
+      { type: 'json_object' },
+      { type: 'json_schema', json_schema: { name: 'plan', schema, strict: false } },
+    ]);
+  });
+
+  it('leaves caching to the provider when OPENAI_PROMPT_CACHE is implicit', async () => {
+    vi.stubEnv('OPENAI_PROMPT_CACHE', 'implicit');
+    let sent: any;
+    mockFetch(async (_url, init) => {
+      sent = JSON.parse(String(init.body));
+      return jsonResponse(upstreamOk);
+    });
+    const u = await t.createUser();
+    const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
+    expect(res.status).toBe(200);
+    expect(sent.messages[0]).toEqual({ role: 'system', content: 'You are FiNN.' });
+    expect(sent).not.toHaveProperty('prompt_cache_options');
   });
 
   it('rejects non-function tools, bad tool names and max_completion_tokens above the ceiling', async () => {

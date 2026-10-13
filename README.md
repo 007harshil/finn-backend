@@ -50,6 +50,7 @@ Environment variables (server-only; see `.env.example`):
 | `OPENAI_MODEL` | no | Model used by the relay (default `gpt-6-luna`) |
 | `OPENAI_FALLBACK_MODELS` | no | Comma-separated models tried in order when the one before is rate limited (429); default none |
 | `OPENAI_REASONING_EFFORT` | no | `off`/`none`/`minimal`/`low`/`medium`/`high`/`xhigh` (default `none`; `off` = not sent). gpt-6-luna accepts tools on Chat Completions only with `none` |
+| `OPENAI_PROMPT_CACHE` | no | `explicit` (default: one cache breakpoint after the static system message) or `implicit` |
 | `OPENAI_TIMEOUT_MS` | no | Provider timeout (default 60000, 100-300000) |
 | `AGENT_MAX_OUTPUT_TOKENS` | no | Default and ceiling for `max_completion_tokens` (default 2048) |
 | `AGENT_RATE_LIMIT_PER_MINUTE` | no | Relay requests per user per minute (default 20; in-memory, per instance) |
@@ -78,6 +79,8 @@ SQL migrations live in `supabase/migrations/`:
 - `20261012090000_finn_api_role.sql` — **not yet applied** (the connector declined it): `finn_api` role, Data API
   roles lose table access, policies moved to `finn_api`, guard triggers. The API requires it. Apply with
   `supabase db push` or the SQL editor.
+
+- `20261013150000_finn_agent_history.sql` — `agent_runs` (agent history, owner-only RLS for `finn_api`); applied live 2026-10-13
 
 To set up another environment: `supabase link --project-ref <ref>` then `supabase db push`, or run the files in order.
 

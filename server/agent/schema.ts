@@ -1,8 +1,9 @@
 // Request body of POST /api/v1/agent/completions: an OpenAI-compatible Chat
 // Completions request (OpenAI) minus everything the server owns (model,
-// reasoning_effort, safety_identifier, user, service_tier, response_format,
+// reasoning_effort, prompt caching, safety_identifier, user, service_tier,
 // stream, ...). Strict top level: unknown keys are rejected so a client can
-// never pick the model, stream, or add server-side tools.
+// never pick the model, stream, or add server-side tools. `response_format`
+// is limited to JSON output (the agent's structured plan).
 
 import { z } from 'zod';
 
@@ -56,6 +57,20 @@ const functionTool = z.strictObject({
   }),
 });
 
+/** JSON output only: a JSON object, or a JSON Schema the reply must follow. */
+const responseFormat = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('json_object') }),
+  z.strictObject({
+    type: z.literal('json_schema'),
+    json_schema: z.strictObject({
+      name: toolName,
+      description: z.string().max(2000).optional(),
+      schema: z.record(z.string(), z.unknown()),
+      strict: z.boolean().optional(),
+    }),
+  }),
+]);
+
 export function completionRequestSchema(maxOutputTokens: number) {
   return z
     .strictObject({
@@ -64,6 +79,7 @@ export function completionRequestSchema(maxOutputTokens: number) {
       tool_choice: z.enum(['auto', 'none', 'required']).optional(),
       parallel_tool_calls: z.boolean().optional(),
       max_completion_tokens: z.number().int().min(1).max(maxOutputTokens).optional(),
+      response_format: responseFormat.optional(),
     })
     .superRefine((req, ctx) => {
       req.messages.forEach((m, i) => {
