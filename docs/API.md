@@ -407,13 +407,13 @@ Use `id` as `linkedUserId` in `pending.create`/`pending.split`.
 
 ### 2.22 Agent LLM relay
 **`POST /agent/completions`** (+ `OPTIONS` preflight). Relay for the in-app agent (orchestrated by the Flutter app in
-`lib/agent/`): the app sends an OpenAI-compatible Chat Completions request, the server adds the secret Groq key and
-forwards it to `POST {GROQ_BASE_URL}/chat/completions` (Groq). The server never executes tools, never stores the
+`lib/agent/`): the app sends an OpenAI-compatible Chat Completions request, the server adds the secret OpenAI key and
+forwards it to `POST {OPENAI_BASE_URL}/chat/completions` (OpenAI). The server never executes tools, never stores the
 conversation and never logs prompt, message or output content (only request id, hashed user, upstream status, latency
 and token counts). Tool calls returned in `message.tool_calls` are run by the app through the normal action/plan
 endpoints. No streaming.
 
-Body (strict: any other top-level key, e.g. `model`, `user`, `service_tier`, `response_format`, `stream`,
+Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`, `service_tier`, `response_format`, `stream`,
 `reasoning_effort`, is 422; max 600,000 bytes):
 | Field | Type | Rules |
 |---|---|---|
@@ -431,10 +431,10 @@ Messages:
 | `{ role: "assistant", content?, tool_calls? }` | `content` string <= 8,000 or `null`; `tool_calls` <= 16 of `{ id, type: "function", function: { name, arguments } }`, `id` 1-128, `arguments` (JSON string) <= 20,000 |
 | `{ role: "tool", tool_call_id, name?, content }` | `tool_call_id` 1-128, `content` <= 20,000 |
 
-The server always sets `model` (`GROQ_MODEL`; on a provider 429/498 the same request goes to each
-`GROQ_FALLBACK_MODELS` entry in turn, and a model is skipped while its `retry-after` lasts), `max_completion_tokens` (requested value capped at
-`AGENT_MAX_OUTPUT_TOKENS`, or the cap), `reasoning_effort` (`GROQ_REASONING_EFFORT`; not sent when `off`) and `user`
-(hash of the user id). `tools`/`tool_choice`/`parallel_tool_calls` are omitted when `tools` is empty.
+The server always sets `model` (`OPENAI_MODEL`; on a provider 429 the same request goes to each
+`OPENAI_FALLBACK_MODELS` entry in turn, and a model is skipped while its `retry-after` lasts), `max_completion_tokens` (requested value capped at
+`AGENT_MAX_OUTPUT_TOKENS`, or the cap), `reasoning_effort` (`OPENAI_REASONING_EFFORT`; not sent when `off`) and
+`safety_identifier` (hash of the user id). `tools`/`tool_choice`/`parallel_tool_calls` are omitted when `tools` is empty.
 
 Response (trimmed from `choices[0]`; `reasoning` and any other provider fields are dropped):
 ```json
@@ -448,12 +448,12 @@ assistant message (with its `tool_calls`) and one `role: "tool"` message per cal
 Errors:
 | Situation | code | HTTP | retryable | details |
 |---|---|---|---|---|
-| `GROQ_API_KEY` not set | `unavailable` | 503 | false | `{ reason: "notConfigured" }` "The assistant is not configured on this server." |
+| `OPENAI_API_KEY` not set | `unavailable` | 503 | false | `{ reason: "notConfigured" }` "The assistant is not configured on this server." |
 | Per-user limit (`AGENT_RATE_LIMIT_PER_MINUTE`, `AGENT_DAILY_REQUEST_LIMIT`; in-memory, per server instance) | `unavailable` | 503 | true | `{ reason: "rateLimited", retryAfterSeconds }` |
-| Provider 429 or 498 (capacity) on the main model and every fallback | `unavailable` | 503 | true | `{ reason: "providerRateLimited", retryAfterSeconds? }` (soonest `retry-after` or remaining cooldown, 1-3600) |
-| Provider 400 `tool_use_failed` (model produced an invalid tool call) | `unknown` | 500 | true | `{ reason: "toolCallFailed" }` "The assistant made a malformed request. Please try again." |
+| Provider 429 (or 498 capacity) on the main model and every fallback | `unavailable` | 503 | true | `{ reason: "providerRateLimited", retryAfterSeconds? }` (soonest `retry-after` or remaining cooldown, 1-3600) |
+| Provider 400 `tool_use_failed` (model produced an invalid tool call; Groq-style providers) | `unknown` | 500 | true | `{ reason: "toolCallFailed" }` "The assistant made a malformed request. Please try again." |
 | Provider 413 | `validation` | 422 | false | `{ reason: "tooLarge" }` "This conversation is too long. Start a new chat." |
-| Provider timeout (`GROQ_TIMEOUT_MS`) or network error | `unavailable` | 503 | true | `{ reason: "timeout" \| "network" }` |
+| Provider timeout (`OPENAI_TIMEOUT_MS`) or network error | `unavailable` | 503 | true | `{ reason: "timeout" \| "network" }` |
 | Provider 5xx | `unavailable` | 503 | true | — |
 | Provider 401/403 (bad server key) | `unavailable` | 503 | false | `{ reason: "notConfigured" }` |
 | Other provider 4xx | `unknown` | 500 | false | `{ upstreamStatus }` |

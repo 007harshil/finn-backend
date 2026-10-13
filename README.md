@@ -45,15 +45,17 @@ Environment variables (server-only; see `.env.example`):
 | `DATABASE_CA_CERT` | recommended | Supabase root CA (PEM) for verified TLS |
 | `DATABASE_POOL_MAX` | no | Pool size per instance (default 5) |
 | `CORS_ORIGINS` | no | Allowed browser origins (Flutter web only) |
-| `GROQ_API_KEY` | for the agent | Groq key for `POST /agent/completions`; unset = assistant disabled (503), rest of the API unaffected |
-| `GROQ_BASE_URL` | no | Default `https://api.groq.com/openai/v1` |
-| `GROQ_MODEL` | no | Model used by the relay (default `openai/gpt-oss-20b`) |
-| `GROQ_FALLBACK_MODELS` | no | Comma-separated models tried in order when the one before is rate limited (429/498); each has its own Groq per-minute budget (default `openai/gpt-oss-120b`; `none` = no fallback) |
-| `GROQ_REASONING_EFFORT` | no | `off`/`none`/`default`/`low`/`medium`/`high` (default `low`; `off` = not sent) |
-| `GROQ_TIMEOUT_MS` | no | Provider timeout (default 60000, 100-300000) |
+| `OPENAI_API_KEY` | for the agent | OpenAI key for `POST /agent/completions`; unset = assistant disabled (503), rest of the API unaffected |
+| `OPENAI_BASE_URL` | no | Default `https://api.openai.com/v1` |
+| `OPENAI_MODEL` | no | Model used by the relay (default `gpt-6-luna`) |
+| `OPENAI_FALLBACK_MODELS` | no | Comma-separated models tried in order when the one before is rate limited (429); default none |
+| `OPENAI_REASONING_EFFORT` | no | `off`/`none`/`minimal`/`low`/`medium`/`high`/`xhigh` (default `none`; `off` = not sent). gpt-6-luna accepts tools on Chat Completions only with `none` |
+| `OPENAI_TIMEOUT_MS` | no | Provider timeout (default 60000, 100-300000) |
 | `AGENT_MAX_OUTPUT_TOKENS` | no | Default and ceiling for `max_completion_tokens` (default 2048) |
 | `AGENT_RATE_LIMIT_PER_MINUTE` | no | Relay requests per user per minute (default 20; in-memory, per instance) |
 | `AGENT_DAILY_REQUEST_LIMIT` | no | Relay requests per user per 24 h (default 300; in-memory, per instance) |
+| `GROQ_API_KEY` | for voice input | Groq key for `POST /agent/transcriptions` (Whisper); unset = voice input disabled (503) |
+| `GROQ_BASE_URL` | no | Speech-to-text base URL (default `https://api.groq.com/openai/v1`) |
 | `GROQ_STT_MODEL` | no | Whisper model for `POST /agent/transcriptions` (default `whisper-large-v3`) |
 | `GROQ_STT_LANGUAGE` | no | Default ISO-639-1 language (e.g. `en`, `hi`); unset = Whisper auto-detects |
 | `GROQ_STT_PROMPT` | no | Vocabulary hint for finance terms (default: FiNN/rupee/UPI/EMI/... list) |
@@ -111,7 +113,7 @@ server/
   db/                      Kysely client, table types, per-user transactions (RLS role + locks)
   auth/                    Supabase token verification
   http/                    route wrapper, error mapping, logger
-  agent/                   LLM relay and speech-to-text relay for the in-app agent (schemas, Groq forwarding, rate limits)
+  agent/                   LLM relay and speech-to-text relay for the in-app agent (schemas, OpenAI LLM and Groq Whisper forwarding, rate limits)
   actions/                 action framework: types, input codecs, dispatcher, policy, registry, plans
   finance/                 domain records (= Flutter DTOs), snapshot loader, ledger aggregates
   modules/<feature>/       calculator.ts (pure rules), actions.ts, service.ts (reads), repo.ts

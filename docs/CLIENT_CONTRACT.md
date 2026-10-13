@@ -65,9 +65,9 @@ deletions by id. Full load always includes `emergencyPlan` and `alertInbox`.
 
 ## Agent LLM relay — `POST /agent/completions`
 The in-app agent (`lib/agent/`) runs the tool loop on the device; the server only relays model calls with its secret key.
-The provider is Groq (OpenAI-compatible Chat Completions, no streaming). Body = Chat Completions request without
+The provider is OpenAI (Chat Completions, model `gpt-6-luna`, no streaming). Body = Chat Completions request without
 server-owned fields: `{ messages, tools?, tool_choice?, parallel_tool_calls?, max_completion_tokens? }` (sending
-`model`, `user`, `service_tier`, `response_format`, `stream` or any other key → 422; only `type: "function"` tools as
+`model`, `user`, `safety_identifier`, `service_tier`, `response_format`, `stream` or any other key → 422; only `type: "function"` tools as
 `{ type, function: { name, description, parameters } }`; a `system` message only as `messages[0]`). Response
 `{ id, finish_reason, message: { content, tool_calls }, usage }` (`tool_calls` always an array; `usage` may be null).
 For the next turn append the assistant message (`content`, `tool_calls`) and one `{ role: "tool", tool_call_id, content }`

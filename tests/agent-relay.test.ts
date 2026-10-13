@@ -1,10 +1,12 @@
-// Agent LLM relay (Groq, Chat Completions): validation, upstream request shape,
+// Agent LLM relay (OpenAI, Chat Completions): validation, upstream request shape,
 // error mapping and the per-user rate limiter. The provider is a stubbed
 // global fetch; every key here is fake.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as relayRoute from '@/app/api/v1/agent/completions/route';
 import { resetAgentRateLimits } from '@/server/agent/rate-limit';
+import { upstreamModels } from '@/server/agent/relay';
+import { agentEnv } from '@/server/env';
 import { createTestDb, type TestDb } from './support/db';
 import { makeClient } from './support/http';
 
@@ -12,7 +14,7 @@ let t: TestDb;
 let call: ReturnType<typeof makeClient>;
 
 const PATH = '/api/v1/agent/completions';
-const KEY = 'gsk_fake-test-key-123';
+const KEY = 'sk-fake-test-key-123';
 
 beforeAll(async () => {
   t = await createTestDb();
@@ -22,12 +24,12 @@ afterAll(async () => t.close());
 
 beforeEach(() => {
   resetAgentRateLimits();
-  vi.stubEnv('GROQ_API_KEY', KEY);
-  vi.stubEnv('GROQ_BASE_URL', 'https://groq.test/openai/v1/');
-  vi.stubEnv('GROQ_MODEL', 'test-model');
-  vi.stubEnv('GROQ_FALLBACK_MODELS', 'fallback-model');
-  vi.stubEnv('GROQ_REASONING_EFFORT', 'low');
-  vi.stubEnv('GROQ_TIMEOUT_MS', '60000');
+  vi.stubEnv('OPENAI_API_KEY', KEY);
+  vi.stubEnv('OPENAI_BASE_URL', 'https://openai.test/v1/');
+  vi.stubEnv('OPENAI_MODEL', 'test-model');
+  vi.stubEnv('OPENAI_FALLBACK_MODELS', 'fallback-model');
+  vi.stubEnv('OPENAI_REASONING_EFFORT', 'low');
+  vi.stubEnv('OPENAI_TIMEOUT_MS', '60000');
   vi.stubEnv('AGENT_MAX_OUTPUT_TOKENS', '1000');
   vi.stubEnv('AGENT_RATE_LIMIT_PER_MINUTE', '50');
   vi.stubEnv('AGENT_DAILY_REQUEST_LIMIT', '500');
@@ -93,7 +95,7 @@ describe('POST /agent/completions', () => {
   });
 
   it('is unavailable (not retryable) when no API key is configured', async () => {
-    vi.stubEnv('GROQ_API_KEY', '');
+    vi.stubEnv('OPENAI_API_KEY', '');
     const fetchSpy = mockFetch(async () => jsonResponse(upstreamOk));
     const u = await t.createUser();
     const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
@@ -140,7 +142,7 @@ describe('POST /agent/completions', () => {
     });
     expect(JSON.stringify(res.body)).not.toContain('reasoning');
 
-    expect(seenUrl).toBe('https://groq.test/openai/v1/chat/completions');
+    expect(seenUrl).toBe('https://openai.test/v1/chat/completions');
     const headers = new Headers(seenInit.headers);
     expect(headers.get('authorization')).toBe(`Bearer ${KEY}`);
     expect(headers.get('content-type')).toBe('application/json');
@@ -154,8 +156,9 @@ describe('POST /agent/completions', () => {
       reasoning_effort: 'low',
     });
     expect(sent).not.toHaveProperty('parallel_tool_calls');
-    expect(sent.user).toMatch(/^[0-9a-f]{32}$/);
-    expect(sent.user).not.toContain(u.userId);
+    expect(sent).not.toHaveProperty('user');
+    expect(sent.safety_identifier).toMatch(/^[0-9a-f]{32}$/);
+    expect(sent.safety_identifier).not.toContain(u.userId);
     expect(seenInit.signal).toBeInstanceOf(AbortSignal);
     // The key never leaks into the response.
     expect(JSON.stringify(res.body)).not.toContain(KEY);
@@ -175,8 +178,16 @@ describe('POST /agent/completions', () => {
     expect(sent).not.toHaveProperty('tool_choice');
   });
 
+  it('defaults to gpt-6-luna on OpenAI with reasoning_effort none and no fallback', () => {
+    for (const name of ['OPENAI_BASE_URL', 'OPENAI_MODEL', 'OPENAI_FALLBACK_MODELS', 'OPENAI_REASONING_EFFORT']) vi.stubEnv(name, undefined);
+    const config = agentEnv();
+    expect(config.OPENAI_BASE_URL).toBe('https://api.openai.com/v1');
+    expect(config.OPENAI_REASONING_EFFORT).toBe('none');
+    expect(upstreamModels(config)).toEqual(['gpt-6-luna']);
+  });
+
   it('omits tool fields without tools and reasoning_effort when set to off', async () => {
-    vi.stubEnv('GROQ_REASONING_EFFORT', 'off');
+    vi.stubEnv('OPENAI_REASONING_EFFORT', 'off');
     let sent: any;
     mockFetch(async (_url, init) => {
       sent = JSON.parse(String(init.body));
@@ -205,6 +216,7 @@ describe('POST /agent/completions', () => {
     for (const extra of [
       { model: 'other-model' },
       { user: 'someone' },
+      { safety_identifier: 'someone' },
       { service_tier: 'flex' },
       { response_format: { type: 'json_object' } },
       { stream: true },
@@ -331,7 +343,7 @@ describe('POST /agent/completions', () => {
   });
 
   it('does not fall back when fallback is disabled or the failure is not a rate limit', async () => {
-    vi.stubEnv('GROQ_FALLBACK_MODELS', 'none');
+    vi.stubEnv('OPENAI_FALLBACK_MODELS', 'none');
     const fetchSpy = mockFetch(async () => jsonResponse({ error: { message: 'slow down' } }, 429, { 'retry-after': '3' }));
     const u = await t.createUser();
     const limited = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
@@ -340,7 +352,7 @@ describe('POST /agent/completions', () => {
 
     vi.restoreAllMocks();
     resetAgentRateLimits();
-    vi.stubEnv('GROQ_FALLBACK_MODELS', 'fallback-model');
+    vi.stubEnv('OPENAI_FALLBACK_MODELS', 'fallback-model');
     const outage = mockFetch(async () => new Response('busy', { status: 503 }));
     const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
     expect(res.status).toBe(503);
@@ -418,7 +430,7 @@ describe('POST /agent/completions', () => {
     expect(net.body.error).toMatchObject({ retryable: true, details: { reason: 'network' } });
 
     vi.restoreAllMocks();
-    vi.stubEnv('GROQ_TIMEOUT_MS', '100');
+    vi.stubEnv('OPENAI_TIMEOUT_MS', '100');
     mockFetch(
       (_url, init) =>
         new Promise<Response>((_resolve, reject) => {

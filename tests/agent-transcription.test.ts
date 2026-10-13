@@ -310,7 +310,8 @@ describe('POST /agent/transcriptions', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(3);
 
     // The completions budget is independent.
-    vi.stubEnv('GROQ_MODEL', 'test-model');
+    vi.stubEnv('OPENAI_API_KEY', KEY);
+    vi.stubEnv('OPENAI_MODEL', 'test-model');
     mockFetch(async () => jsonResponse({ id: 'c', choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'hi' } }] }));
     const completion = await call(completionsRoute.POST, 'POST', '/api/v1/agent/completions', {
       user: a,

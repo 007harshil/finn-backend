@@ -1,8 +1,8 @@
 // Request body of POST /api/v1/agent/completions: an OpenAI-compatible Chat
-// Completions request (Groq) minus everything the server owns (model,
-// reasoning_effort, user, service_tier, response_format, stream, ...). Strict
-// top level: unknown keys are rejected so a client can never pick the model,
-// stream, or add server-side tools.
+// Completions request (OpenAI) minus everything the server owns (model,
+// reasoning_effort, safety_identifier, user, service_tier, response_format,
+// stream, ...). Strict top level: unknown keys are rejected so a client can
+// never pick the model, stream, or add server-side tools.
 
 import { z } from 'zod';
 

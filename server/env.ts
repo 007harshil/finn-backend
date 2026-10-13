@@ -23,27 +23,29 @@ export type Env = z.infer<typeof schema>;
 const emptyToUndefined = <T extends z.ZodType>(inner: T) => z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), inner);
 
 const agentSchema = z.object({
-  /** Groq API key. Unset or empty = the relay answers `unavailable` (not configured). */
-  GROQ_API_KEY: z
+  /** OpenAI API key for the LLM relay. Unset or empty = the relay answers `unavailable` (not configured). */
+  OPENAI_API_KEY: z
     .string()
     .trim()
     .optional()
     .transform((v) => (v ? v : undefined)),
-  /** Groq OpenAI-compatible base URL (no trailing slash needed). */
-  GROQ_BASE_URL: z
+  /** OpenAI API base URL (no trailing slash needed). */
+  OPENAI_BASE_URL: z
     .string()
     .url()
-    .default('https://api.groq.com/openai/v1')
+    .default('https://api.openai.com/v1')
     .transform((v) => v.replace(/\/+$/, '')),
   /** Model id the server always uses; clients cannot choose it. */
-  GROQ_MODEL: z.string().trim().min(1).max(100).default('openai/gpt-oss-20b'),
+  OPENAI_MODEL: z.string().trim().min(1).max(100).default('gpt-6-luna'),
   /**
    * Comma-separated models tried in order when the model before them is rate
-   * limited (429/498). Groq meters each model separately, so every fallback adds
-   * its own per-minute budget. They receive the same request, including
-   * reasoning_effort, so they must accept it. `none` disables fallback.
+   * limited (429). OpenAI meters each model separately. They receive the same
+   * request, including reasoning_effort, so they must accept it. Unset, empty
+   * or `none` = no fallback.
    */
-  GROQ_FALLBACK_MODELS: emptyToUndefined(z.string().default('openai/gpt-oss-120b'))
+  OPENAI_FALLBACK_MODELS: z
+    .string()
+    .default('')
     .transform((v) =>
       v.trim().toLowerCase() === 'none'
         ? []
@@ -53,16 +55,32 @@ const agentSchema = z.object({
             .filter((m) => m.length > 0),
     )
     .pipe(z.array(z.string().max(100)).max(5)),
-  /** `reasoning_effort` sent upstream; `off` = the parameter is not sent at all. */
-  GROQ_REASONING_EFFORT: z.enum(['off', 'none', 'default', 'low', 'medium', 'high']).default('low'),
+  /**
+   * `reasoning_effort` sent upstream; `off` = the parameter is not sent at all.
+   * gpt-6-luna accepts function tools on /chat/completions only with `none`
+   * (it reasons by default, so `off` is rejected too).
+   */
+  OPENAI_REASONING_EFFORT: z.enum(['off', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh']).default('none'),
   /** Upstream request timeout in milliseconds. */
-  GROQ_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(60_000),
+  OPENAI_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(60_000),
   /** Ceiling (and default) for `max_completion_tokens`. */
   AGENT_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1).max(100_000).default(2048),
   /** Relay requests per user per rolling minute (per server instance). */
   AGENT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
   /** Relay requests per user per rolling 24 hours (per server instance). */
   AGENT_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(300),
+  /** Groq API key for speech-to-text. Unset or empty = transcription answers `unavailable`. */
+  GROQ_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  /** Groq OpenAI-compatible base URL for speech-to-text (no trailing slash needed). */
+  GROQ_BASE_URL: z
+    .string()
+    .url()
+    .default('https://api.groq.com/openai/v1')
+    .transform((v) => v.replace(/\/+$/, '')),
   /** Speech-to-text model (Groq Whisper). */
   GROQ_STT_MODEL: emptyToUndefined(z.string().trim().min(1).max(100).default('whisper-large-v3')),
   /** Default ISO-639-1 language for transcription; unset/empty = Whisper auto-detects. */

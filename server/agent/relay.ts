@@ -1,5 +1,5 @@
 // Agent LLM relay: forwards the Flutter agent's OpenAI-compatible Chat
-// Completions request to Groq with the server-held key. The server never
+// Completions request to OpenAI with the server-held key. The server never
 // executes tools and never touches financial data here; the app runs the agent
 // loop (lib/agent/) and calls the normal action/plan endpoints itself.
 //
@@ -38,7 +38,7 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-/** Stable, non-reversible per-user id for provider abuse monitoring (`user`). */
+/** Stable, non-reversible per-user id for provider abuse monitoring (`safety_identifier`). */
 export function safetyIdentifier(userId: string): string {
   return sha256Hex(userId).slice(0, 32);
 }
@@ -66,22 +66,22 @@ function retryAfterSeconds(header: string | null, now = Date.now()): number | un
 
 /** The primary model, then each distinct fallback, in order. */
 export function upstreamModels(config: AgentEnv): string[] {
-  return [...new Set([config.GROQ_MODEL, ...config.GROQ_FALLBACK_MODELS])];
+  return [...new Set([config.OPENAI_MODEL, ...config.OPENAI_FALLBACK_MODELS])];
 }
 
 export function buildUpstreamBody(
   req: CompletionRequest,
   config: AgentEnv,
   userId: string,
-  model: string = config.GROQ_MODEL,
+  model: string = config.OPENAI_MODEL,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model,
     messages: req.messages,
     max_completion_tokens: Math.min(req.max_completion_tokens ?? config.AGENT_MAX_OUTPUT_TOKENS, config.AGENT_MAX_OUTPUT_TOKENS),
-    user: safetyIdentifier(userId),
+    safety_identifier: safetyIdentifier(userId),
   };
-  if (config.GROQ_REASONING_EFFORT !== 'off') body.reasoning_effort = config.GROQ_REASONING_EFFORT;
+  if (config.OPENAI_REASONING_EFFORT !== 'off') body.reasoning_effort = config.OPENAI_REASONING_EFFORT;
   if (req.tools.length > 0) {
     body.tools = req.tools;
     if (req.tool_choice !== undefined) body.tool_choice = req.tool_choice;
@@ -90,7 +90,7 @@ export function buildUpstreamBody(
   return body;
 }
 
-/** True when a Groq 400 body reports a failed tool call generation. */
+/** True when a 400 body reports a failed tool call generation (OpenAI-compatible providers such as Groq). */
 function isToolUseFailure(text: string): boolean {
   try {
     const parsed: unknown = JSON.parse(text);
@@ -150,7 +150,7 @@ function usageCounts(payload: unknown): Record<string, number | undefined> {
 /** Handles POST /api/v1/agent/completions for an authenticated user. */
 export async function relayCompletion(ctx: RequestContext): Promise<CompletionResult> {
   const config = agentEnv();
-  if (!config.GROQ_API_KEY) {
+  if (!config.OPENAI_API_KEY) {
     throw new AppFailure('unavailable', 'The assistant is not configured on this server.', {
       retryable: false,
       details: { reason: 'notConfigured' },
@@ -172,15 +172,15 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
 
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
   const started = Date.now();
-  const timeout = AbortSignal.timeout(config.GROQ_TIMEOUT_MS);
+  const timeout = AbortSignal.timeout(config.OPENAI_TIMEOUT_MS);
   // Also stop paying for the call if the app disconnects.
   const signal = ctx.request.signal ? AbortSignal.any([timeout, ctx.request.signal]) : timeout;
 
-  // Free tiers meter tokens per minute per model, so a rate-limited model is
-  // skipped for the next one instead of making the user wait. Models known to
-  // be cooling down are not called at all.
+  // Rate limits are metered per model, so a rate-limited model is skipped for
+  // the next fallback (if any) instead of making the user wait. Models known
+  // to be cooling down are not called at all.
   let res: Response | undefined;
-  let model = config.GROQ_MODEL;
+  let model = config.OPENAI_MODEL;
   let soonest: number | undefined;
   const noteWait = (seconds: number) => {
     soonest = soonest === undefined ? seconds : Math.min(soonest, seconds);
@@ -193,9 +193,9 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     }
     let attempt: Response;
     try {
-      attempt = await fetch(`${config.GROQ_BASE_URL}/chat/completions`, {
+      attempt = await fetch(`${config.OPENAI_BASE_URL}/chat/completions`, {
         method: 'POST',
-        headers: { authorization: `Bearer ${config.GROQ_API_KEY}`, 'content-type': 'application/json' },
+        headers: { authorization: `Bearer ${config.OPENAI_API_KEY}`, 'content-type': 'application/json' },
         body: JSON.stringify(buildUpstreamBody(req, config, ctx.user.userId, candidate)),
         signal,
       });
