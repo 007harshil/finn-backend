@@ -3,7 +3,6 @@
 
 import { z } from 'zod';
 import {
-  PAYMENT_METHODS,
   zBool,
   zDate,
   zDateOpt,
@@ -25,6 +24,7 @@ import { sumPaise } from '../../core/money';
 import { loanFromRow, loanPaymentFromRow, type Loan, type LoanPayment } from '../../finance/models';
 import { SystemCategories } from '../account/standard-categories';
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
+import { channelError, resolveAccountId } from '../accounts/resolve';
 import { buildLinkedTransaction, deleteTransaction, insertTransaction, updateTransaction } from '../transactions/repo';
 import {
   DIRECTION_INFO,
@@ -62,6 +62,9 @@ const loanShape = {
   maturityDate: zDateOpt,
   prepaymentStrategy: zEnumOpt(PREPAYMENT_STRATEGIES).transform((v) => v ?? 'reduceTenure'),
   recordDisbursement: zBool(false),
+  /** Account the disbursement moved through (defaults to the default account). */
+  accountId: zId.nullish().transform((v) => v ?? null),
+  channel: zTextOpt,
   note: zTextOpt,
 };
 export const loanInput = z.object(loanShape);
@@ -136,6 +139,8 @@ export function validateLoan(i: LoanInput, today: string): Record<string, string
   if (i.frequency === 'weekly') e.frequency = 'Weekly repayment is not supported.';
   if (i.firstDueDate < i.startDate) e.firstDueDate = 'The first due date must be after the start date.';
   if (i.recordDisbursement && i.startDate > today) e.startDate = 'A future disbursement cannot be recorded as cash yet.';
+  const ce = channelError(i.channel);
+  if (ce) e.channel = ce;
   if (i.structure === 'amortizing') {
     const n = i.tenureInstallments;
     if (n === null || n < 1 || n > 480) {
@@ -189,6 +194,8 @@ const createFields: FieldSpec[] = [
   { name: 'tenureInstallments', kind: 'integer', description: 'Number of EMIs (amortizing only)', required: false },
   { name: 'maturityDate', kind: 'date', description: 'Principal due date (interest-only, optional)', required: false },
   { name: 'recordDisbursement', kind: 'boolean', description: 'Record the disbursement as a cash movement', required: false },
+  { name: 'accountId', kind: 'id', description: 'Account the disbursement moved through (defaults to the default account)', required: false },
+  { name: 'channel', kind: 'string', description: 'How the disbursement moved (free text, up to 30 characters)', required: false },
   {
     name: 'prepaymentStrategy',
     kind: 'enumeration',
@@ -213,6 +220,7 @@ export const createLoan = defineAction({
   input: loanInput,
   async prepare(input, ctx) {
     fail(validateLoan(input, ctx.today));
+    if (input.recordDisbursement) await resolveAccountId(ctx, input.accountId);
     const ppy = FREQUENCY_INFO[input.frequency].periodsPerYear;
     const lines: PreviewLine[] = [
       { label: 'Principal', value: fmtMoney(input.principal), emphasis: true },
@@ -260,7 +268,8 @@ export const createLoan = defineAction({
         originRefId: id,
         counterparty: input.counterparty.trim(),
         note: `${input.name} · disbursement`,
-        method: 'bankTransfer',
+        accountId: await resolveAccountId(ctx, input.accountId),
+        channel: input.channel,
       });
       // The loan references its disbursement, so the transaction goes in first.
       await insertTransaction(ctx.tx, ctx.userId, t);
@@ -401,7 +410,8 @@ export const loanPaymentInput = z.object({
   kind: zEnum(LOAN_PAYMENT_KINDS),
   amount: zMoney,
   date: zDate,
-  method: zEnumOpt(PAYMENT_METHODS),
+  accountId: zId.nullish().transform((v) => v ?? null),
+  channel: zTextOpt,
   recordCashMovement: zBool(true),
   note: zTextOpt,
 });
@@ -442,13 +452,17 @@ export const recordLoanPayment = defineAction({
       },
       { name: 'amount', kind: 'money', description: 'Amount paid (or received for lent loans)', required: true },
       { name: 'date', kind: 'date', description: 'Payment date', required: true },
-      { name: 'method', kind: 'enumeration', description: 'Payment method', required: false },
+      { name: 'accountId', kind: 'id', description: 'Account the payment moved through (defaults to the default account)', required: false },
+      { name: 'channel', kind: 'string', description: 'How it moved (free text, up to 30 characters)', required: false },
       { name: 'recordCashMovement', kind: 'boolean', description: 'Create the matching cash transaction (default true)', required: false },
       { name: 'note', kind: 'string', description: 'Free-text note', required: false },
     ],
   },
   input: loanPaymentInput,
   async prepare(input, ctx) {
+    const ce = channelError(input.channel);
+    if (ce) throw AppFailure.validation(ce, { channel: ce });
+    if (input.recordCashMovement) await resolveAccountId(ctx, input.accountId);
     const { state: st, preview: p } = await splitPayment(input, ctx);
     const loan = st.loan;
     const borrowed = loan.direction === 'borrowed';
@@ -498,7 +512,8 @@ export const recordLoanPayment = defineAction({
         date: input.date,
         origin: 'loanRepayment',
         originRefId: loan.id,
-        method: input.method,
+        accountId: await resolveAccountId(ctx, input.accountId),
+        channel: input.channel,
         counterparty: loan.counterparty,
         note: `${loan.name} · ${PAYMENT_KIND_LABELS[input.kind]}${p.periodNumber !== null ? ` #${p.periodNumber}` : ''}`,
       });

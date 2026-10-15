@@ -2,13 +2,14 @@
 // A due date passing NEVER creates a transaction: only markPaid records a payment.
 
 import { z } from 'zod';
-import { PAYMENT_METHODS, zBool, zDate, zDateOpt, zEnum, zEnumOpt, zId, zMoneyOpt, zPositiveMoney, zTextOpt, zVersion } from '../../actions/input';
+import { zBool, zDate, zDateOpt, zEnum, zId, zMoneyOpt, zPositiveMoney, zTextOpt, zVersion } from '../../actions/input';
 import { defineAction, type ActionContext, type AnyAction, type FieldSpec, type PreviewLine } from '../../actions/types';
 import { formatDate, formatDayMonth } from '../../core/dates';
 import { AppFailure, throwIfErrors } from '../../core/failure';
 import { FREQUENCIES, FREQUENCY_INFO } from '../../core/frequency';
 import { formatInr } from '../../core/money';
-import { PAYMENT_METHOD_LABELS, type Subscription } from '../../finance/models';
+import { type Subscription } from '../../finance/models';
+import { channelError, defaultAccount, resolveAccountId } from '../accounts/resolve';
 import { SystemCategories } from '../account/standard-categories';
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { buildLinkedTransaction, insertTransaction } from '../transactions/repo';
@@ -29,7 +30,7 @@ const dataShape = {
   nextDueDate: zDate,
   startDate: zDateOpt,
   autoRenews: zBool(true),
-  paymentMethod: zEnumOpt(PAYMENT_METHODS),
+  accountId: zId.nullish().transform((v) => v ?? null),
   note: zTextOpt,
 };
 const dataInput = z.object(dataShape);
@@ -43,7 +44,7 @@ const fields: FieldSpec[] = [
   { name: 'nextDueDate', kind: 'date', description: 'Next renewal date', required: true },
   { name: 'startDate', kind: 'date', description: 'When the subscription started', required: false },
   { name: 'autoRenews', kind: 'boolean', description: 'Renews automatically (informational)', required: false },
-  { name: 'paymentMethod', kind: 'enumeration', description: 'Usual payment method', required: false, allowedValues: PAYMENT_METHODS },
+  { name: 'accountId', kind: 'id', description: 'Account usually charged', required: false },
   { name: 'note', kind: 'string', description: 'Note', required: false },
 ];
 
@@ -53,8 +54,13 @@ async function findSub(ctx: ActionContext, id: string): Promise<Subscription> {
   return s;
 }
 
-async function validateSubscription(i: SubscriptionInput, ctx: ActionContext): Promise<Record<string, string>> {
+async function validateSubscription(i: SubscriptionInput, ctx: ActionContext, keepAccountId: string | null = null): Promise<Record<string, string>> {
   const e: Record<string, string> = {};
+  if (i.accountId !== null) {
+    const acc = await ctx.snapshot.moneyAccount(i.accountId);
+    if (!acc) e.accountId = 'This account does not exist.';
+    else if (acc.isArchived && acc.id !== keepAccountId) e.accountId = 'This account is archived.';
+  }
   const name = i.name.trim();
   if (name.length === 0) e.name = 'Enter the service name.';
   if (name.length > 60) e.name = 'Keep the name under 60 characters.';
@@ -115,7 +121,7 @@ export const createSubscription = defineAction({
       startDate: input.startDate,
       status: 'active',
       autoRenews: input.autoRenews,
-      paymentMethod: input.paymentMethod,
+      accountId: input.accountId,
       note: input.note,
       createdAt: now,
       updatedAt: now,
@@ -145,7 +151,7 @@ export const updateSubscriptionAction = defineAction({
   async prepare(input, ctx) {
     const existing = await findSub(ctx, input.id);
     if (existing.version !== input.expectedVersion) throw AppFailure.stale(STALE_MSG);
-    throwIfErrors(await validateSubscription(input, ctx));
+    throwIfErrors(await validateSubscription(input, ctx, existing.accountId));
     return { title: 'Save changes', summary: `${input.name.trim()} updated`, lines: await subscriptionLines(input, ctx) };
   },
   async execute(input, ctx) {
@@ -159,7 +165,7 @@ export const updateSubscriptionAction = defineAction({
       nextDueDate: input.nextDueDate,
       startDate: input.startDate,
       autoRenews: input.autoRenews,
-      paymentMethod: input.paymentMethod,
+      accountId: input.accountId,
       note: input.note,
       updatedAt: ctx.now.toISOString(),
       version: existing.version + 1,
@@ -220,7 +226,8 @@ const markPaidInput = z.object({
   cycleDate: zDateOpt,
   date: zDateOpt,
   amount: zMoneyOpt,
-  method: zEnumOpt(PAYMENT_METHODS),
+  accountId: zId.nullish().transform((v) => v ?? null),
+  channel: zTextOpt,
 });
 
 /** Validates and resolves defaults; shared by prepare and execute. */
@@ -247,8 +254,17 @@ async function plan(input: z.output<typeof markPaidInput>, ctx: ActionContext) {
   if (date > ctx.today) e.date = 'The date cannot be in the future.';
   if (amount <= 0) e.amount = 'Enter an amount greater than zero.';
   if (amount > MAX_TRANSACTION_PAISE) e.amount = 'That amount looks too large. Please check it.';
+  const ce = channelError(input.channel);
+  if (ce) e.channel = ce;
   throwIfErrors(e);
-  return { sub, cycle, date, amount, method: input.method ?? sub.paymentMethod, nextDueDate: nextCycleAfterCurrent(sub) };
+  // Explicit account, else the subscription's (when still active), else the default.
+  let accountId: string;
+  if (input.accountId) accountId = await resolveAccountId(ctx, input.accountId);
+  else {
+    const own = sub.accountId ? await ctx.snapshot.moneyAccount(sub.accountId) : null;
+    accountId = own && !own.isArchived ? own.id : (await defaultAccount(ctx)).id;
+  }
+  return { sub, cycle, date, amount, accountId, channel: input.channel, nextDueDate: nextCycleAfterCurrent(sub) };
 }
 
 export const markSubscriptionPaid = defineAction({
@@ -266,7 +282,8 @@ export const markSubscriptionPaid = defineAction({
       { name: 'cycleDate', kind: 'date', description: 'Due date of the cycle being paid (defaults to next due date)', required: false },
       { name: 'date', kind: 'date', description: 'Payment date, not in the future (defaults to the due date)', required: false },
       { name: 'amount', kind: 'money', description: 'Amount paid (defaults to the subscription amount)', required: false },
-      { name: 'method', kind: 'enumeration', description: 'Payment method', required: false, allowedValues: PAYMENT_METHODS },
+      { name: 'accountId', kind: 'id', description: 'Account paid from (defaults to the subscription account, then the default account)', required: false },
+      { name: 'channel', kind: 'string', description: 'How it was paid (free text, up to 30 characters)', required: false },
     ],
   },
   input: markPaidInput,
@@ -282,7 +299,8 @@ export const markSubscriptionPaid = defineAction({
       { label: 'Renewal due', value: formatDate(p.cycle) },
       { label: 'Paid on', value: formatDate(p.date) },
     ];
-    if (p.method) lines.push({ label: 'Paid via', value: PAYMENT_METHOD_LABELS[p.method] });
+    lines.push({ label: 'Paid from', value: (await ctx.snapshot.moneyAccount(p.accountId))?.name ?? '—' });
+    if (p.channel) lines.push({ label: 'Via', value: p.channel });
     lines.push({ label: 'Cash balance', value: formatInr(-p.amount), emphasis: true });
     lines.push({ label: 'Next due', value: formatDate(p.nextDueDate) });
     return {
@@ -304,7 +322,8 @@ export const markSubscriptionPaid = defineAction({
       date: p.date,
       origin: 'subscription',
       originRefId: p.sub.id,
-      method: p.method,
+      accountId: p.accountId,
+      channel: p.channel,
       counterparty: p.sub.name,
       note: paymentNote(p.sub, p.cycle),
     });

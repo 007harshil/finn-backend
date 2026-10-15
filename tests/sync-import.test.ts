@@ -29,7 +29,7 @@ function devicePayload() {
     ],
     transactions: [
       { id: 'tx_a', type: 'income', amountPaise: 5_000_000, categoryId: 'cat_salary', date: '2026-09-01', origin: 'manual', createdAt: at, updatedAt: at, version: 1 },
-      { id: 'tx_b', type: 'expense', amountPaise: 120_000, categoryId: 'cat_custom_1', date: '2026-09-03', paymentMethod: 'upi', createdAt: at, updatedAt: at, version: 1 },
+      { id: 'tx_b', type: 'expense', amountPaise: 120_000, categoryId: 'cat_custom_1', date: '2026-09-03', channel: 'UPI', createdAt: at, updatedAt: at, version: 1 },
       { id: 'tx_c', type: 'expense', amountPaise: 40_000, categoryId: 'cat_sys_settle_out', date: '2026-09-05', origin: 'pendingSettlement', originRefId: 'set_1', createdAt: at, updatedAt: at, version: 1 },
     ],
     goals: [{ id: 'goal_1', name: 'Goa', category: 'travel', targetPaise: 3_000_000, colorIndex: 2, createdAt: at, updatedAt: at, version: 1 }],

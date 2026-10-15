@@ -19,6 +19,7 @@ export function loadNetWorth(s: FinanceSnapshot): Promise<NetWorthSnapshot> {
     return computeNetWorth({
       cashPaise: balance.cashPaise,
       earmarkedPaise: balance.earmarkedPaise,
+      creditOwedPaise: balance.creditOwedPaise,
       assets,
       loans: loans.map((l) => ({
         id: l.loan.id,

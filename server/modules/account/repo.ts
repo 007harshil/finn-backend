@@ -20,12 +20,13 @@ export async function updateOwnProfile(tx: Tx, userId: string, p: FinancialProfi
 }
 
 /**
- * Moves the profile's tracking start back to [date] when a transaction is
- * recorded before it, so the entry counts towards cash (the ledger skips
- * anything dated before the opening date). The opening balance is kept.
- * No-op without a financial profile or when [date] is not earlier.
+ * Moves tracking starts back to [date] when a movement is recorded before
+ * them, so the entry counts towards balances (the ledger skips anything dated
+ * before an account's opening date). Applies to the profile's tracking start
+ * and to each of [accountIds]; opening balances are kept. Rows whose start is
+ * not later than [date] are untouched.
  */
-export async function extendTrackingStart(tx: Tx, userId: string, date: string): Promise<void> {
+export async function extendTrackingStart(tx: Tx, userId: string, date: string, accountIds: readonly string[] = []): Promise<void> {
   await tx
     .updateTable('profiles')
     .set({ opening_date: date, version: sql`version + 1`, updated_at: sql`now()` })
@@ -33,6 +34,16 @@ export async function extendTrackingStart(tx: Tx, userId: string, date: string):
     .where('opening_date', 'is not', null)
     .where('opening_date', '>', date)
     .execute();
+  const ids = [...new Set(accountIds)];
+  if (ids.length > 0) {
+    await tx
+      .updateTable('money_accounts')
+      .set({ opening_date: date, version: sql`version + 1`, updated_at: sql`now()` })
+      .where('user_id', '=', userId)
+      .where('id', 'in', ids)
+      .where('opening_date', '>', date)
+      .execute();
+  }
 }
 
 export async function updateHandle(tx: Tx, userId: string, handle: string, now: Date): Promise<void> {

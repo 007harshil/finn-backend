@@ -5,7 +5,6 @@
 // as the source record.
 
 import type { ActionContext } from '../../actions/types';
-import type { PaymentMethod } from '../../actions/input';
 import type { IsoDate } from '../../core/dates';
 import { AppFailure } from '../../core/failure';
 import { extendTrackingStart } from '../account/repo';
@@ -15,7 +14,7 @@ import { transactionFromRow, transactionToRow, type Transaction, type Transactio
 
 export async function insertTransaction(tx: Tx, userId: string, t: Transaction): Promise<Transaction> {
   const row = await tx.insertInto('transactions').values(transactionToRow(userId, t)).returningAll().executeTakeFirstOrThrow();
-  await extendTrackingStart(tx, userId, t.date);
+  await extendTrackingStart(tx, userId, t.date, [t.accountId]);
   return transactionFromRow(row);
 }
 
@@ -31,7 +30,7 @@ export async function updateTransaction(tx: Tx, userId: string, next: Transactio
     .returningAll()
     .executeTakeFirst();
   if (!row) throw AppFailure.stale('This transaction changed since you opened it. Reload and try again.');
-  await extendTrackingStart(tx, userId, next.date);
+  await extendTrackingStart(tx, userId, next.date, [next.accountId]);
   return transactionFromRow(row);
 }
 
@@ -49,7 +48,8 @@ export function buildLinkedTransaction(
     date: IsoDate;
     origin: Exclude<TransactionOrigin, 'manual'>;
     originRefId: string;
-    method?: PaymentMethod | null;
+    accountId: string;
+    channel?: string | null;
     counterparty?: string | null;
     note?: string | null;
   },
@@ -61,7 +61,8 @@ export function buildLinkedTransaction(
     amountPaise: t.amountPaise,
     categoryId: t.categoryId,
     date: t.date,
-    paymentMethod: t.method ?? null,
+    accountId: t.accountId,
+    channel: t.channel ?? null,
     counterparty: t.counterparty ?? null,
     note: t.note ?? null,
     origin: t.origin,

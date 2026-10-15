@@ -47,7 +47,7 @@ const sub = (over: Partial<Subscription> = {}): Subscription => ({
   startDate: null,
   status: 'active',
   autoRenews: true,
-  paymentMethod: null,
+  accountId: null,
   note: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
@@ -140,7 +140,7 @@ describe('subscription actions', () => {
   });
 
   it('mark paid records exactly one linked expense and advances one cycle', async () => {
-    const s = await act(alice, 'subscriptions.create', input({ name: 'Hotstar', nextDueDate: '2026-10-08', paymentMethod: 'upi' }));
+    const s = await act(alice, 'subscriptions.create', input({ name: 'Hotstar', nextDueDate: '2026-10-08', accountId: 'acc_cash' }));
     const before = await read(alice, (x) => x.balance());
     const tx = await act(alice, 'subscriptions.markPaid', { subscriptionId: s.id });
     expect(tx.origin).toBe('subscription');
@@ -148,7 +148,7 @@ describe('subscription actions', () => {
     expect(tx.type).toBe('expense');
     expect(tx.categoryId).toBe('cat_food');
     expect(tx.date).toBe('2026-10-08');
-    expect(tx.paymentMethod).toBe('upi');
+    expect(tx.accountId).toBe('acc_cash');
     expect(tx.note).toBe('Monthly renewal · for 8 Oct 2026');
     const after = await read(alice, (x) => x.balance());
     expect(after.cashPaise - before.cashPaise).toBe(-49900);

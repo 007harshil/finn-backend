@@ -10,10 +10,10 @@ import type { AuthUser } from '../../auth/verify';
 import { isIsoDate } from '../../core/dates';
 import { AppFailure } from '../../core/failure';
 import { withUserTx, type Tx } from '../../db/tx';
-import { PAYMENT_METHODS } from '../../actions/input';
-import { ASSET_TYPES, GOAL_CATEGORIES, PENDING_KINDS, SPLIT_METHODS, TRANSACTION_ORIGINS } from '../../finance/models';
+import { ACCOUNT_KINDS, ASSET_TYPES, CASH_ACCOUNT_ID, GOAL_CATEGORIES, PENDING_KINDS, SPLIT_METHODS, TRANSACTION_ORIGINS } from '../../finance/models';
 import { FREQUENCIES } from '../../core/frequency';
 import { isAccountEmpty } from '../account/bootstrap';
+import { setCashOpening } from '../accounts/repo';
 import { fullSync, type SyncChanges } from './service';
 
 const id = z.string().min(1).max(64);
@@ -23,7 +23,7 @@ const date = z.string().refine(isIsoDate, 'Expected yyyy-MM-dd');
 const instant = z.string().refine((s) => !Number.isNaN(Date.parse(s)), 'Expected an ISO-8601 instant');
 const text = (max: number) => z.string().max(max).nullish().transform((v) => v ?? null);
 const version = z.number().int().min(1).default(1);
-const method = z.enum(PAYMENT_METHODS).nullish().transform((v) => v ?? null);
+const accountRef = z.string().min(1).max(64).nullish().transform((v) => v ?? null);
 
 const category = z.object({
   id,
@@ -44,7 +44,9 @@ const transaction = z.object({
   amountPaise: positive,
   categoryId: id,
   date,
-  paymentMethod: method,
+  /** Missing = the default account (the Cash account when no accounts are uploaded). */
+  accountId: accountRef,
+  channel: text(30),
   counterparty: text(80),
   note: text(500),
   origin: z.enum(TRANSACTION_ORIGINS).default('manual'),
@@ -138,7 +140,7 @@ const subscription = z.object({
   startDate: date.nullish().transform((v) => v ?? null),
   status: z.enum(['active', 'paused', 'cancelled']).default('active'),
   autoRenews: z.boolean().default(true),
-  paymentMethod: method,
+  accountId: accountRef,
   note: text(500),
   createdAt: instant,
   updatedAt: instant,
@@ -175,7 +177,8 @@ const settlement = z.object({
   pendingId: id,
   amountPaise: positive,
   date,
-  method,
+  accountId: accountRef,
+  channel: text(30),
   transactionId: z.string().max(64).nullish().transform((v) => v ?? null),
   note: text(500),
   createdAt: instant,
@@ -187,6 +190,37 @@ const asset = z.object({
   type: z.enum(ASSET_TYPES).default('other'),
   valuePaise: paise,
   valuedOn: date,
+  note: text(500),
+  createdAt: instant,
+  updatedAt: instant,
+  version,
+});
+
+const moneyAccount = z.object({
+  id,
+  name: z.string().min(1).max(40),
+  kind: z.enum(ACCOUNT_KINDS),
+  institution: text(40),
+  last4: z.string().regex(/^[0-9]{4}$/).nullish().transform((v) => v ?? null),
+  openingPaise: paise,
+  openingDate: date,
+  creditLimitPaise: positive.nullish().transform((v) => v ?? null),
+  isDefault: z.boolean().default(false),
+  isArchived: z.boolean().default(false),
+  sortOrder: z.number().int().default(0),
+  note: text(200),
+  createdAt: instant,
+  updatedAt: instant,
+  version,
+});
+
+const transfer = z.object({
+  id,
+  fromAccountId: id,
+  toAccountId: id,
+  amountPaise: positive,
+  date,
+  channel: text(30),
   note: text(500),
   createdAt: instant,
   updatedAt: instant,
@@ -207,6 +241,8 @@ export const importSchema = z.object({
   pending: list(pending, 5_000),
   settlements: list(settlement, 20_000),
   assets: list(asset, 1_000),
+  moneyAccounts: list(moneyAccount, 100),
+  transfers: list(transfer, 20_000),
   profile: z
     .union([
       z.object({ exists: z.literal(false) }),
@@ -239,7 +275,14 @@ async function chunked<T>(rows: T[], write: (chunk: T[]) => Promise<unknown>, si
   for (let i = 0; i < rows.length; i += size) await write(rows.slice(i, i + size));
 }
 
+/** Id of the account that receives records without an explicit one. */
+function defaultAccountOf(p: ImportPayload): string {
+  if (p.moneyAccounts.length === 0) return CASH_ACCOUNT_ID;
+  return (p.moneyAccounts.find((a) => a.isDefault && !a.isArchived) ?? p.moneyAccounts.find((a) => !a.isArchived) ?? p.moneyAccounts[0]!).id;
+}
+
 async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void> {
+  const defaultAccountId = defaultAccountOf(p);
   // Categories: standard ids already exist (bootstrap) — overwrite them with the device's version.
   await chunked(p.categories, (rows) =>
     tx
@@ -298,6 +341,56 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
       .execute();
   }
 
+  // Money accounts: device accounts replace the bootstrapped Cash account; without any, Cash takes the profile's opening.
+  if (p.moneyAccounts.length === 0) {
+    if (p.profile.exists) await setCashOpening(tx, userId, p.profile.openingPaise, p.profile.openingDate);
+  } else {
+    if (!p.moneyAccounts.some((a) => a.id === CASH_ACCOUNT_ID)) {
+      await tx.deleteFrom('money_accounts').where('user_id', '=', userId).where('id', '=', CASH_ACCOUNT_ID).execute();
+    } else {
+      // Kept (overwritten below); drop its default flag so the device's default can take over.
+      await tx.updateTable('money_accounts').set({ is_default: false }).where('user_id', '=', userId).execute();
+    }
+    await tx
+      .insertInto('money_accounts')
+      .values(
+        p.moneyAccounts.map((a) => ({
+          user_id: userId,
+          id: a.id,
+          name: a.name,
+          kind: a.kind,
+          institution: a.institution,
+          last4: a.last4,
+          opening_paise: a.openingPaise,
+          opening_date: a.openingDate,
+          credit_limit_paise: a.creditLimitPaise,
+          is_default: a.id === defaultAccountId,
+          is_archived: a.isArchived,
+          sort_order: a.sortOrder,
+          note: a.note,
+          created_at: a.createdAt,
+          updated_at: a.updatedAt,
+          version: a.version,
+        })),
+      )
+      .onConflict((oc) =>
+        oc.columns(['user_id', 'id']).doUpdateSet((eb) => ({
+          name: eb.ref('excluded.name'),
+          kind: eb.ref('excluded.kind'),
+          institution: eb.ref('excluded.institution'),
+          last4: eb.ref('excluded.last4'),
+          opening_paise: eb.ref('excluded.opening_paise'),
+          opening_date: eb.ref('excluded.opening_date'),
+          credit_limit_paise: eb.ref('excluded.credit_limit_paise'),
+          is_default: eb.ref('excluded.is_default'),
+          is_archived: eb.ref('excluded.is_archived'),
+          sort_order: eb.ref('excluded.sort_order'),
+          note: eb.ref('excluded.note'),
+        })),
+      )
+      .execute();
+  }
+
   await chunked(p.transactions, (rows) =>
     tx
       .insertInto('transactions')
@@ -309,7 +402,8 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
           amount_paise: t.amountPaise,
           category_id: t.categoryId,
           date: t.date,
-          payment_method: t.paymentMethod,
+          account_id: t.accountId ?? defaultAccountId,
+          channel: t.channel,
           counterparty: t.counterparty,
           note: t.note,
           origin: t.origin,
@@ -452,7 +546,7 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
           start_date: s.startDate,
           status: s.status,
           auto_renews: s.autoRenews,
-          payment_method: s.paymentMethod,
+          account_id: s.accountId,
           note: s.note,
           created_at: s.createdAt,
           updated_at: s.updatedAt,
@@ -503,10 +597,32 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
           pending_id: s.pendingId,
           amount_paise: s.amountPaise,
           date: s.date,
-          method: s.method,
+          account_id: s.transactionId ? (s.accountId ?? defaultAccountId) : s.accountId,
+          channel: s.channel,
           transaction_id: s.transactionId,
           note: s.note,
           created_at: s.createdAt,
+        })),
+      )
+      .execute(),
+  );
+
+  await chunked(p.transfers, (rows) =>
+    tx
+      .insertInto('transfers')
+      .values(
+        rows.map((x) => ({
+          user_id: userId,
+          id: x.id,
+          from_account_id: x.fromAccountId,
+          to_account_id: x.toAccountId,
+          amount_paise: x.amountPaise,
+          date: x.date,
+          channel: x.channel,
+          note: x.note,
+          created_at: x.createdAt,
+          updated_at: x.updatedAt,
+          version: x.version,
         })),
       )
       .execute(),
@@ -535,6 +651,29 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
 
 /** Cross-record checks the database cannot express (settlements never exceed their item). */
 function validateReferences(p: ImportPayload): void {
+  const accountIds = new Set(p.moneyAccounts.length === 0 ? [CASH_ACCOUNT_ID] : p.moneyAccounts.map((a) => a.id));
+  if (accountIds.size !== (p.moneyAccounts.length === 0 ? 1 : p.moneyAccounts.length)) {
+    throw AppFailure.validation('Two accounts share the same id.', { moneyAccounts: 'Duplicate id' });
+  }
+  if (p.moneyAccounts.length > 0 && p.moneyAccounts.every((a) => a.isArchived)) {
+    throw AppFailure.validation('At least one account must be active.', { moneyAccounts: 'No active account' });
+  }
+  const known = (ref: string | null, field: string) => {
+    if (ref !== null && !accountIds.has(ref)) throw AppFailure.validation('A record refers to an account that is not included.', { [field]: ref });
+  };
+  for (const t of p.transactions) known(t.accountId, 'transactions');
+  for (const s of p.subscriptions) known(s.accountId, 'subscriptions');
+  for (const s of p.settlements) known(s.accountId, 'settlements');
+  for (const t of p.transfers) {
+    known(t.fromAccountId, 'transfers');
+    known(t.toAccountId, 'transfers');
+    if (t.fromAccountId === t.toAccountId) throw AppFailure.validation('A transfer needs two different accounts.', { transfers: t.id });
+  }
+  for (const a of p.moneyAccounts) {
+    if ((a.creditLimitPaise !== null && a.kind !== 'creditCard') || (a.last4 !== null && (a.kind === 'cash' || a.kind === 'bank'))) {
+      throw AppFailure.validation('An account has details its kind does not allow.', { moneyAccounts: a.id });
+    }
+  }
   const settled = new Map<string, number>();
   for (const s of p.settlements) settled.set(s.pendingId, (settled.get(s.pendingId) ?? 0) + s.amountPaise);
   for (const x of p.pending) {

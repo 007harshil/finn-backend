@@ -22,9 +22,8 @@ import {
 } from '../../core/dates';
 import { ratioBps, roundDiv, scale, type Paise } from '../../core/money';
 import type { PeriodSummary } from '../../finance/ledger';
-import { PAYMENT_METHOD_LABELS, signedMovement, type Category, type Transaction } from '../../finance/models';
+import { signedMovement, type Category, type Transaction } from '../../finance/models';
 import type { FinanceSnapshot } from '../../finance/snapshot';
-import type { PaymentMethod } from '../../actions/input';
 import { fmtWhole, formatBps, MONTH_NAMES } from '../alerts/format';
 import type { BudgetUsage } from '../budgets/calculator';
 import { currentBudgetPeriod, usageDto } from '../budgets/service';
@@ -451,13 +450,23 @@ export async function analytics(s: FinanceSnapshot, q: AnalyticsQuery) {
     quietest = 0;
     for (let i = 1; i < spend.weekday.length; i++) if (spend.weekday[i]! < spend.weekday[quietest]!) quietest = i;
   }
-  const methods = current.byMethod.map((m) => ({
-    method: m.method,
-    label: PAYMENT_METHOD_LABELS[m.method as PaymentMethod] ?? m.method,
+  const accountRecords = await s.moneyAccounts();
+  const accounts = current.byAccount.map((m) => {
+    const a = accountRecords.find((x) => x.id === m.accountId);
+    return {
+      accountId: m.accountId,
+      label: a?.name ?? 'Account',
+      kind: a?.kind ?? null,
+      amountPaise: m.amountPaise,
+      shareBps: ratioBps(m.amountPaise, current.expensePaise) ?? 0,
+    };
+  });
+  const channels = current.byChannel.map((m) => ({
+    channel: m.channel,
     amountPaise: m.amountPaise,
     shareBps: ratioBps(m.amountPaise, current.expensePaise) ?? 0,
   }));
-  const cash = methods.filter((m) => m.method === 'cash').reduce((n, m) => n + m.amountPaise, 0);
+  const cash = accounts.filter((m) => m.kind === 'cash').reduce((n, m) => n + m.amountPaise, 0);
   const digitalShareBps = current.expensePaise === 0 ? null : ratioBps(current.expensePaise - cash, current.expensePaise);
 
   // Budgets (current budget period).
@@ -505,7 +514,8 @@ export async function analytics(s: FinanceSnapshot, q: AnalyticsQuery) {
     dailyBurnPaise: burn,
     months,
     categories,
-    methods,
+    accounts,
+    channels,
     dailySpend: spend.daily,
     weekdayAverages: spend.weekday,
     topExpenses: spend.top,
@@ -557,7 +567,7 @@ export async function analytics(s: FinanceSnapshot, q: AnalyticsQuery) {
       months,
       windowNet,
       categories,
-      methods,
+      methods: accounts,
       budgets,
       savings,
       debt,

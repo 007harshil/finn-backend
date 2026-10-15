@@ -2,12 +2,13 @@
 // Only manual transactions are edited here; linked ones belong to their module.
 
 import { z } from 'zod';
-import { PAYMENT_METHODS, zDate, zEnum, zEnumOpt, zId, zPositiveMoney, zTextOpt, zVersion } from '../../actions/input';
+import { zDate, zEnum, zId, zPositiveMoney, zTextOpt, zVersion } from '../../actions/input';
 import { defineAction, type ActionContext, type AnyAction, type FieldSpec, type PreviewLine } from '../../actions/types';
 import { formatDate } from '../../core/dates';
 import { AppFailure, throwIfErrors } from '../../core/failure';
 import { formatInr } from '../../core/money';
-import { ORIGIN_LABELS, PAYMENT_METHOD_LABELS, type Transaction } from '../../finance/models';
+import { ORIGIN_LABELS, type Transaction } from '../../finance/models';
+import { channelError, resolveAccountId } from '../accounts/resolve';
 import { deleteTransaction, insertTransaction, updateTransaction } from './repo';
 
 /** Maximum single amount (₹10 crore): guards against typos. */
@@ -18,7 +19,8 @@ const dataShape = {
   amount: zPositiveMoney,
   categoryId: zId,
   date: zDate,
-  paymentMethod: zEnumOpt(PAYMENT_METHODS),
+  accountId: zId.nullish().transform((v) => v ?? null),
+  channel: zTextOpt,
   counterparty: zTextOpt,
   note: zTextOpt,
 };
@@ -30,15 +32,23 @@ const fields: FieldSpec[] = [
   { name: 'amount', kind: 'money', description: 'Amount in rupees, greater than zero', required: true },
   { name: 'categoryId', kind: 'id', description: 'Category id matching the type', required: true },
   { name: 'date', kind: 'date', description: 'Date the money moved (not in the future)', required: true },
-  { name: 'paymentMethod', kind: 'enumeration', description: 'How it was paid', required: false, allowedValues: PAYMENT_METHODS },
+  { name: 'accountId', kind: 'id', description: 'Account the money moved through (defaults to the default account)', required: false },
+  { name: 'channel', kind: 'string', description: 'How it moved: UPI, IMPS, NEFT, Cheque, ATM… (free text, up to 30 characters)', required: false },
   { name: 'counterparty', kind: 'string', description: 'Merchant or person', required: false },
   { name: 'note', kind: 'string', description: 'Free-text note', required: false },
 ];
 
 const typeLabel = (t: 'income' | 'expense') => (t === 'income' ? 'Income' : 'Expense');
 
-export async function validateTransaction(i: TransactionInput, ctx: ActionContext): Promise<Record<string, string>> {
+export async function validateTransaction(i: TransactionInput, ctx: ActionContext, keepAccountId: string | null = null): Promise<Record<string, string>> {
   const errors: Record<string, string> = {};
+  const ce = channelError(i.channel);
+  if (ce) errors.channel = ce;
+  if (i.accountId !== null) {
+    const acc = await ctx.snapshot.moneyAccount(i.accountId);
+    if (!acc) errors.accountId = 'This account does not exist.';
+    else if (acc.isArchived && acc.id !== keepAccountId) errors.accountId = 'This account is archived.';
+  }
   if (i.amount <= 0) errors.amount = 'Enter an amount greater than zero.';
   if (i.amount > MAX_TRANSACTION_PAISE) errors.amount = 'That amount looks too large. Please check it.';
   const cat = await ctx.snapshot.category(i.categoryId);
@@ -55,14 +65,15 @@ export async function validateTransaction(i: TransactionInput, ctx: ActionContex
   return errors;
 }
 
-async function lines(i: TransactionInput, ctx: ActionContext): Promise<PreviewLine[]> {
+async function lines(i: TransactionInput, ctx: ActionContext, accountId: string): Promise<PreviewLine[]> {
   const out: PreviewLine[] = [
     { label: 'Type', value: typeLabel(i.type) },
     { label: 'Amount', value: formatInr(i.amount), emphasis: true },
     { label: 'Category', value: (await ctx.snapshot.category(i.categoryId))?.name ?? '—' },
     { label: 'Date', value: formatDate(i.date) },
   ];
-  if (i.paymentMethod) out.push({ label: 'Paid via', value: PAYMENT_METHOD_LABELS[i.paymentMethod] });
+  out.push({ label: i.type === 'income' ? 'Into' : 'From', value: (await ctx.snapshot.moneyAccount(accountId))?.name ?? '—' });
+  if (i.channel) out.push({ label: 'Via', value: i.channel });
   if (i.counterparty) out.push({ label: i.type === 'income' ? 'From' : 'To', value: i.counterparty });
   return out;
 }
@@ -81,6 +92,7 @@ export const createTransaction = defineAction({
   input: transactionInput,
   async prepare(input, ctx) {
     throwIfErrors(await validateTransaction(input, ctx));
+    const accountId = await resolveAccountId(ctx, input.accountId);
     const warnings: string[] = [];
     const balance = await ctx.snapshot.balance();
     if (input.type === 'expense' && input.amount > balance.availablePaise) {
@@ -89,19 +101,21 @@ export const createTransaction = defineAction({
     return {
       title: `Record ${typeLabel(input.type).toLowerCase()}`,
       summary: `${input.type === 'income' ? 'Received' : 'Spent'} ${formatInr(input.amount)}`,
-      lines: await lines(input, ctx),
+      lines: await lines(input, ctx, accountId),
       warnings,
     };
   },
   async execute(input, ctx): Promise<Transaction> {
     const now = ctx.now.toISOString();
+    const accountId = await resolveAccountId(ctx, input.accountId);
     const t = await insertTransaction(ctx.tx, ctx.userId, {
       id: ctx.ids.next('tx'),
       type: input.type,
       amountPaise: input.amount,
       categoryId: input.categoryId,
       date: input.date,
-      paymentMethod: input.paymentMethod,
+      accountId,
+      channel: input.channel,
       counterparty: input.counterparty,
       note: input.note,
       origin: 'manual',
@@ -151,15 +165,17 @@ export const updateTransactionAction = defineAction({
     if (existing.version !== input.expectedVersion) {
       throw AppFailure.stale('This transaction changed since you opened it. Reload and try again.');
     }
-    throwIfErrors(await validateTransaction(input, ctx));
+    throwIfErrors(await validateTransaction(input, ctx, existing.accountId));
+    const accountId = await resolveAccountId(ctx, input.accountId, { fallback: existing.accountId, keep: existing.accountId });
     return {
       title: 'Save changes',
       summary: `Update ${formatInr(existing.amountPaise)} ${typeLabel(existing.type).toLowerCase()} to ${formatInr(input.amount)}`,
-      lines: await lines(input, ctx),
+      lines: await lines(input, ctx, accountId),
     };
   },
   async execute(input, ctx) {
     const existing = (await ctx.snapshot.transaction(input.id))!;
+    const accountId = await resolveAccountId(ctx, input.accountId, { fallback: existing.accountId, keep: existing.accountId });
     const updated = await updateTransaction(
       ctx.tx,
       ctx.userId,
@@ -169,7 +185,8 @@ export const updateTransactionAction = defineAction({
         amountPaise: input.amount,
         categoryId: input.categoryId,
         date: input.date,
-        paymentMethod: input.paymentMethod,
+        accountId,
+        channel: input.channel,
         counterparty: input.counterparty,
         note: input.note,
         updatedAt: ctx.now.toISOString(),

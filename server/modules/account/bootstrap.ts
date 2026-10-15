@@ -5,6 +5,8 @@ import { randomInt } from 'node:crypto';
 import { sql } from 'kysely';
 import type { AuthUser } from '../../auth/verify';
 import type { Tx } from '../../db/tx';
+import { todayIn } from '../../core/dates';
+import { ensureCashAccount } from '../accounts/repo';
 import { STANDARD_CATEGORIES } from './standard-categories';
 
 function baseHandle(email: string | null): string {
@@ -66,6 +68,9 @@ export async function ensureAccount(tx: Tx, user: AuthUser): Promise<void> {
     )
     .onConflict((oc) => oc.columns(['user_id', 'id']).doNothing())
     .execute();
+
+  // Every user always has a default Cash account (opening balance 0, as of today).
+  await ensureCashAccount(tx, user.userId, todayIn('Asia/Kolkata', now));
 }
 
 /** Used by tests and the import endpoint: whether the account holds any financial records. */
@@ -78,6 +83,7 @@ export async function isAccountEmpty(tx: Tx, userId: string): Promise<boolean> {
         or exists (select 1 from public.subscriptions where user_id = ${userId})
         or exists (select 1 from public.budgets where user_id = ${userId})
         or exists (select 1 from public.assets where user_id = ${userId})
+        or exists (select 1 from public.transfers where user_id = ${userId})
         or exists (select 1 from public.savings_movements where user_id = ${userId}) as any`.execute(tx);
   return !row.rows[0]?.any;
 }

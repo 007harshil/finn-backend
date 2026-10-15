@@ -29,6 +29,8 @@ PostgreSQL 17 on the Supabase project `FiNN` (`xeqhygypqyyyoortalod`). Source of
 | `subscriptions` | Expected recurring charges | Only "mark paid" records a transaction |
 | `pending_payments`, `pending_settlements` | Obligations to/from people and their settlements | Shared items stored once; settlements owned by the recorder |
 | `assets` | User-entered valuations | |
+| `money_accounts` | User-owned cash/bank/card accounts (credit cards hold an amount owed); `acc_cash` is every user's default Cash account | Exactly one default (unique partial index); FKs from transactions, transfers, subscriptions, settlements |
+| `transfers` | Money moved between own accounts (not income or spending) | Both accounts must be the user's and differ |
 | `alert_inbox` | Read/dismissed alert keys | Alerts themselves are derived |
 | `idempotency_keys` | Completed action results per (user, key) | Pruned after 30 days |
 | `audit_log` | Every attempted operation (summary, channel, confirmation, outcome) | Append-only for the owner |

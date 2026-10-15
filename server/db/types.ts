@@ -59,6 +59,8 @@ export interface TransactionsTable {
   category_id: string;
   date: string;
   payment_method: string | null;
+  account_id: string;
+  channel: string | null;
   counterparty: string | null;
   note: string | null;
   origin: Generated<string>;
@@ -181,6 +183,7 @@ export interface SubscriptionsTable {
   status: Generated<'active' | 'paused' | 'cancelled'>;
   auto_renews: Generated<boolean>;
   payment_method: string | null;
+  account_id: string | null;
   note: string | null;
   version: Generated<number>;
   created_at: Ts;
@@ -222,6 +225,8 @@ export interface PendingSettlementsTable {
   amount_paise: number;
   date: string;
   method: string | null;
+  account_id: string | null;
+  channel: string | null;
   transaction_id: string | null;
   note: string | null;
   created_at: Ts;
@@ -235,6 +240,41 @@ export interface AssetsTable {
   type: string;
   value_paise: number;
   valued_on: string;
+  note: string | null;
+  version: Generated<number>;
+  created_at: Ts;
+  updated_at: Ts;
+  sync_seq: SyncSeq;
+}
+
+export interface MoneyAccountsTable {
+  user_id: string;
+  id: string;
+  name: string;
+  kind: string;
+  institution: string | null;
+  last4: string | null;
+  opening_paise: number;
+  opening_date: string;
+  credit_limit_paise: number | null;
+  is_default: Generated<boolean>;
+  is_archived: Generated<boolean>;
+  sort_order: Generated<number>;
+  note: string | null;
+  version: Generated<number>;
+  created_at: Ts;
+  updated_at: Ts;
+  sync_seq: SyncSeq;
+}
+
+export interface TransfersTable {
+  user_id: string;
+  id: string;
+  from_account_id: string;
+  to_account_id: string;
+  amount_paise: number;
+  date: string;
+  channel: string | null;
   note: string | null;
   version: Generated<number>;
   created_at: Ts;
@@ -341,6 +381,8 @@ export interface Database {
   pending_payments: PendingPaymentsTable;
   pending_settlements: PendingSettlementsTable;
   assets: AssetsTable;
+  money_accounts: MoneyAccountsTable;
+  transfers: TransfersTable;
   alert_inbox: AlertInboxTable;
   idempotency_keys: IdempotencyKeysTable;
   audit_log: AuditLogTable;

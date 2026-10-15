@@ -14,7 +14,7 @@
 
 import type { Selectable } from 'kysely';
 import { z } from 'zod';
-import { PAYMENT_METHODS, zBool, zDate, zEnum, zEnumOpt, zId, zMoney, zText, zTextOpt, zVersion } from '../../actions/input';
+import { zBool, zDate, zEnum, zEnumOpt, zId, zMoney, zText, zTextOpt, zVersion } from '../../actions/input';
 import type { Tx } from '../../db/tx';
 import { defineAction, type ActionContext, type AnyAction, type FieldSpec, type PreviewLine } from '../../actions/types';
 import { AppFailure, throwIfErrors } from '../../core/failure';
@@ -32,6 +32,7 @@ import {
 } from '../../finance/models';
 import { directoryEntries, type DirectoryEntry } from '../../finance/snapshot';
 import { SystemCategories } from '../account/standard-categories';
+import { channelError, resolveAccountId } from '../accounts/resolve';
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { buildLinkedTransaction, insertTransaction } from '../transactions/repo';
 import {
@@ -622,7 +623,9 @@ const settleInput = z.object({
   pendingId: zId,
   amount: zMoney,
   date: zDate,
-  method: zEnumOpt(PAYMENT_METHODS),
+  /** Account the settlement money moved through (defaults to the default account). */
+  accountId: zId.nullish().transform((v) => v ?? null),
+  channel: zTextOpt,
   /**
    * When true, a linked income/expense transaction is created so the cash
    * balance reflects the settlement. False for settlements outside tracked
@@ -645,7 +648,8 @@ export const settlePending = defineAction({
       { name: 'pendingId', kind: 'id', description: 'Exact pending payment id. Use pending.resolve to find it by name; never guess.', required: true },
       { name: 'amount', kind: 'money', description: 'Amount settled now (≤ outstanding)', required: true },
       { name: 'date', kind: 'date', description: 'Settlement date', required: true },
-      { name: 'method', kind: 'enumeration', description: 'Payment method', required: false, allowedValues: PAYMENT_METHODS },
+      { name: 'accountId', kind: 'id', description: 'Account the money moved through (defaults to the default account)', required: false },
+      { name: 'channel', kind: 'string', description: 'How it moved (free text, up to 30 characters)', required: false },
       { name: 'recordCashMovement', kind: 'boolean', description: 'Create the matching cash transaction (default true)', required: false },
       { name: 'note', kind: 'string', description: 'Reference', required: false },
     ],
@@ -662,7 +666,10 @@ export const settlePending = defineAction({
     if (input.amount > v.outstandingPaise) e.amount = `Only ${formatInr(v.outstandingPaise)} is outstanding.`;
     if (input.date > ctx.today) e.date = 'The date cannot be in the future.';
     if (input.date < v.payment.createdDate) e.date = 'The date is before this item was created.';
+    const ce = channelError(input.channel);
+    if (ce) e.channel = ce;
     throwIfErrors(e);
+    if (input.recordCashMovement) await resolveAccountId(ctx, input.accountId);
 
     const owe = v.payment.direction === 'iOwe';
     const remaining = v.outstandingPaise - input.amount;
@@ -696,7 +703,9 @@ export const settlePending = defineAction({
     const owe = v.payment.direction === 'iOwe';
     // The recorder's own cash movement (never the other person's).
     let transactionId: string | null = null;
+    let accountId: string | null = null;
     if (input.recordCashMovement) {
+      accountId = await resolveAccountId(ctx, input.accountId);
       const t = await insertTransaction(
         ctx.tx,
         ctx.userId,
@@ -707,7 +716,8 @@ export const settlePending = defineAction({
           date: input.date,
           origin: 'pendingSettlement',
           originRefId: v.payment.id,
-          method: input.method,
+          accountId,
+          channel: input.channel,
           counterparty: v.payment.counterparty,
           note: `Settlement · ${v.payment.purpose}`,
         }),
@@ -725,7 +735,8 @@ export const settlePending = defineAction({
         shared_with_user_id: target.row.shared_with_user_id,
         amount_paise: input.amount,
         date: input.date,
-        method: input.method,
+        account_id: accountId,
+        channel: accountId ? input.channel : null,
         transaction_id: transactionId,
         note: input.note,
         created_at: ctx.now.toISOString(),

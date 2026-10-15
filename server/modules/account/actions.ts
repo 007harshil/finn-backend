@@ -10,7 +10,9 @@ import { formatDate } from '../../core/dates';
 import { throwIfErrors } from '../../core/failure';
 import { formatInr } from '../../core/money';
 import { loadBalance } from '../../finance/ledger';
+import { CASH_ACCOUNT_ID } from '../../finance/models';
 import { profileDto, type FinancialProfile } from '../../finance/models';
+import { setCashOpening } from '../accounts/repo';
 import { updateOwnProfile } from './repo';
 
 /** Largest opening balance accepted (₹1,000 crore): guards against typos. */
@@ -60,7 +62,7 @@ export const updateProfile = defineAction({
     module: 'settings',
     title: 'Update profile',
     description:
-      'Changes your name, opening balance, start date or income estimate. Changing the opening balance or start date recalculates every balance.',
+      'Changes your name, opening balance (the Cash account), start date or income estimate. Changing the opening balance or start date recalculates every balance.',
     risk: 'consequential',
     movesMoney: false,
     reversible: true,
@@ -85,7 +87,11 @@ export const updateProfile = defineAction({
     const warnings: string[] = [];
     if (balanceChange && existing) {
       const current = await ctx.snapshot.balance();
-      const next = await loadBalance(ctx.tx, ctx.userId, newProfile(input), ctx.today);
+      const next = await loadBalance(ctx.tx, ctx.userId, ctx.today, {
+        accountId: CASH_ACCOUNT_ID,
+        openingPaise: input.openingBalance,
+        openingDate: input.openingDate,
+      });
       const delta = next.cashPaise - current.cashPaise;
       lines.push({ label: 'Cash balance', value: `${formatInr(current.cashPaise)} → ${formatInr(next.cashPaise)}`, emphasis: true });
       warnings.push(`Every balance is recalculated from the opening balance and start date (${signed(delta)} change to cash).`);
@@ -105,6 +111,8 @@ export const updateProfile = defineAction({
   async execute(input, ctx) {
     const profile = newProfile(input);
     await updateOwnProfile(ctx.tx, ctx.userId, profile, ctx.now);
+    // The ledger reads per-account openings: the profile's opening balance is the Cash account's.
+    await setCashOpening(ctx.tx, ctx.userId, profile.openingPaise, profile.openingDate);
     ctx.snapshot.invalidate();
     ctx.touched.push(ctx.userId);
     return profileDto(profile);

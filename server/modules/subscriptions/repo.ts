@@ -11,7 +11,7 @@ const rowValues = (s: Subscription) => ({
   start_date: s.startDate,
   status: s.status,
   auto_renews: s.autoRenews,
-  payment_method: s.paymentMethod,
+  account_id: s.accountId,
   note: s.note,
   updated_at: s.updatedAt,
   version: s.version,

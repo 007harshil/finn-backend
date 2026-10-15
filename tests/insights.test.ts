@@ -53,7 +53,8 @@ async function seed(user: AuthUser, txs: Array<[number, string, Partial<Transact
           amountPaise: rs(rupees),
           categoryId: 'cat_food',
           date,
-          paymentMethod: null,
+          accountId: 'acc_cash',
+          channel: null,
           counterparty: null,
           note: null,
           origin: 'manual',
@@ -198,12 +199,13 @@ describe('analytics service', () => {
 
   it('GET /analytics returns the Insights screen datasets and validates the period', async () => {
     const u = await t.createUser();
+    const sbi = await act(u, 'accounts.create', { name: 'SBI', kind: 'bank', openingBalance: 0, openingDate: '2026-01-01' });
     await seed(u, [
       [100000, '2026-09-01', income()],
-      [5000, '2026-09-03', { paymentMethod: 'cash' }],
+      [5000, '2026-09-03'],
       [100000, '2026-10-01', income()],
-      [8000, '2026-10-03', { paymentMethod: 'upi' }],
-      [2000, '2026-10-05', { paymentMethod: 'cash' }],
+      [8000, '2026-10-03', { accountId: sbi.id, channel: 'UPI' }],
+      [2000, '2026-10-05'],
       [700, '2026-10-20'], // future-dated: counted in the month total, not in daily patterns
     ]);
     const r = await call(analyticsRoute.GET, 'GET', '/api/v1/analytics', { user: u, query: { period: 'month' } });
@@ -225,12 +227,13 @@ describe('analytics service', () => {
     expect(d.baselines.peakDay.date).toBe('2026-10-03');
     expect(d.dailyBurnPaise).toBe(rs(1000));
     expect(d.baselines.projectedMonthSpendPaise).toBe(rs(31000));
-    expect(d.methods.map((m: { method: string }) => m.method)).toEqual(['upi', 'cash']);
+    expect(d.accounts.map((m: { accountId: string }) => m.accountId)).toEqual([sbi.id, 'acc_cash']);
+    expect(d.channels).toEqual([{ channel: 'UPI', amountPaise: rs(8000), shareBps: 8000 }]);
     expect(d.baselines.digitalShareBps).toBe(8000);
     expect(d.weekdayAverages).toHaveLength(7);
     expect(d.topExpenses.map((x: Transaction) => x.amountPaise)).toEqual([rs(8000), rs(2000)]);
     expect(d.headlines.spending).toBe('So far you have spent 100% more than all of September');
-    expect(d.headlines.method).toBe('UPI carried 80% of your spending');
+    expect(d.headlines.method).toBe('SBI carried 80% of your spending');
     expect(d.insights[0].title).toBe('You kept 89% of your income'); // insights read the whole month, the 20 Oct expense included
 
     const q = await call(analyticsRoute.GET, 'GET', '/api/v1/analytics', { user: u, query: { period: 'quarter' } });

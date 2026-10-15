@@ -3,6 +3,7 @@
 // agent can build valid input.
 
 import { AppFailure } from '../core/failure';
+import { accountsActions } from '../modules/accounts/actions';
 import { assetsActions } from '../modules/assets/actions';
 import { budgetsActions } from '../modules/budgets/actions';
 import { categoriesActions } from '../modules/categories/actions';
@@ -13,6 +14,7 @@ import { pendingActions } from '../modules/pending/actions';
 import { profileActions } from '../modules/account/actions';
 import { subscriptionsActions } from '../modules/subscriptions/actions';
 import { transactionsActions } from '../modules/transactions/actions';
+import { transfersActions } from '../modules/transfers/actions';
 import type { ActionDescriptor, AnyAction } from './types';
 
 const all: AnyAction[] = [
@@ -25,6 +27,8 @@ const all: AnyAction[] = [
   ...goalsActions,
   ...emergencyFundActions,
   ...assetsActions,
+  ...accountsActions,
+  ...transfersActions,
   ...profileActions,
 ];
 

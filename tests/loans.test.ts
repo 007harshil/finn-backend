@@ -123,7 +123,7 @@ describe('loans.create', () => {
     const tx = (await read(u, (s) => s.transaction(loan.disbursementTransactionId)))!;
     expect(tx).toMatchObject({ type: 'income', origin: 'loanDisbursement', categoryId: 'cat_sys_loan_in', originRefId: loan.id, amountPaise: rs(600000) });
     expect(tx.note).toBe('Car loan · disbursement');
-    expect(tx.paymentMethod).toBe('bankTransfer');
+    expect(tx.accountId).toBe('acc_cash');
     expect(await cash(u)).toBe(before + rs(600000));
   });
 

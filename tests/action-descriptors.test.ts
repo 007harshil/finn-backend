@@ -32,8 +32,8 @@ describe('action descriptors', () => {
     expect(problems).toEqual([]);
   });
 
-  it('has 40 unique action ids', () => {
+  it('has 49 unique action ids', () => {
     const ids = describeActions().map((d) => d.id);
-    expect(new Set(ids).size).toBe(40);
+    expect(new Set(ids).size).toBe(49);
   });
 });

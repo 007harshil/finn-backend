@@ -58,5 +58,3 @@ export function zEnumOpt<const T extends readonly [string, ...string[]]>(values:
 /** Expected record version for optimistic concurrency. */
 export const zVersion = z.number().int().min(1);
 
-export const PAYMENT_METHODS = ['upi', 'card', 'cash', 'bankTransfer', 'wallet', 'other'] as const;
-export type PaymentMethod = (typeof PAYMENT_METHODS)[number];

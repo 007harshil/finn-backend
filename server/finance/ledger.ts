@@ -2,8 +2,11 @@
 // summaries, computed with SQL aggregates so a balance never requires loading
 // a user's whole history.
 //
-//   cash      = opening balance + Σ income − Σ expense
-//               (transactions dated from the opening date up to today)
+//   per account a (movements dated a.openingDate..today):
+//     flow  = Σ income − Σ expense + Σ transfers in − Σ transfers out
+//     asset account balance = opening + flow; credit card owed = opening − flow
+//   cash       = Σ asset account balances (credit cards excluded)
+//   creditOwed = Σ credit card owed
 //   earmarked = Σ goal movements + Σ emergency-fund movements (dated up to today)
 //   available = cash − earmarked
 
@@ -11,53 +14,106 @@ import { sql } from 'kysely';
 import { ratioBps, type Paise } from '../core/money';
 import type { DateRange, IsoDate } from '../core/dates';
 import type { Tx } from '../db/tx';
-import type { FinancialProfile } from './models';
 
-export interface BalanceSnapshot {
-  openingBalancePaise: Paise;
-  totalInflowPaise: Paise;
-  totalOutflowPaise: Paise;
-  earmarkedGoalsPaise: Paise;
-  earmarkedEmergencyPaise: Paise;
-  cashPaise: Paise;
-  earmarkedPaise: Paise;
-  availablePaise: Paise;
+export interface AccountBalance {
+  accountId: string;
+  /** Money in the account; for credit cards the amount owed. */
+  balancePaise: Paise;
 }
 
-export function makeBalance(parts: {
+export interface BalanceSnapshot {
+  /** Sum of opening balances of asset accounts. */
   openingBalancePaise: Paise;
   totalInflowPaise: Paise;
   totalOutflowPaise: Paise;
   earmarkedGoalsPaise: Paise;
   earmarkedEmergencyPaise: Paise;
-}): BalanceSnapshot {
-  const cash = parts.openingBalancePaise + parts.totalInflowPaise - parts.totalOutflowPaise;
-  const earmarked = parts.earmarkedGoalsPaise + parts.earmarkedEmergencyPaise;
-  return { ...parts, cashPaise: cash, earmarkedPaise: earmarked, availablePaise: cash - earmarked };
+  /** Total money: sum of asset account balances (credit cards excluded). */
+  cashPaise: Paise;
+  /** Sum owed on credit cards. */
+  creditOwedPaise: Paise;
+  earmarkedPaise: Paise;
+  availablePaise: Paise;
+  accounts: AccountBalance[];
+}
+
+/** Opening figures of one account replaced for a what-if (profile / balance-correction previews). */
+export interface OpeningOverride {
+  accountId: string;
+  openingPaise: Paise;
+  openingDate: IsoDate;
 }
 
 const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
 
-export async function loadBalance(tx: Tx, userId: string, profile: FinancialProfile | null, asOf: IsoDate): Promise<BalanceSnapshot> {
-  const from = profile?.openingDate ?? null;
-  const flows = await sql<{ inflow: string | null; outflow: string | null }>`
-    select sum(amount_paise) filter (where type = 'income') as inflow,
-           sum(amount_paise) filter (where type = 'expense') as outflow
-    from public.transactions
-    where user_id = ${userId} and date <= ${asOf}::date
-      and (${from}::date is null or date >= ${from}::date)`.execute(tx);
+export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, override: OpeningOverride | null = null): Promise<BalanceSnapshot> {
+  const ovId = override?.accountId ?? null;
+  const ovPaise = override?.openingPaise ?? null;
+  const ovDate = override?.openingDate ?? null;
+  const rows = await sql<{ id: string; kind: string; opening: string; flow: string; inflow: string; outflow: string }>`
+    select a.id, a.kind, a.opening, (a.inc - a.exp + a.tin - a.tout) as flow, a.inc as inflow, a.exp as outflow
+    from (
+      select m.id, m.kind, m.sort_order, m.created_at,
+             case when m.id = ${ovId}::text then ${ovPaise}::bigint else m.opening_paise end as opening,
+             coalesce(
+               (select sum(t.amount_paise) from public.transactions t
+                 where t.user_id = m.user_id and t.account_id = m.id and t.type = 'income'
+                   and t.date <= ${asOf}::date and t.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as inc,
+             coalesce(
+               (select sum(t.amount_paise) from public.transactions t
+                 where t.user_id = m.user_id and t.account_id = m.id and t.type = 'expense'
+                   and t.date <= ${asOf}::date and t.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as exp,
+             coalesce(
+               (select sum(x.amount_paise) from public.transfers x
+                 where x.user_id = m.user_id and x.to_account_id = m.id
+                   and x.date <= ${asOf}::date and x.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as tin,
+             coalesce(
+               (select sum(x.amount_paise) from public.transfers x
+                 where x.user_id = m.user_id and x.from_account_id = m.id
+                   and x.date <= ${asOf}::date and x.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as tout
+      from public.money_accounts m
+      where m.user_id = ${userId}
+    ) a
+    order by a.sort_order, a.created_at, a.id`.execute(tx);
   const marks = await sql<{ goals: string | null; emergency: string | null }>`
     select sum(case when kind = 'contribution' then amount_paise else -amount_paise end) filter (where bucket_type = 'goal') as goals,
            sum(case when kind = 'contribution' then amount_paise else -amount_paise end) filter (where bucket_type = 'emergencyFund') as emergency
     from public.savings_movements
     where user_id = ${userId} and date <= ${asOf}::date`.execute(tx);
-  return makeBalance({
-    openingBalancePaise: profile?.openingPaise ?? 0,
-    totalInflowPaise: num(flows.rows[0]?.inflow),
-    totalOutflowPaise: num(flows.rows[0]?.outflow),
-    earmarkedGoalsPaise: num(marks.rows[0]?.goals),
-    earmarkedEmergencyPaise: num(marks.rows[0]?.emergency),
-  });
+  let opening = 0;
+  let cash = 0;
+  let owed = 0;
+  let inflow = 0;
+  let outflow = 0;
+  const accounts: AccountBalance[] = [];
+  for (const r of rows.rows) {
+    const liability = r.kind === 'creditCard';
+    const flow = num(r.flow);
+    const balance = liability ? num(r.opening) - flow : num(r.opening) + flow;
+    accounts.push({ accountId: r.id, balancePaise: balance });
+    if (liability) owed += balance;
+    else {
+      cash += balance;
+      opening += num(r.opening);
+    }
+    inflow += num(r.inflow);
+    outflow += num(r.outflow);
+  }
+  const goals = num(marks.rows[0]?.goals);
+  const emergency = num(marks.rows[0]?.emergency);
+  const earmarked = goals + emergency;
+  return {
+    openingBalancePaise: opening,
+    totalInflowPaise: inflow,
+    totalOutflowPaise: outflow,
+    earmarkedGoalsPaise: goals,
+    earmarkedEmergencyPaise: emergency,
+    cashPaise: cash,
+    creditOwedPaise: owed,
+    earmarkedPaise: earmarked,
+    availablePaise: cash - earmarked,
+    accounts,
+  };
 }
 
 /** Income vs spending for an inclusive date range (CashFlowCalculator.summarize). */
@@ -72,8 +128,10 @@ export interface PeriodSummary {
   savingsRateBps: number | null;
   /** Expense per category, sorted descending. */
   byCategory: { categoryId: string; amountPaise: Paise }[];
-  /** Expense per payment method (missing = other), sorted descending. */
-  byMethod: { method: string; amountPaise: Paise }[];
+  /** Expense per account, sorted descending. */
+  byAccount: { accountId: string; amountPaise: Paise }[];
+  /** Expense that has a channel, per channel, sorted descending. */
+  byChannel: { channel: string; amountPaise: Paise }[];
   transactionCount: number;
 }
 
@@ -91,12 +149,18 @@ export async function loadPeriodSummary(tx: Tx, userId: string, range: DateRange
     where user_id = ${userId} and type = 'expense' and origin <> 'loanDisbursement'
       and date between ${range.start}::date and ${range.end}::date
     group by category_id`.execute(tx);
-  const methods = await sql<{ method: string; total: string }>`
-    select coalesce(payment_method, 'other') as method, sum(amount_paise) as total
+  const accts = await sql<{ account_id: string; total: string }>`
+    select account_id, sum(amount_paise) as total
     from public.transactions
     where user_id = ${userId} and type = 'expense' and origin <> 'loanDisbursement'
       and date between ${range.start}::date and ${range.end}::date
-    group by 1`.execute(tx);
+    group by account_id`.execute(tx);
+  const channels = await sql<{ channel: string; total: string }>`
+    select channel, sum(amount_paise) as total
+    from public.transactions
+    where user_id = ${userId} and type = 'expense' and origin <> 'loanDisbursement' and channel is not null
+      and date between ${range.start}::date and ${range.end}::date
+    group by channel`.execute(tx);
   const income = num(totals.rows[0]?.income);
   const expense = num(totals.rows[0]?.expense);
   // Descending by amount; ties broken by key so the order is deterministic.
@@ -109,7 +173,8 @@ export async function loadPeriodSummary(tx: Tx, userId: string, range: DateRange
     netPaise: income - expense,
     savingsRateBps: ratioBps(income - expense, income),
     byCategory: cats.rows.map((r) => ({ categoryId: r.category_id, amountPaise: num(r.total) })).sort(byDesc((x) => x.categoryId)),
-    byMethod: methods.rows.map((r) => ({ method: r.method, amountPaise: num(r.total) })).sort(byDesc((x) => x.method)),
+    byAccount: accts.rows.map((r) => ({ accountId: r.account_id, amountPaise: num(r.total) })).sort(byDesc((x) => x.accountId)),
+    byChannel: channels.rows.map((r) => ({ channel: r.channel, amountPaise: num(r.total) })).sort(byDesc((x) => x.channel)),
     transactionCount: num(totals.rows[0]?.count),
   };
 }

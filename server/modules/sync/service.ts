@@ -21,6 +21,7 @@ import {
   goalFromRow,
   loanFromRow,
   loanPaymentFromRow,
+  moneyAccountFromRow,
   movementFromRow,
   pendingFromRow,
   preferencesFromRow,
@@ -28,6 +29,7 @@ import {
   settlementFromRow,
   subscriptionFromRow,
   transactionFromRow,
+  transferFromRow,
   type BudgetLimitChange,
 } from '../../finance/models';
 import { directoryEntries } from '../../finance/snapshot';
@@ -44,6 +46,8 @@ export const COLLECTIONS = [
   'pending',
   'settlements',
   'assets',
+  'moneyAccounts',
+  'transfers',
 ] as const;
 export type Collection = (typeof COLLECTIONS)[number];
 
@@ -60,6 +64,8 @@ const TOMBSTONE_NAMES: Record<string, Collection> = {
   pending: 'pending',
   settlements: 'settlements',
   assets: 'assets',
+  moneyAccounts: 'moneyAccounts',
+  transfers: 'transfers',
 };
 
 export interface CollectionChanges {
@@ -87,7 +93,7 @@ type Row = { sync_seq: number } & Record<string, unknown>;
 export async function changesSince(tx: Tx, userId: string, since: number, limit = 2000): Promise<SyncChanges> {
   const fetch = async <R extends Row>(build: () => Promise<R[]>) => build();
   const take = limit + 1;
-  const own = <T extends 'transactions' | 'categories' | 'budgets' | 'goals' | 'savings_movements' | 'loans' | 'loan_payments' | 'subscriptions' | 'assets'>(
+  const own = <T extends 'transactions' | 'categories' | 'budgets' | 'goals' | 'savings_movements' | 'loans' | 'loan_payments' | 'subscriptions' | 'assets' | 'money_accounts' | 'transfers'>(
     table: T,
   ) =>
     fetch(
@@ -102,7 +108,7 @@ export async function changesSince(tx: Tx, userId: string, since: number, limit 
           .execute() as unknown as Promise<Row[]>,
     );
 
-  const [transactions, categories, budgets, goals, movements, loans, loanPayments, subscriptions, assets] = await Promise.all([
+  const [transactions, categories, budgets, goals, movements, loans, loanPayments, subscriptions, assets, moneyAccounts, transfers] = await Promise.all([
     own('transactions'),
     own('categories'),
     own('budgets'),
@@ -112,6 +118,8 @@ export async function changesSince(tx: Tx, userId: string, since: number, limit 
     own('loan_payments'),
     own('subscriptions'),
     own('assets'),
+    own('money_accounts'),
+    own('transfers'),
   ]);
   const pending = (await tx
     .selectFrom('pending_payments')
@@ -140,7 +148,7 @@ export async function changesSince(tx: Tx, userId: string, since: number, limit 
     .limit(take)
     .execute()) as unknown as Row[];
 
-  const lists = { transactions, categories, budgets, goals, movements, loans, loanPayments, subscriptions, assets, pending, settlements, tombstones };
+  const lists = { transactions, categories, budgets, goals, movements, loans, loanPayments, subscriptions, assets, moneyAccounts, transfers, pending, settlements, tombstones };
 
   // Bound the page: stop at the smallest last-included seq of any truncated list.
   let cutoff = Number.POSITIVE_INFINITY;
@@ -186,6 +194,8 @@ export async function changesSince(tx: Tx, userId: string, since: number, limit 
   put('loanPayments', track(within(loanPayments)).map((r) => loanPaymentFromRow(r as never)));
   put('subscriptions', track(within(subscriptions)).map((r) => subscriptionFromRow(r as never)));
   put('assets', track(within(assets)).map((r) => assetFromRow(r as never)));
+  put('moneyAccounts', track(within(moneyAccounts)).map((r) => moneyAccountFromRow(r as never)));
+  put('transfers', track(within(transfers)).map((r) => transferFromRow(r as never)));
 
   const pendingRows = track(within(pending));
   const owners = await directoryEntries(

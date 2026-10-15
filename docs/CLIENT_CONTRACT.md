@@ -35,7 +35,7 @@ Omit `since` for a full load. Response `data`:
 { "cursor": "1234", "hasMore": false,
   "collections": { "transactions": { "upserted": [TransactionDto...], "deleted": ["tx_1"] }, "categories": {...},
     "budgets": {...}, "goals": {...}, "savingsMovements": {...}, "loans": {...}, "loanPayments": {...},
-    "subscriptions": {...}, "pending": {...}, "settlements": {...}, "assets": {...} },
+    "subscriptions": {...}, "pending": {...}, "settlements": {...}, "assets": {...}, "moneyAccounts": {...}, "transfers": {...} },
   "values": { "profile": ProfileDto, "emergencyPlan": EmergencyPlanDto, "preferences": {...},
               "alertInbox": AlertInboxDto, "me": { "id", "name", "handle", "phoneHint" } } }
 ```
@@ -88,7 +88,7 @@ store's DTO JSON:
 ```json
 { "categories": [CategoryDto], "transactions": [...], "budgets": [...], "goals": [...], "savingsMovements": [...],
   "loans": [...], "loanPayments": [...], "subscriptions": [...], "pending": [...], "settlements": [...],
-  "assets": [...], "profile": ProfileDto, "emergencyPlan": EmergencyPlanDto }
+  "assets": [...], "moneyAccounts": [...], "transfers": [...], "profile": ProfileDto, "emergencyPlan": EmergencyPlanDto }
 ```
 Pending items: send own items only (not mirrors); `link` is dropped (sharing is re-established online). Validated and
 written atomically (all or nothing) with the client ids preserved. Response = full sync payload.

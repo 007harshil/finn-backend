@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T03:52:10.683Z",
+  "generatedAt": "2026-10-15T18:00:57.769Z",
   "actions": [
     {
       "actionId": "profile.update",
@@ -32,13 +32,353 @@
       }
     },
     {
+      "actionId": "accounts.create",
+      "input": {
+        "name": "SBI",
+        "kind": "bank",
+        "institution": "SBI",
+        "openingBalance": "10000",
+        "openingDate": "2026-01-01"
+      },
+      "result": {
+        "id": "acc_1",
+        "name": "SBI",
+        "kind": "bank",
+        "institution": "SBI",
+        "last4": null,
+        "openingPaise": 1000000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 1,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "accounts.create",
+      "input": {
+        "name": "Axis Magnus",
+        "kind": "creditCard",
+        "institution": "Axis",
+        "last4": "4321",
+        "openingBalance": "0",
+        "openingDate": "2026-01-01",
+        "creditLimit": "200000"
+      },
+      "result": {
+        "id": "acc_2",
+        "name": "Axis Magnus",
+        "kind": "creditCard",
+        "institution": "Axis",
+        "last4": "4321",
+        "openingPaise": 0,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": 20000000,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 2,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "accounts.create",
+      "input": {
+        "name": "Old wallet",
+        "kind": "otherCard",
+        "openingBalance": "0",
+        "openingDate": "2026-01-01"
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 0,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 3,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "accounts.update",
+      "input": {
+        "id": "acc_3",
+        "expectedVersion": 1,
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "openingBalance": "0",
+        "openingDate": "2026-01-01",
+        "note": "Unused"
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 0,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 3,
+        "note": "Unused",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "accounts.setBalance",
+      "input": {
+        "id": "acc_3",
+        "balance": "50",
+        "asOf": "2026-10-01"
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 5000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 3,
+        "note": "Unused",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 3
+      }
+    },
+    {
+      "actionId": "accounts.setDefault",
+      "input": {
+        "id": "acc_1"
+      },
+      "result": {
+        "id": "acc_1",
+        "name": "SBI",
+        "kind": "bank",
+        "institution": "SBI",
+        "last4": null,
+        "openingPaise": 1000000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": true,
+        "isArchived": false,
+        "sortOrder": 1,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "accounts.setDefault",
+      "input": {
+        "id": "acc_cash"
+      },
+      "result": {
+        "id": "acc_cash",
+        "name": "Cash",
+        "kind": "cash",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 2000000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": true,
+        "isArchived": false,
+        "sortOrder": 0,
+        "note": null,
+        "createdAt": "2026-10-15T18:00:53.246Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 4
+      }
+    },
+    {
+      "actionId": "accounts.archive",
+      "input": {
+        "id": "acc_3",
+        "archived": true
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 5000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": true,
+        "sortOrder": 3,
+        "note": "Unused",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 4
+      }
+    },
+    {
+      "actionId": "accounts.archive",
+      "input": {
+        "id": "acc_3",
+        "archived": false
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 5000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 3,
+        "note": "Unused",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 5
+      }
+    },
+    {
+      "actionId": "accounts.delete",
+      "input": {
+        "id": "acc_3"
+      },
+      "result": {
+        "id": "acc_3",
+        "name": "Old wallet card",
+        "kind": "otherCard",
+        "institution": null,
+        "last4": null,
+        "openingPaise": 5000,
+        "openingDate": "2026-01-01",
+        "creditLimitPaise": null,
+        "isDefault": false,
+        "isArchived": false,
+        "sortOrder": 3,
+        "note": "Unused",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 5
+      }
+    },
+    {
+      "actionId": "transfers.create",
+      "input": {
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_cash",
+        "amount": "2000",
+        "date": "2026-10-02",
+        "channel": "ATM"
+      },
+      "result": {
+        "id": "trf_1",
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_cash",
+        "amountPaise": 200000,
+        "date": "2026-10-02",
+        "channel": "ATM",
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "transfers.update",
+      "input": {
+        "id": "trf_1",
+        "expectedVersion": 1,
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_cash",
+        "amount": "2500",
+        "date": "2026-10-02",
+        "channel": "ATM",
+        "note": "Cash for the week"
+      },
+      "result": {
+        "id": "trf_1",
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_cash",
+        "amountPaise": 250000,
+        "date": "2026-10-02",
+        "channel": "ATM",
+        "note": "Cash for the week",
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 2
+      }
+    },
+    {
+      "actionId": "transfers.create",
+      "input": {
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_2",
+        "amount": "500",
+        "date": "2026-10-03"
+      },
+      "result": {
+        "id": "trf_2",
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_2",
+        "amountPaise": 50000,
+        "date": "2026-10-03",
+        "channel": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
+      "actionId": "transfers.delete",
+      "input": {
+        "id": "trf_2"
+      },
+      "result": {
+        "id": "trf_2",
+        "fromAccountId": "acc_1",
+        "toAccountId": "acc_2",
+        "amountPaise": 50000,
+        "date": "2026-10-03",
+        "channel": null,
+        "note": null,
+        "createdAt": "2026-10-10T03:30:00.000Z",
+        "updatedAt": "2026-10-10T03:30:00.000Z",
+        "version": 1
+      }
+    },
+    {
       "actionId": "transactions.create",
       "input": {
         "type": "income",
         "amount": "100000",
         "categoryId": "cat_salary",
         "date": "2026-10-01",
-        "paymentMethod": "bankTransfer",
+        "accountId": "acc_1",
+        "channel": "NEFT",
         "counterparty": "Acme Corp"
       },
       "result": {
@@ -47,7 +387,8 @@
         "amountPaise": 10000000,
         "categoryId": "cat_salary",
         "date": "2026-10-01",
-        "paymentMethod": "bankTransfer",
+        "accountId": "acc_1",
+        "channel": "NEFT",
         "counterparty": "Acme Corp",
         "note": null,
         "origin": "manual",
@@ -64,7 +405,8 @@
         "amount": "1250.50",
         "categoryId": "cat_food",
         "date": "2026-10-05",
-        "paymentMethod": "upi",
+        "accountId": "acc_2",
+        "channel": "UPI",
         "counterparty": "Swiggy",
         "note": "Dinner"
       },
@@ -74,7 +416,8 @@
         "amountPaise": 125050,
         "categoryId": "cat_food",
         "date": "2026-10-05",
-        "paymentMethod": "upi",
+        "accountId": "acc_2",
+        "channel": "UPI",
         "counterparty": "Swiggy",
         "note": "Dinner",
         "origin": "manual",
@@ -93,7 +436,8 @@
         "amount": "1300.25",
         "categoryId": "cat_food",
         "date": "2026-10-05",
-        "paymentMethod": "upi",
+        "accountId": "acc_2",
+        "channel": "UPI",
         "counterparty": "Swiggy",
         "note": "Dinner + tip"
       },
@@ -103,7 +447,8 @@
         "amountPaise": 130025,
         "categoryId": "cat_food",
         "date": "2026-10-05",
-        "paymentMethod": "upi",
+        "accountId": "acc_2",
+        "channel": "UPI",
         "counterparty": "Swiggy",
         "note": "Dinner + tip",
         "origin": "manual",
@@ -127,7 +472,8 @@
         "amountPaise": 9900,
         "categoryId": "cat_food",
         "date": "2026-10-06",
-        "paymentMethod": null,
+        "accountId": "acc_cash",
+        "channel": null,
         "counterparty": null,
         "note": null,
         "origin": "manual",
@@ -148,7 +494,8 @@
         "amountPaise": 9900,
         "categoryId": "cat_food",
         "date": "2026-10-06",
-        "paymentMethod": null,
+        "accountId": "acc_cash",
+        "channel": null,
         "counterparty": null,
         "note": null,
         "origin": "manual",
@@ -460,7 +807,8 @@
         "pendingId": "pend_1",
         "amount": "1200",
         "date": "2026-10-05",
-        "method": "upi",
+        "accountId": "acc_1",
+        "channel": "UPI",
         "recordCashMovement": true,
         "note": "Part payment"
       },
@@ -469,7 +817,8 @@
         "pendingId": "pend_1",
         "amountPaise": 120000,
         "date": "2026-10-05",
-        "method": "upi",
+        "accountId": "acc_1",
+        "channel": "UPI",
         "transactionId": "tx_4",
         "note": "Part payment",
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -488,7 +837,8 @@
         "pendingId": "pend_1",
         "amountPaise": 30000,
         "date": "2026-10-06",
-        "method": null,
+        "accountId": null,
+        "channel": null,
         "transactionId": null,
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -696,14 +1046,15 @@
         "pendingId": "pend_6",
         "amount": "300",
         "date": "2026-10-09",
-        "method": "upi"
+        "channel": "UPI"
       },
       "result": {
         "id": "set_3",
         "pendingId": "pend_6",
         "amountPaise": 30000,
         "date": "2026-10-09",
-        "method": "upi",
+        "accountId": "acc_cash",
+        "channel": "UPI",
         "transactionId": "tx_5",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -715,14 +1066,15 @@
         "pendingId": "mir_shr_1",
         "amount": "400",
         "date": "2026-10-10",
-        "method": "upi"
+        "channel": "UPI"
       },
       "result": {
         "id": "set_4",
         "pendingId": "mir_shr_1",
         "amountPaise": 40000,
         "date": "2026-10-10",
-        "method": "upi",
+        "accountId": "acc_cash",
+        "channel": "UPI",
         "transactionId": "tx_6",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -918,7 +1270,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": null,
+        "accountId": null,
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -935,7 +1287,7 @@
         "categoryId": "cat_food",
         "frequency": "monthly",
         "nextDueDate": "2026-10-08",
-        "paymentMethod": "upi"
+        "accountId": "acc_1"
       },
       "result": {
         "id": "sub_1",
@@ -947,7 +1299,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": "upi",
+        "accountId": "acc_1",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -965,7 +1317,8 @@
         "amountPaise": 64900,
         "categoryId": "cat_food",
         "date": "2026-10-08",
-        "paymentMethod": "upi",
+        "accountId": "acc_1",
+        "channel": null,
         "counterparty": "Netflix",
         "note": "Monthly renewal · for 8 Oct 2026",
         "origin": "subscription",
@@ -990,7 +1343,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": "upi",
+        "accountId": "acc_1",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -1013,7 +1366,7 @@
         "startDate": null,
         "status": "paused",
         "autoRenews": true,
-        "paymentMethod": "upi",
+        "accountId": "acc_1",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -1036,7 +1389,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": "upi",
+        "accountId": "acc_1",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -1062,7 +1415,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": null,
+        "accountId": null,
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -1084,7 +1437,7 @@
         "startDate": null,
         "status": "active",
         "autoRenews": true,
-        "paymentMethod": null,
+        "accountId": null,
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -1401,7 +1754,8 @@
             "amountPaise": 4275,
             "categoryId": "cat_food",
             "date": "2026-10-07",
-            "paymentMethod": "cash",
+            "accountId": "acc_cash",
+            "channel": null,
             "counterparty": null,
             "note": null,
             "origin": "manual",
@@ -1433,17 +1787,17 @@
                 "value": "7 Oct 2026"
               },
               {
-                "label": "Paid via",
+                "label": "From",
                 "value": "Cash"
               }
             ],
             "warnings": [],
-            "fingerprint": "8c85dc3f865e73ee",
+            "fingerprint": "359526877772db43",
             "requiresConfirmation": false
           },
           "replayed": false,
           "changes": {
-            "cursor": "195",
+            "cursor": "229",
             "hasMore": false,
             "collections": {
               "transactions": {
@@ -1454,7 +1808,8 @@
                     "amountPaise": 4275,
                     "categoryId": "cat_food",
                     "date": "2026-10-07",
-                    "paymentMethod": "cash",
+                    "accountId": "acc_cash",
+                    "channel": null,
                     "counterparty": null,
                     "note": null,
                     "origin": "manual",
@@ -1545,18 +1900,16 @@
                   "required": true
                 },
                 {
-                  "name": "paymentMethod",
-                  "kind": "enumeration",
-                  "description": "How it was paid",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved: UPI, IMPS, NEFT, Cheque, ATM… (free text, up to 30 characters)",
+                  "required": false
                 },
                 {
                   "name": "counterparty",
@@ -1622,18 +1975,16 @@
                   "required": true
                 },
                 {
-                  "name": "paymentMethod",
-                  "kind": "enumeration",
-                  "description": "How it was paid",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved: UPI, IMPS, NEFT, Cheque, ATM… (free text, up to 30 characters)",
+                  "required": false
                 },
                 {
                   "name": "counterparty",
@@ -2205,18 +2556,16 @@
                   "required": true
                 },
                 {
-                  "name": "method",
-                  "kind": "enumeration",
-                  "description": "Payment method",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved (free text, up to 30 characters)",
+                  "required": false
                 },
                 {
                   "name": "recordCashMovement",
@@ -2362,6 +2711,18 @@
                   "required": false
                 },
                 {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the disbursement moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How the disbursement moved (free text, up to 30 characters)",
+                  "required": false
+                },
+                {
                   "name": "prepaymentStrategy",
                   "kind": "enumeration",
                   "description": "What a prepayment changes (default reduceTenure)",
@@ -2487,6 +2848,18 @@
                   "required": false
                 },
                 {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the disbursement moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How the disbursement moved (free text, up to 30 characters)",
+                  "required": false
+                },
+                {
                   "name": "prepaymentStrategy",
                   "kind": "enumeration",
                   "description": "What a prepayment changes (default reduceTenure)",
@@ -2543,9 +2916,15 @@
                   "required": true
                 },
                 {
-                  "name": "method",
-                  "kind": "enumeration",
-                  "description": "Payment method",
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the payment moved through (defaults to the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved (free text, up to 30 characters)",
                   "required": false
                 },
                 {
@@ -2638,18 +3017,10 @@
                   "required": false
                 },
                 {
-                  "name": "paymentMethod",
-                  "kind": "enumeration",
-                  "description": "Usual payment method",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account usually charged",
+                  "required": false
                 },
                 {
                   "name": "note",
@@ -2730,18 +3101,10 @@
                   "required": false
                 },
                 {
-                  "name": "paymentMethod",
-                  "kind": "enumeration",
-                  "description": "Usual payment method",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account usually charged",
+                  "required": false
                 },
                 {
                   "name": "note",
@@ -2813,18 +3176,16 @@
                   "required": false
                 },
                 {
-                  "name": "method",
-                  "kind": "enumeration",
-                  "description": "Payment method",
-                  "required": false,
-                  "allowedValues": [
-                    "upi",
-                    "card",
-                    "cash",
-                    "bankTransfer",
-                    "wallet",
-                    "other"
-                  ]
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account paid from (defaults to the subscription account, then the default account)",
+                  "required": false
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it was paid (free text, up to 30 characters)",
+                  "required": false
                 }
               ]
             },
@@ -3341,10 +3702,395 @@
               ]
             },
             {
+              "id": "accounts.create",
+              "module": "accounts",
+              "title": "Add an account",
+              "description": "Adds a cash, bank or card account with its own balance. Credit cards track the amount owed.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Account name, 1–40 characters",
+                  "required": true
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "Kind of account",
+                  "required": true,
+                  "allowedValues": [
+                    "cash",
+                    "bank",
+                    "debitCard",
+                    "creditCard",
+                    "promoCard",
+                    "otherCard"
+                  ]
+                },
+                {
+                  "name": "institution",
+                  "kind": "string",
+                  "description": "Bank or issuer, up to 40 characters",
+                  "required": false
+                },
+                {
+                  "name": "last4",
+                  "kind": "string",
+                  "description": "Last 4 digits (cards only)",
+                  "required": false
+                },
+                {
+                  "name": "openingBalance",
+                  "kind": "money",
+                  "description": "Money in the account on the opening date (credit card: amount owed), in rupees",
+                  "required": true
+                },
+                {
+                  "name": "creditLimit",
+                  "kind": "money",
+                  "description": "Credit limit in rupees (credit cards only)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note, up to 200 characters",
+                  "required": false
+                },
+                {
+                  "name": "openingDate",
+                  "kind": "date",
+                  "description": "Date the opening balance is as of (defaults to today)",
+                  "required": false
+                },
+                {
+                  "name": "isDefault",
+                  "kind": "boolean",
+                  "description": "Make this the default account",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "accounts.update",
+              "module": "accounts",
+              "title": "Edit an account",
+              "description": "Changes an account's name, kind, details, opening balance or opening date. Switching between a credit card and any other kind is allowed only while the account has no movements.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Account id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read. Omit to skip the stale check",
+                  "required": false
+                },
+                {
+                  "name": "version",
+                  "kind": "integer",
+                  "description": "Alias of expectedVersion",
+                  "required": false
+                },
+                {
+                  "name": "name",
+                  "kind": "string",
+                  "description": "Account name, 1–40 characters",
+                  "required": true
+                },
+                {
+                  "name": "kind",
+                  "kind": "enumeration",
+                  "description": "Kind of account",
+                  "required": true,
+                  "allowedValues": [
+                    "cash",
+                    "bank",
+                    "debitCard",
+                    "creditCard",
+                    "promoCard",
+                    "otherCard"
+                  ]
+                },
+                {
+                  "name": "institution",
+                  "kind": "string",
+                  "description": "Bank or issuer, up to 40 characters",
+                  "required": false
+                },
+                {
+                  "name": "last4",
+                  "kind": "string",
+                  "description": "Last 4 digits (cards only)",
+                  "required": false
+                },
+                {
+                  "name": "openingBalance",
+                  "kind": "money",
+                  "description": "Money in the account on the opening date (credit card: amount owed), in rupees",
+                  "required": true
+                },
+                {
+                  "name": "creditLimit",
+                  "kind": "money",
+                  "description": "Credit limit in rupees (credit cards only)",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note, up to 200 characters",
+                  "required": false
+                },
+                {
+                  "name": "openingDate",
+                  "kind": "date",
+                  "description": "Date the opening balance is as of",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "accounts.setBalance",
+              "module": "accounts",
+              "title": "Correct an account balance",
+              "description": "Adjusts the opening balance so the account shows the given balance (amount owed for a credit card) as of the date. Records no transaction.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Account id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read. Omit to skip the stale check",
+                  "required": false
+                },
+                {
+                  "name": "version",
+                  "kind": "integer",
+                  "description": "Alias of expectedVersion",
+                  "required": false
+                },
+                {
+                  "name": "balance",
+                  "kind": "money",
+                  "description": "What the account really holds (credit card: owes), in rupees",
+                  "required": true
+                },
+                {
+                  "name": "asOf",
+                  "kind": "date",
+                  "description": "Date the balance is as of (defaults to today, not in the future)",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "accounts.setDefault",
+              "module": "accounts",
+              "title": "Set the default account",
+              "description": "Makes an account the one preselected in forms and used when a movement does not name an account.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Account id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "accounts.archive",
+              "module": "accounts",
+              "title": "Archive an account",
+              "description": "Hides an account from pickers and Home. History and balance are kept. The default or last active account cannot be archived.",
+              "risk": "low",
+              "movesMoney": false,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Account id",
+                  "required": true
+                },
+                {
+                  "name": "archived",
+                  "kind": "boolean",
+                  "description": "true to archive, false to restore",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "accounts.delete",
+              "module": "accounts",
+              "title": "Delete an account",
+              "description": "Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions or settlements must be archived instead.",
+              "risk": "consequential",
+              "movesMoney": false,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Account id",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "transfers.create",
+              "module": "transfers",
+              "title": "Transfer between accounts",
+              "description": "Moves money between two of your own accounts (for example ATM withdrawal or paying a credit-card bill). Total money is unchanged; it is not income or spending.",
+              "risk": "low",
+              "movesMoney": true,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "fromAccountId",
+                  "kind": "id",
+                  "description": "Account the money leaves",
+                  "required": true
+                },
+                {
+                  "name": "toAccountId",
+                  "kind": "id",
+                  "description": "Account the money arrives in (different from the source)",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date of the transfer (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved (UPI, ATM, Cheque…), up to 30 characters",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "transfers.update",
+              "module": "transfers",
+              "title": "Edit a transfer",
+              "description": "Changes a transfer between your accounts. Balances update automatically.",
+              "risk": "low",
+              "movesMoney": true,
+              "reversible": true,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Transfer id",
+                  "required": true
+                },
+                {
+                  "name": "expectedVersion",
+                  "kind": "integer",
+                  "description": "Version that was read. Omit to skip the stale check",
+                  "required": false
+                },
+                {
+                  "name": "version",
+                  "kind": "integer",
+                  "description": "Alias of expectedVersion",
+                  "required": false
+                },
+                {
+                  "name": "fromAccountId",
+                  "kind": "id",
+                  "description": "Account the money leaves",
+                  "required": true
+                },
+                {
+                  "name": "toAccountId",
+                  "kind": "id",
+                  "description": "Account the money arrives in (different from the source)",
+                  "required": true
+                },
+                {
+                  "name": "amount",
+                  "kind": "money",
+                  "description": "Amount in rupees, greater than zero",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "kind": "date",
+                  "description": "Date of the transfer (not in the future)",
+                  "required": true
+                },
+                {
+                  "name": "channel",
+                  "kind": "string",
+                  "description": "How it moved (UPI, ATM, Cheque…), up to 30 characters",
+                  "required": false
+                },
+                {
+                  "name": "note",
+                  "kind": "string",
+                  "description": "Free-text note",
+                  "required": false
+                }
+              ]
+            },
+            {
+              "id": "transfers.delete",
+              "module": "transfers",
+              "title": "Delete a transfer",
+              "description": "Removes a transfer and reverses its effect on both account balances.",
+              "risk": "consequential",
+              "movesMoney": true,
+              "reversible": false,
+              "fields": [
+                {
+                  "name": "id",
+                  "kind": "id",
+                  "description": "Transfer id",
+                  "required": true
+                }
+              ]
+            },
+            {
               "id": "profile.update",
               "module": "settings",
               "title": "Update profile",
-              "description": "Changes your name, opening balance, start date or income estimate. Changing the opening balance or start date recalculates every balance.",
+              "description": "Changes your name, opening balance (the Cash account), start date or income estimate. Changing the opening balance or start date recalculates every balance.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": true,
@@ -3401,13 +4147,660 @@
         }
       }
     },
+    "analytics": {
+      "status": 200,
+      "body": {
+        "data": {
+          "period": "month",
+          "periodInfo": {
+            "label": "This month",
+            "months": 1
+          },
+          "month": "2026-10",
+          "currentMonth": "2026-10",
+          "minMonth": "2024-11",
+          "today": "2026-10-10",
+          "range": {
+            "start": "2026-10-01",
+            "end": "2026-10-10"
+          },
+          "previousRange": {
+            "start": "2026-09-01",
+            "end": "2026-09-30"
+          },
+          "isPartial": true,
+          "periodLabel": "this month",
+          "previousLabel": "all of September",
+          "hasActivity": true,
+          "current": {
+            "range": {
+              "start": "2026-10-01",
+              "end": "2026-10-10"
+            },
+            "incomePaise": 10120000,
+            "expensePaise": 1489400,
+            "netPaise": 8630600,
+            "savingsRateBps": 8528,
+            "transactionCount": 7
+          },
+          "previous": {
+            "range": {
+              "start": "2026-09-01",
+              "end": "2026-09-30"
+            },
+            "incomePaise": 0,
+            "expensePaise": 0,
+            "netPaise": 0,
+            "savingsRateBps": null,
+            "transactionCount": 0
+          },
+          "comparison": {
+            "incomeChangeBps": null,
+            "expenseChangeBps": null
+          },
+          "savingsRateBps": 8528,
+          "dailyBurnPaise": 148940,
+          "months": [
+            {
+              "month": "2026-05",
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            {
+              "month": "2026-06",
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            {
+              "month": "2026-07",
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            {
+              "month": "2026-08",
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            {
+              "month": "2026-09",
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            {
+              "month": "2026-10",
+              "incomePaise": 10120000,
+              "expensePaise": 1489400,
+              "netPaise": 8630600,
+              "savingsRateBps": 8528,
+              "transactionCount": 7
+            }
+          ],
+          "categories": [
+            {
+              "categoryId": "cat_sys_emi",
+              "name": "EMI & Loan Repayment",
+              "iconKey": "scale",
+              "colorIndex": 10,
+              "amountPaise": 1260200,
+              "shareBps": 8461,
+              "previousPaise": 0,
+              "changeBps": null
+            },
+            {
+              "categoryId": "cat_food",
+              "name": "Food & Dining",
+              "iconKey": "utensils",
+              "colorIndex": 12,
+              "amountPaise": 199200,
+              "shareBps": 1337,
+              "previousPaise": 0,
+              "changeBps": null
+            },
+            {
+              "categoryId": "cat_sys_settle_out",
+              "name": "Settlement Paid",
+              "iconKey": "handshake",
+              "colorIndex": 13,
+              "amountPaise": 30000,
+              "shareBps": 201,
+              "previousPaise": 0,
+              "changeBps": null
+            }
+          ],
+          "accounts": [
+            {
+              "accountId": "acc_cash",
+              "label": "Cash",
+              "kind": "cash",
+              "amountPaise": 1294475,
+              "shareBps": 8691
+            },
+            {
+              "accountId": "acc_2",
+              "label": "Axis Magnus",
+              "kind": "creditCard",
+              "amountPaise": 130025,
+              "shareBps": 873
+            },
+            {
+              "accountId": "acc_1",
+              "label": "SBI",
+              "kind": "bank",
+              "amountPaise": 64900,
+              "shareBps": 436
+            }
+          ],
+          "channels": [
+            {
+              "channel": "UPI",
+              "amountPaise": 160025,
+              "shareBps": 1074
+            }
+          ],
+          "dailySpend": [
+            {
+              "date": "2026-10-01",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-02",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-03",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-04",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-05",
+              "amountPaise": 1390225,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-06",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-07",
+              "amountPaise": 4275,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-08",
+              "amountPaise": 64900,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-09",
+              "amountPaise": 30000,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-10",
+              "amountPaise": 0,
+              "isFuture": false
+            },
+            {
+              "date": "2026-10-11",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-12",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-13",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-14",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-15",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-16",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-17",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-18",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-19",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-20",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-21",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-22",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-23",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-24",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-25",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-26",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-27",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-28",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-29",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-30",
+              "amountPaise": 0,
+              "isFuture": true
+            },
+            {
+              "date": "2026-10-31",
+              "amountPaise": 0,
+              "isFuture": true
+            }
+          ],
+          "weekdayAverages": [
+            1390225,
+            0,
+            4275,
+            32450,
+            15000,
+            0,
+            0
+          ],
+          "topExpenses": [
+            {
+              "id": "tx_8",
+              "type": "expense",
+              "amountPaise": 1260200,
+              "categoryId": "cat_sys_emi",
+              "date": "2026-10-05",
+              "accountId": "acc_cash",
+              "channel": null,
+              "counterparty": "HDFC Bank",
+              "note": "Swift car loan · EMI instalment #1",
+              "origin": "loanRepayment",
+              "originRefId": "loan_1",
+              "createdAt": "2026-10-10T03:30:00.000Z",
+              "updatedAt": "2026-10-10T03:30:00.000Z",
+              "version": 1
+            },
+            {
+              "id": "tx_2",
+              "type": "expense",
+              "amountPaise": 130025,
+              "categoryId": "cat_food",
+              "date": "2026-10-05",
+              "accountId": "acc_2",
+              "channel": "UPI",
+              "counterparty": "Swiggy",
+              "note": "Dinner + tip",
+              "origin": "manual",
+              "originRefId": null,
+              "createdAt": "2026-10-10T03:30:00.000Z",
+              "updatedAt": "2026-10-10T03:30:00.000Z",
+              "version": 2
+            },
+            {
+              "id": "tx_9",
+              "type": "expense",
+              "amountPaise": 64900,
+              "categoryId": "cat_food",
+              "date": "2026-10-08",
+              "accountId": "acc_1",
+              "channel": null,
+              "counterparty": "Netflix",
+              "note": "Monthly renewal · for 8 Oct 2026",
+              "origin": "subscription",
+              "originRefId": "sub_1",
+              "createdAt": "2026-10-10T03:30:00.000Z",
+              "updatedAt": "2026-10-10T03:30:00.000Z",
+              "version": 1
+            },
+            {
+              "id": "tx_5",
+              "type": "expense",
+              "amountPaise": 30000,
+              "categoryId": "cat_sys_settle_out",
+              "date": "2026-10-09",
+              "accountId": "acc_cash",
+              "channel": "UPI",
+              "counterparty": "Bob",
+              "note": "Settlement · Dinner",
+              "origin": "pendingSettlement",
+              "originRefId": "pend_6",
+              "createdAt": "2026-10-10T03:30:00.000Z",
+              "updatedAt": "2026-10-10T03:30:00.000Z",
+              "version": 1
+            },
+            {
+              "id": "tx_10",
+              "type": "expense",
+              "amountPaise": 4275,
+              "categoryId": "cat_food",
+              "date": "2026-10-07",
+              "accountId": "acc_cash",
+              "channel": null,
+              "counterparty": null,
+              "note": null,
+              "origin": "manual",
+              "originRefId": null,
+              "createdAt": "2026-10-10T03:30:00.000Z",
+              "updatedAt": "2026-10-10T03:30:00.000Z",
+              "version": 1
+            }
+          ],
+          "budgets": {
+            "period": {
+              "start": "2026-10-01",
+              "end": "2026-10-31"
+            },
+            "items": [
+              {
+                "budget": {
+                  "id": "bud_1",
+                  "categoryId": "cat_food",
+                  "limitPaise": 900000,
+                  "previousLimits": [],
+                  "status": "active",
+                  "warningThresholdBps": 8500,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 4
+                },
+                "period": {
+                  "start": "2026-10-01",
+                  "end": "2026-10-31"
+                },
+                "spentPaise": 199200,
+                "committedPaise": 0,
+                "limitPaise": 900000,
+                "health": "healthy",
+                "elapsedBps": 3225,
+                "utilizationBps": 2213,
+                "remainingPaise": 700800,
+                "remainingAfterCommittedPaise": 700800
+              }
+            ],
+            "limitTotalPaise": 900000,
+            "spentTotalPaise": 199200,
+            "elapsedBps": 3226,
+            "daysLeft": 22,
+            "safeDailyPaise": 31855,
+            "over": 0,
+            "active": 1
+          },
+          "savings": {
+            "trend": [
+              {
+                "month": "2026-05",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-06",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-07",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-08",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-09",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-10",
+                "valuePaise": 1650000
+              }
+            ],
+            "changePaise": 1650000,
+            "avgMonthlyChangePaise": 330000
+          },
+          "debt": {
+            "trend": [
+              {
+                "month": "2026-05",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-06",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-07",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-08",
+                "valuePaise": 0
+              },
+              {
+                "month": "2026-09",
+                "valuePaise": 60000000
+              },
+              {
+                "month": "2026-10",
+                "valuePaise": 59214800
+              }
+            ],
+            "repaidPaise": -59214800,
+            "avgMonthlyRepaidPaise": -11842960,
+            "monthsToDebtFree": null
+          },
+          "subscriptions": {
+            "monthlyPaise": 64900,
+            "annualPaise": 778800,
+            "activeCount": 1,
+            "top": [
+              {
+                "id": "sub_1",
+                "name": "Netflix",
+                "amountPaise": 64900,
+                "categoryId": "cat_food",
+                "frequency": "monthly",
+                "nextDueDate": "2026-12-08",
+                "startDate": null,
+                "status": "active",
+                "autoRenews": true,
+                "accountId": "acc_1",
+                "note": null,
+                "createdAt": "2026-10-10T03:30:00.000Z",
+                "updatedAt": "2026-10-10T03:30:00.000Z",
+                "version": 6,
+                "monthlyEquivalentPaise": 64900,
+                "annualPaise": 778800,
+                "dueState": "upcoming",
+                "daysUntilDue": 59
+              }
+            ]
+          },
+          "goals": [
+            {
+              "goal": {
+                "id": "goal_1",
+                "name": "Japan trip 2027",
+                "category": "travel",
+                "targetPaise": 20000000,
+                "targetDate": "2027-04-10",
+                "plannedMonthlyPaise": null,
+                "colorIndex": 2,
+                "status": "active",
+                "note": null,
+                "createdAt": "2026-10-10T03:30:00.000Z",
+                "updatedAt": "2026-10-10T03:30:00.000Z",
+                "version": 4
+              },
+              "saved": 1400000,
+              "remaining": 18600000,
+              "progressBps": 700,
+              "achieved": false,
+              "averageMonthly": null,
+              "requiredPerMonth": 3100000,
+              "estimatedCompletion": null,
+              "onTrack": null
+            }
+          ],
+          "loans": [
+            {
+              "id": "loan_1",
+              "name": "Swift car loan",
+              "counterparty": "HDFC Bank",
+              "outstandingPaise": 59214800,
+              "emiPaise": 1260200,
+              "nextDue": {
+                "date": "2026-11-05",
+                "amountPaise": 1260200,
+                "period": 2
+              },
+              "daysUntilNextDue": 26,
+              "overdueCount": 0,
+              "paidInstallments": 1,
+              "principalRepaidPaise": 785200,
+              "totalInterestPaidPaise": 475000,
+              "projectedInterestPaise": 15130250,
+              "remainingInstallments": 59,
+              "projectedEndDate": "2031-09-05",
+              "repaidBps": 131,
+              "warning": null,
+              "closed": false
+            }
+          ],
+          "baselines": {
+            "avgMonthlyIncomePaise": 10120000,
+            "avgMonthlyExpensePaise": 1489400,
+            "avgMonthlyNetPaise": 8630600,
+            "windowNetPaise": 8630600,
+            "peakDay": {
+              "date": "2026-10-05",
+              "amountPaise": 1390225,
+              "isFuture": false
+            },
+            "noSpendDays": 6,
+            "elapsedDays": 10,
+            "projectedMonthSpendPaise": 4617140,
+            "busiestWeekday": 0,
+            "quietestWeekday": 1,
+            "digitalShareBps": 1309
+          },
+          "insights": [
+            {
+              "title": "You kept 85% of your income",
+              "body": "₹86,306 more came in than went out. A healthy cushion.",
+              "tone": "positive"
+            },
+            {
+              "title": "Top category: EMI & Loan Repayment",
+              "body": "85% of spending (₹12,602).",
+              "tone": "neutral"
+            },
+            {
+              "title": "Subscriptions take 0.6% of income",
+              "body": "₹649 a month in recurring commitments.",
+              "tone": "neutral"
+            }
+          ],
+          "narrative": [
+            "So far this month you have spent ₹14,894 and received ₹1,01,200.",
+            "EMI & Loan Repayment was your largest spend at ₹12,602.",
+            "You moved ₹16,500 into goals and your emergency fund.",
+            "Loan principal went down by ₹7,852."
+          ],
+          "headlines": {
+            "spending": "You spent ₹14,894 in this month",
+            "incomeVsExpense": "Income covered spending",
+            "net": "You kept ₹86,306 over 6 months",
+            "category": "EMI & Loan Repayment was your biggest spend at 85%",
+            "method": "Cash carried 87% of your spending",
+            "budget": "Your budget is on track",
+            "savings": "Savings grew ₹16,500 in 6 months",
+            "debt": "Debt is up ₹5,92,148 in 6 months",
+            "subscription": "₹649 a month in subscriptions"
+          }
+        }
+      }
+    },
     "audit": {
       "status": 200,
       "body": {
         "data": {
           "items": [
             {
-              "id": "60",
+              "id": "74",
               "actionId": "transactions.create",
               "summary": "Spent ₹42.75",
               "channel": "ui",
@@ -3417,10 +4810,10 @@
               "recordIds": [
                 "tx_10"
               ],
-              "at": "2026-10-12T03:52:10.628Z"
+              "at": "2026-10-15T18:00:57.407Z"
             },
             {
-              "id": "59",
+              "id": "73",
               "actionId": "assets.delete",
               "summary": "Deleted Old bike",
               "channel": "ui",
@@ -3430,10 +4823,10 @@
               "recordIds": [
                 "asset_2"
               ],
-              "at": "2026-10-12T03:52:10.600Z"
+              "at": "2026-10-15T18:00:57.303Z"
             },
             {
-              "id": "58",
+              "id": "72",
               "actionId": "assets.create",
               "summary": "Added Old bike at ₹80,000.50",
               "channel": "ui",
@@ -3443,10 +4836,10 @@
               "recordIds": [
                 "asset_2"
               ],
-              "at": "2026-10-12T03:52:10.589Z"
+              "at": "2026-10-15T18:00:57.257Z"
             },
             {
-              "id": "57",
+              "id": "71",
               "actionId": "assets.update",
               "summary": "Updated Gold coins to ₹82,000",
               "channel": "ui",
@@ -3456,10 +4849,10 @@
               "recordIds": [
                 "asset_1"
               ],
-              "at": "2026-10-12T03:52:10.579Z"
+              "at": "2026-10-15T18:00:57.222Z"
             },
             {
-              "id": "56",
+              "id": "70",
               "actionId": "assets.create",
               "summary": "Added Gold coins at ₹80,000.50",
               "channel": "ui",
@@ -3469,10 +4862,10 @@
               "recordIds": [
                 "asset_1"
               ],
-              "at": "2026-10-12T03:52:10.569Z"
+              "at": "2026-10-15T18:00:57.185Z"
             },
             {
-              "id": "55",
+              "id": "69",
               "actionId": "emergencyFund.withdraw",
               "summary": "Release ₹500 from your emergency fund",
               "channel": "ui",
@@ -3482,10 +4875,10 @@
               "recordIds": [
                 "sv_5"
               ],
-              "at": "2026-10-12T03:52:10.558Z"
+              "at": "2026-10-15T18:00:57.142Z"
             },
             {
-              "id": "54",
+              "id": "68",
               "actionId": "emergencyFund.contribute",
               "summary": "Set aside ₹3,000 for emergencies",
               "channel": "ui",
@@ -3495,10 +4888,10 @@
               "recordIds": [
                 "sv_4"
               ],
-              "at": "2026-10-12T03:52:10.542Z"
+              "at": "2026-10-15T18:00:57.080Z"
             },
             {
-              "id": "53",
+              "id": "67",
               "actionId": "emergencyFund.configure",
               "summary": "Emergency fund target ₹2,40,000",
               "channel": "ui",
@@ -3508,10 +4901,10 @@
               "recordIds": [
                 "emergency_plan"
               ],
-              "at": "2026-10-12T03:52:10.529Z"
+              "at": "2026-10-15T18:00:57.024Z"
             },
             {
-              "id": "52",
+              "id": "66",
               "actionId": "goals.delete",
               "summary": "Delete Doomed",
               "channel": "ui",
@@ -3521,10 +4914,10 @@
               "recordIds": [
                 "goal_2"
               ],
-              "at": "2026-10-12T03:52:10.519Z"
+              "at": "2026-10-15T18:00:56.988Z"
             },
             {
-              "id": "51",
+              "id": "65",
               "actionId": "goals.create",
               "summary": "New goal: Doomed · ₹2,00,000",
               "channel": "ui",
@@ -3534,10 +4927,10 @@
               "recordIds": [
                 "goal_2"
               ],
-              "at": "2026-10-12T03:52:10.508Z"
+              "at": "2026-10-15T18:00:56.944Z"
             },
             {
-              "id": "50",
+              "id": "64",
               "actionId": "goals.toggleArchive",
               "summary": "Restore Japan trip 2027",
               "channel": "ui",
@@ -3547,10 +4940,10 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-12T03:52:10.499Z"
+              "at": "2026-10-15T18:00:56.906Z"
             },
             {
-              "id": "49",
+              "id": "63",
               "actionId": "goals.toggleArchive",
               "summary": "Archive Japan trip 2027",
               "channel": "ui",
@@ -3560,10 +4953,10 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-12T03:52:10.489Z"
+              "at": "2026-10-15T18:00:56.863Z"
             },
             {
-              "id": "48",
+              "id": "62",
               "actionId": "goals.withdraw",
               "summary": "Release ₹1,000 from Japan trip 2027",
               "channel": "ui",
@@ -3573,10 +4966,10 @@
               "recordIds": [
                 "sv_3"
               ],
-              "at": "2026-10-12T03:52:10.477Z"
+              "at": "2026-10-15T18:00:56.823Z"
             },
             {
-              "id": "47",
+              "id": "61",
               "actionId": "goals.contribute",
               "summary": "Set aside ₹5,000 for Japan trip 2027",
               "channel": "ui",
@@ -3586,10 +4979,10 @@
               "recordIds": [
                 "sv_2"
               ],
-              "at": "2026-10-12T03:52:10.463Z"
+              "at": "2026-10-15T18:00:56.763Z"
             },
             {
-              "id": "46",
+              "id": "60",
               "actionId": "goals.update",
               "summary": "Update Japan trip",
               "channel": "ui",
@@ -3599,10 +4992,10 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-12T03:52:10.449Z"
+              "at": "2026-10-15T18:00:56.704Z"
             },
             {
-              "id": "45",
+              "id": "59",
               "actionId": "goals.create",
               "summary": "New goal: Japan trip · ₹2,00,000",
               "channel": "ui",
@@ -3613,10 +5006,10 @@
                 "goal_1",
                 "sv_1"
               ],
-              "at": "2026-10-12T03:52:10.437Z"
+              "at": "2026-10-15T18:00:56.654Z"
             },
             {
-              "id": "44",
+              "id": "58",
               "actionId": "subscriptions.delete",
               "summary": "Old gym deleted",
               "channel": "ui",
@@ -3626,10 +5019,10 @@
               "recordIds": [
                 "sub_2"
               ],
-              "at": "2026-10-12T03:52:10.422Z"
+              "at": "2026-10-15T18:00:56.593Z"
             },
             {
-              "id": "43",
+              "id": "57",
               "actionId": "subscriptions.create",
               "summary": "Old gym added · ₹499 monthly",
               "channel": "ui",
@@ -3639,10 +5032,10 @@
               "recordIds": [
                 "sub_2"
               ],
-              "at": "2026-10-12T03:52:10.409Z"
+              "at": "2026-10-15T18:00:56.543Z"
             },
             {
-              "id": "42",
+              "id": "56",
               "actionId": "subscriptions.setStatus",
               "summary": "Netflix resumed",
               "channel": "ui",
@@ -3652,10 +5045,10 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.400Z"
+              "at": "2026-10-15T18:00:56.500Z"
             },
             {
-              "id": "41",
+              "id": "55",
               "actionId": "subscriptions.setStatus",
               "summary": "Netflix paused",
               "channel": "ui",
@@ -3665,10 +5058,10 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.390Z"
+              "at": "2026-10-15T18:00:56.465Z"
             },
             {
-              "id": "40",
+              "id": "54",
               "actionId": "subscriptions.skipCycle",
               "summary": "Skipped the 8 Nov renewal of Netflix",
               "channel": "ui",
@@ -3678,10 +5071,10 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.380Z"
+              "at": "2026-10-15T18:00:56.426Z"
             },
             {
-              "id": "39",
+              "id": "53",
               "actionId": "subscriptions.markPaid",
               "summary": "Paid ₹649 · Netflix",
               "channel": "ui",
@@ -3692,10 +5085,10 @@
                 "tx_9",
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.368Z"
+              "at": "2026-10-15T18:00:56.369Z"
             },
             {
-              "id": "38",
+              "id": "52",
               "actionId": "subscriptions.update",
               "summary": "Netflix updated",
               "channel": "ui",
@@ -3705,10 +5098,10 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.353Z"
+              "at": "2026-10-15T18:00:56.300Z"
             },
             {
-              "id": "37",
+              "id": "51",
               "actionId": "subscriptions.create",
               "summary": "Netflix added · ₹499 monthly",
               "channel": "ui",
@@ -3718,10 +5111,10 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-12T03:52:10.341Z"
+              "at": "2026-10-15T18:00:56.254Z"
             },
             {
-              "id": "36",
+              "id": "50",
               "actionId": "loans.delete",
               "summary": "Delete Lent to Ravi with Ravi",
               "channel": "ui",
@@ -3731,10 +5124,10 @@
               "recordIds": [
                 "loan_2"
               ],
-              "at": "2026-10-12T03:52:10.329Z"
+              "at": "2026-10-15T18:00:56.211Z"
             },
             {
-              "id": "35",
+              "id": "49",
               "actionId": "loans.create",
               "summary": "I lent ₹12,000 to Ravi",
               "channel": "ui",
@@ -3744,10 +5137,10 @@
               "recordIds": [
                 "loan_2"
               ],
-              "at": "2026-10-12T03:52:10.316Z"
+              "at": "2026-10-15T18:00:56.165Z"
             },
             {
-              "id": "34",
+              "id": "48",
               "actionId": "loans.recordPayment",
               "summary": "Pay ₹12,602 · Swift car loan",
               "channel": "ui",
@@ -3758,10 +5151,10 @@
                 "tx_8",
                 "lp_1"
               ],
-              "at": "2026-10-12T03:52:10.303Z"
+              "at": "2026-10-15T18:00:56.109Z"
             },
             {
-              "id": "33",
+              "id": "47",
               "actionId": "loans.update",
               "summary": "Update Car loan",
               "channel": "ui",
@@ -3772,10 +5165,10 @@
                 "loan_1",
                 "tx_7"
               ],
-              "at": "2026-10-12T03:52:10.285Z"
+              "at": "2026-10-15T18:00:56.041Z"
             },
             {
-              "id": "32",
+              "id": "46",
               "actionId": "loans.create",
               "summary": "I borrowed ₹6,00,000 from HDFC Bank",
               "channel": "ui",
@@ -3786,10 +5179,10 @@
                 "tx_7",
                 "loan_1"
               ],
-              "at": "2026-10-12T03:52:10.274Z"
+              "at": "2026-10-15T18:00:55.996Z"
             },
             {
-              "id": "30",
+              "id": "44",
               "actionId": "pending.settle",
               "summary": "Pay Bob ₹300",
               "channel": "ui",
@@ -3801,10 +5194,10 @@
                 "set_3",
                 "pend_6"
               ],
-              "at": "2026-10-12T03:52:10.236Z"
+              "at": "2026-10-15T18:00:55.838Z"
             },
             {
-              "id": "29",
+              "id": "43",
               "actionId": "pending.create",
               "summary": "Owe ₹1,000 · Dinner",
               "channel": "ui",
@@ -3814,10 +5207,10 @@
               "recordIds": [
                 "pend_6"
               ],
-              "at": "2026-10-12T03:52:10.219Z"
+              "at": "2026-10-15T18:00:55.774Z"
             },
             {
-              "id": "28",
+              "id": "42",
               "actionId": "pending.split",
               "summary": "Collect ₹2,000 from 2 people · Weekend cabin",
               "channel": "ui",
@@ -3828,10 +5221,10 @@
                 "pend_4",
                 "pend_5"
               ],
-              "at": "2026-10-12T03:52:10.208Z"
+              "at": "2026-10-15T18:00:55.730Z"
             },
             {
-              "id": "27",
+              "id": "41",
               "actionId": "pending.delete",
               "summary": "Delete Coffee with Dev",
               "channel": "ui",
@@ -3841,10 +5234,10 @@
               "recordIds": [
                 "pend_3"
               ],
-              "at": "2026-10-12T03:52:10.192Z"
+              "at": "2026-10-15T18:00:55.660Z"
             },
             {
-              "id": "26",
+              "id": "40",
               "actionId": "pending.create",
               "summary": "Owe ₹150 · Coffee",
               "channel": "ui",
@@ -3854,10 +5247,10 @@
               "recordIds": [
                 "pend_3"
               ],
-              "at": "2026-10-12T03:52:10.179Z"
+              "at": "2026-10-15T18:00:55.607Z"
             },
             {
-              "id": "25",
+              "id": "39",
               "actionId": "pending.cancel",
               "summary": "Write off ₹800 with Meera",
               "channel": "ui",
@@ -3867,10 +5260,10 @@
               "recordIds": [
                 "pend_2"
               ],
-              "at": "2026-10-12T03:52:10.168Z"
+              "at": "2026-10-15T18:00:55.558Z"
             },
             {
-              "id": "24",
+              "id": "38",
               "actionId": "pending.create",
               "summary": "Collect ₹800 · Cab",
               "channel": "ui",
@@ -3880,10 +5273,10 @@
               "recordIds": [
                 "pend_2"
               ],
-              "at": "2026-10-12T03:52:10.154Z"
+              "at": "2026-10-15T18:00:55.506Z"
             },
             {
-              "id": "23",
+              "id": "37",
               "actionId": "pending.settle",
               "summary": "Receive ₹300 from Rahul Verma",
               "channel": "ui",
@@ -3894,10 +5287,10 @@
                 "set_2",
                 "pend_1"
               ],
-              "at": "2026-10-12T03:52:10.141Z"
+              "at": "2026-10-15T18:00:55.462Z"
             },
             {
-              "id": "22",
+              "id": "36",
               "actionId": "pending.settle",
               "summary": "Receive ₹1,200 from Rahul Verma",
               "channel": "ui",
@@ -3909,10 +5302,10 @@
                 "set_1",
                 "pend_1"
               ],
-              "at": "2026-10-12T03:52:10.123Z"
+              "at": "2026-10-15T18:00:55.395Z"
             },
             {
-              "id": "21",
+              "id": "35",
               "actionId": "pending.update",
               "summary": "Update Goa trip hotel share with Rahul Verma",
               "channel": "ui",
@@ -3922,10 +5315,10 @@
               "recordIds": [
                 "pend_1"
               ],
-              "at": "2026-10-12T03:52:10.104Z"
+              "at": "2026-10-15T18:00:55.326Z"
             },
             {
-              "id": "20",
+              "id": "34",
               "actionId": "pending.create",
               "summary": "Collect ₹6,500 · Goa trip hotel share",
               "channel": "ui",
@@ -3935,10 +5328,10 @@
               "recordIds": [
                 "pend_1"
               ],
-              "at": "2026-10-12T03:52:10.092Z"
+              "at": "2026-10-15T18:00:55.288Z"
             },
             {
-              "id": "19",
+              "id": "33",
               "actionId": "budgets.delete",
               "summary": "Delete the Travel budget",
               "channel": "ui",
@@ -3948,10 +5341,10 @@
               "recordIds": [
                 "bud_2"
               ],
-              "at": "2026-10-12T03:52:10.080Z"
+              "at": "2026-10-15T18:00:55.244Z"
             },
             {
-              "id": "18",
+              "id": "32",
               "actionId": "budgets.create",
               "summary": "Budget for Travel · ₹1,000",
               "channel": "ui",
@@ -3961,10 +5354,10 @@
               "recordIds": [
                 "bud_2"
               ],
-              "at": "2026-10-12T03:52:10.065Z"
+              "at": "2026-10-15T18:00:55.180Z"
             },
             {
-              "id": "17",
+              "id": "31",
               "actionId": "budgets.setPaused",
               "summary": "Food & Dining budget resumed",
               "channel": "ui",
@@ -3974,10 +5367,10 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-12T03:52:10.053Z"
+              "at": "2026-10-15T18:00:55.132Z"
             },
             {
-              "id": "16",
+              "id": "30",
               "actionId": "budgets.setPaused",
               "summary": "Food & Dining budget paused",
               "channel": "ui",
@@ -3987,10 +5380,10 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-12T03:52:10.040Z"
+              "at": "2026-10-15T18:00:55.084Z"
             },
             {
-              "id": "15",
+              "id": "29",
               "actionId": "budgets.update",
               "summary": "Update Food & Dining budget to ₹9,000",
               "channel": "ui",
@@ -4000,10 +5393,10 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-12T03:52:10.026Z"
+              "at": "2026-10-15T18:00:55.024Z"
             },
             {
-              "id": "14",
+              "id": "28",
               "actionId": "budgets.create",
               "summary": "Budget for Food & Dining · ₹8,000",
               "channel": "ui",
@@ -4013,10 +5406,10 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-12T03:52:10.012Z"
+              "at": "2026-10-15T18:00:54.960Z"
             },
             {
-              "id": "13",
+              "id": "27",
               "actionId": "categories.delete",
               "summary": "Temp deleted",
               "channel": "ui",
@@ -4026,10 +5419,10 @@
               "recordIds": [
                 "cat_2"
               ],
-              "at": "2026-10-12T03:52:10.000Z"
+              "at": "2026-10-15T18:00:54.910Z"
             },
             {
-              "id": "12",
+              "id": "26",
               "actionId": "categories.create",
               "summary": "Category \"Temp\" created",
               "channel": "ui",
@@ -4039,10 +5432,10 @@
               "recordIds": [
                 "cat_2"
               ],
-              "at": "2026-10-12T03:52:09.987Z"
+              "at": "2026-10-15T18:00:54.849Z"
             },
             {
-              "id": "11",
+              "id": "25",
               "actionId": "categories.toggleArchive",
               "summary": "Pets & vets restored",
               "channel": "ui",
@@ -4052,10 +5445,10 @@
               "recordIds": [
                 "cat_1"
               ],
-              "at": "2026-10-12T03:52:09.975Z"
+              "at": "2026-10-15T18:00:54.802Z"
             },
             {
-              "id": "10",
+              "id": "24",
               "actionId": "categories.toggleArchive",
               "summary": "Pets & vets archived",
               "channel": "ui",
@@ -4065,10 +5458,238 @@
               "recordIds": [
                 "cat_1"
               ],
-              "at": "2026-10-12T03:52:09.959Z"
+              "at": "2026-10-15T18:00:54.756Z"
             }
           ],
-          "nextBefore": "10"
+          "nextBefore": "24"
+        }
+      }
+    },
+    "dashboard": {
+      "status": 200,
+      "body": {
+        "data": {
+          "today": "2026-10-10",
+          "isFreshUser": false,
+          "balance": {
+            "openingBalancePaise": 3000000,
+            "totalInflowPaise": 70120000,
+            "totalOutflowPaise": 1489400,
+            "earmarkedGoalsPaise": 1400000,
+            "earmarkedEmergencyPaise": 250000,
+            "cashPaise": 71760625,
+            "creditOwedPaise": 130025,
+            "earmarkedPaise": 1650000,
+            "availablePaise": 70110625,
+            "accounts": [
+              {
+                "accountId": "acc_cash",
+                "balancePaise": 60955525
+              },
+              {
+                "accountId": "acc_1",
+                "balancePaise": 10805100
+              },
+              {
+                "accountId": "acc_2",
+                "balancePaise": 130025
+              }
+            ]
+          },
+          "cashFlow": {
+            "month": "2026-10",
+            "summary": {
+              "range": {
+                "start": "2026-10-01",
+                "end": "2026-10-31"
+              },
+              "incomePaise": 10120000,
+              "expensePaise": 1489400,
+              "netPaise": 8630600,
+              "savingsRateBps": 8528,
+              "transactionCount": 7
+            },
+            "compareRange": {
+              "start": "2026-09-01",
+              "end": "2026-09-10"
+            },
+            "before": {
+              "range": {
+                "start": "2026-09-01",
+                "end": "2026-09-10"
+              },
+              "incomePaise": 0,
+              "expensePaise": 0,
+              "netPaise": 0,
+              "savingsRateBps": null,
+              "transactionCount": 0
+            },
+            "savingsHealth": {
+              "level": "strong",
+              "label": "Healthy",
+              "rateBps": 8528,
+              "explanation": "You kept a healthy share of what you earned. 20% or more is a comfortable cushion."
+            }
+          },
+          "upcoming": {
+            "from": "2026-10-10",
+            "horizon": "2026-10-17",
+            "days": 7,
+            "items": [],
+            "toArrangePaise": 0,
+            "expectedInPaise": 0,
+            "outflowCount": 0
+          },
+          "alerts": {
+            "top": [
+              {
+                "key": "ef_low:2026-10",
+                "type": "emergencyFundLow",
+                "typeLabel": "Low emergency fund",
+                "severity": "warning",
+                "title": "Emergency fund covers 0.0 months",
+                "message": "₹2,500 saved of ₹2,40,000 target · ₹2,37,500 to go.",
+                "reason": "Your target is 6 months of essentials. Small regular top-ups get you there.",
+                "actionLabel": "Add to fund",
+                "target": "emergencyFund",
+                "recordId": null,
+                "dueDate": null,
+                "amountPaise": null,
+                "dismissible": true,
+                "visual": {
+                  "kind": "safetyNet",
+                  "savedPaise": 250000,
+                  "targetPaise": 24000000,
+                  "coverageMonths": 0,
+                  "targetMonths": 6
+                },
+                "read": false
+              }
+            ],
+            "total": 1,
+            "unreadCount": 1,
+            "counts": {
+              "critical": 0,
+              "warning": 1,
+              "info": 0,
+              "positive": 0
+            },
+            "breakdown": "1 soon"
+          },
+          "budgets": {
+            "month": "2026-10",
+            "period": {
+              "start": "2026-10-01",
+              "end": "2026-10-31"
+            },
+            "limitPaise": 900000,
+            "spentPaise": 199200,
+            "committedPaise": 0,
+            "remainingPaise": 700800,
+            "active": 1,
+            "paused": 0,
+            "warning": 0,
+            "breached": 0
+          },
+          "pending": {
+            "toPayPaise": 30000,
+            "toCollectPaise": 750000,
+            "payCount": 1,
+            "collectCount": 3,
+            "activeCount": 4,
+            "netPaise": 720000,
+            "longCount": 0,
+            "longPending": []
+          },
+          "goals": {
+            "activeCount": 1,
+            "achievedCount": 0,
+            "savedPaise": 1400000,
+            "targetPaise": 20000000,
+            "top": [
+              {
+                "goal": {
+                  "id": "goal_1",
+                  "name": "Japan trip 2027",
+                  "category": "travel",
+                  "targetPaise": 20000000,
+                  "targetDate": "2027-04-10",
+                  "plannedMonthlyPaise": null,
+                  "colorIndex": 2,
+                  "status": "active",
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 4
+                },
+                "saved": 1400000,
+                "remaining": 18600000,
+                "progressBps": 700,
+                "achieved": false,
+                "averageMonthly": null,
+                "requiredPerMonth": 3100000,
+                "estimatedCompletion": null,
+                "onTrack": null
+              }
+            ]
+          },
+          "emergency": {
+            "level": "critical",
+            "coverageTenths": 0,
+            "savedPaise": 250000,
+            "targetPaise": 24000000,
+            "remainingPaise": 23750000,
+            "progressBps": 104,
+            "targetMonths": 6
+          },
+          "debt": {
+            "totalOutstandingPaise": 59214800,
+            "activeLoans": 1,
+            "nextLoanId": "loan_1",
+            "nextLoanName": "Swift car loan",
+            "nextDueDate": "2026-11-05",
+            "nextAmountPaise": 1260200,
+            "overdueCount": 0
+          },
+          "subscriptions": {
+            "monthlyCommitmentPaise": 64900,
+            "activeCount": 1
+          },
+          "netWorth": {
+            "netWorthPaise": 21335800,
+            "totalAssetsPaise": 80710625,
+            "liabilitiesPaise": 59374825
+          },
+          "setup": {
+            "steps": [
+              {
+                "id": "profile",
+                "title": "Add your name and opening balance",
+                "description": "So balances start from the right number.",
+                "done": true
+              },
+              {
+                "id": "emergencyFund",
+                "title": "Plan your emergency fund",
+                "description": "A safety net for 3–6 months of essentials.",
+                "done": true
+              },
+              {
+                "id": "goal",
+                "title": "Create a savings goal",
+                "description": "Set money aside for something that matters.",
+                "done": true
+              },
+              {
+                "id": "budget",
+                "title": "Set a monthly budget",
+                "description": "Stay comfortably within a spending limit.",
+                "done": true
+              }
+            ],
+            "completed": 4,
+            "total": 4
+          }
         }
       }
     },
@@ -4076,7 +5697,7 @@
       "status": 200,
       "body": {
         "data": {
-          "cursor": "231",
+          "cursor": "271",
           "hasMore": false,
           "collections": {
             "transactions": {
@@ -4087,7 +5708,8 @@
                   "amountPaise": 5000000,
                   "categoryId": "cat_salary",
                   "date": "2026-09-01",
-                  "paymentMethod": null,
+                  "accountId": "acc_sbi",
+                  "channel": "NEFT",
                   "counterparty": null,
                   "note": null,
                   "origin": "manual",
@@ -4102,7 +5724,8 @@
                   "amountPaise": 120000,
                   "categoryId": "cat_custom_1",
                   "date": "2026-09-03",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_cash",
+                  "channel": null,
                   "counterparty": null,
                   "note": null,
                   "origin": "manual",
@@ -4490,6 +6113,62 @@
                 }
               ],
               "deleted": []
+            },
+            "moneyAccounts": {
+              "upserted": [
+                {
+                  "id": "acc_cash",
+                  "name": "Cash",
+                  "kind": "cash",
+                  "institution": null,
+                  "last4": null,
+                  "openingPaise": 1000000,
+                  "openingDate": "2026-09-01",
+                  "creditLimitPaise": null,
+                  "isDefault": true,
+                  "isArchived": false,
+                  "sortOrder": 0,
+                  "note": null,
+                  "createdAt": "2026-10-15T18:00:57.686Z",
+                  "updatedAt": "2026-10-15T18:00:57.686Z",
+                  "version": 1
+                },
+                {
+                  "id": "acc_sbi",
+                  "name": "SBI",
+                  "kind": "bank",
+                  "institution": "SBI",
+                  "last4": null,
+                  "openingPaise": 0,
+                  "openingDate": "2026-09-01",
+                  "creditLimitPaise": null,
+                  "isDefault": false,
+                  "isArchived": false,
+                  "sortOrder": 1,
+                  "note": null,
+                  "createdAt": "2026-09-01T10:00:00.000Z",
+                  "updatedAt": "2026-09-01T10:00:00.000Z",
+                  "version": 1
+                }
+              ],
+              "deleted": []
+            },
+            "transfers": {
+              "upserted": [
+                {
+                  "id": "trf_a",
+                  "fromAccountId": "acc_sbi",
+                  "toAccountId": "acc_cash",
+                  "amountPaise": 200000,
+                  "date": "2026-09-02",
+                  "channel": "ATM",
+                  "note": null,
+                  "createdAt": "2026-09-01T10:00:00.000Z",
+                  "updatedAt": "2026-09-01T10:00:00.000Z",
+                  "version": 1
+                }
+              ],
+              "deleted": []
             }
           },
           "values": {
@@ -4575,7 +6254,7 @@
       "status": 200,
       "body": {
         "data": {
-          "cursor": "195",
+          "cursor": "229",
           "hasMore": false,
           "collections": {
             "transactions": {
@@ -4586,7 +6265,8 @@
                   "amountPaise": 10000000,
                   "categoryId": "cat_salary",
                   "date": "2026-10-01",
-                  "paymentMethod": "bankTransfer",
+                  "accountId": "acc_1",
+                  "channel": "NEFT",
                   "counterparty": "Acme Corp",
                   "note": null,
                   "origin": "manual",
@@ -4601,7 +6281,8 @@
                   "amountPaise": 130025,
                   "categoryId": "cat_food",
                   "date": "2026-10-05",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_2",
+                  "channel": "UPI",
                   "counterparty": "Swiggy",
                   "note": "Dinner + tip",
                   "origin": "manual",
@@ -4616,7 +6297,8 @@
                   "amountPaise": 120000,
                   "categoryId": "cat_sys_settle_in",
                   "date": "2026-10-05",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_1",
+                  "channel": "UPI",
                   "counterparty": "Rahul Verma",
                   "note": "Settlement · Goa trip hotel share (updated)",
                   "origin": "pendingSettlement",
@@ -4631,7 +6313,8 @@
                   "amountPaise": 30000,
                   "categoryId": "cat_sys_settle_out",
                   "date": "2026-10-09",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_cash",
+                  "channel": "UPI",
                   "counterparty": "Bob",
                   "note": "Settlement · Dinner",
                   "origin": "pendingSettlement",
@@ -4646,7 +6329,8 @@
                   "amountPaise": 60000000,
                   "categoryId": "cat_sys_loan_in",
                   "date": "2026-09-01",
-                  "paymentMethod": "bankTransfer",
+                  "accountId": "acc_cash",
+                  "channel": null,
                   "counterparty": "HDFC Bank",
                   "note": "Swift car loan · disbursement",
                   "origin": "loanDisbursement",
@@ -4661,7 +6345,8 @@
                   "amountPaise": 1260200,
                   "categoryId": "cat_sys_emi",
                   "date": "2026-10-05",
-                  "paymentMethod": null,
+                  "accountId": "acc_cash",
+                  "channel": null,
                   "counterparty": "HDFC Bank",
                   "note": "Swift car loan · EMI instalment #1",
                   "origin": "loanRepayment",
@@ -4676,7 +6361,8 @@
                   "amountPaise": 64900,
                   "categoryId": "cat_food",
                   "date": "2026-10-08",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_1",
+                  "channel": null,
                   "counterparty": "Netflix",
                   "note": "Monthly renewal · for 8 Oct 2026",
                   "origin": "subscription",
@@ -4691,7 +6377,8 @@
                   "amountPaise": 4275,
                   "categoryId": "cat_food",
                   "date": "2026-10-07",
-                  "paymentMethod": "cash",
+                  "accountId": "acc_cash",
+                  "channel": null,
                   "counterparty": null,
                   "note": null,
                   "origin": "manual",
@@ -5236,7 +6923,7 @@
                   "startDate": null,
                   "status": "active",
                   "autoRenews": true,
-                  "paymentMethod": "upi",
+                  "accountId": "acc_1",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z",
                   "updatedAt": "2026-10-10T03:30:00.000Z",
@@ -5263,6 +6950,83 @@
               ],
               "deleted": [
                 "asset_2"
+              ]
+            },
+            "moneyAccounts": {
+              "upserted": [
+                {
+                  "id": "acc_2",
+                  "name": "Axis Magnus",
+                  "kind": "creditCard",
+                  "institution": "Axis",
+                  "last4": "4321",
+                  "openingPaise": 0,
+                  "openingDate": "2026-01-01",
+                  "creditLimitPaise": 20000000,
+                  "isDefault": false,
+                  "isArchived": false,
+                  "sortOrder": 2,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 1
+                },
+                {
+                  "id": "acc_1",
+                  "name": "SBI",
+                  "kind": "bank",
+                  "institution": "SBI",
+                  "last4": null,
+                  "openingPaise": 1000000,
+                  "openingDate": "2026-01-01",
+                  "creditLimitPaise": null,
+                  "isDefault": false,
+                  "isArchived": false,
+                  "sortOrder": 1,
+                  "note": null,
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-15T18:00:53.888Z",
+                  "version": 3
+                },
+                {
+                  "id": "acc_cash",
+                  "name": "Cash",
+                  "kind": "cash",
+                  "institution": null,
+                  "last4": null,
+                  "openingPaise": 2000000,
+                  "openingDate": "2026-01-01",
+                  "creditLimitPaise": null,
+                  "isDefault": true,
+                  "isArchived": false,
+                  "sortOrder": 0,
+                  "note": null,
+                  "createdAt": "2026-10-15T18:00:53.246Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 4
+                }
+              ],
+              "deleted": [
+                "acc_3"
+              ]
+            },
+            "transfers": {
+              "upserted": [
+                {
+                  "id": "trf_1",
+                  "fromAccountId": "acc_1",
+                  "toAccountId": "acc_cash",
+                  "amountPaise": 250000,
+                  "date": "2026-10-02",
+                  "channel": "ATM",
+                  "note": "Cash for the week",
+                  "createdAt": "2026-10-10T03:30:00.000Z",
+                  "updatedAt": "2026-10-10T03:30:00.000Z",
+                  "version": 2
+                }
+              ],
+              "deleted": [
+                "trf_2"
               ]
             },
             "pending": {
@@ -5376,7 +7140,8 @@
                   "pendingId": "pend_1",
                   "amountPaise": 120000,
                   "date": "2026-10-05",
-                  "method": "upi",
+                  "accountId": "acc_1",
+                  "channel": "UPI",
                   "transactionId": "tx_4",
                   "note": "Part payment",
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -5386,7 +7151,8 @@
                   "pendingId": "pend_1",
                   "amountPaise": 30000,
                   "date": "2026-10-06",
-                  "method": null,
+                  "accountId": null,
+                  "channel": null,
                   "transactionId": null,
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -5396,7 +7162,8 @@
                   "pendingId": "pend_6",
                   "amountPaise": 30000,
                   "date": "2026-10-09",
-                  "method": "upi",
+                  "accountId": "acc_cash",
+                  "channel": "UPI",
                   "transactionId": "tx_5",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -5406,7 +7173,8 @@
                   "pendingId": "pend_6",
                   "amountPaise": 40000,
                   "date": "2026-10-10",
-                  "method": "upi",
+                  "accountId": null,
+                  "channel": null,
                   "transactionId": null,
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -5457,7 +7225,7 @@
       "status": 200,
       "body": {
         "data": {
-          "cursor": "132",
+          "cursor": "166",
           "hasMore": false,
           "collections": {
             "transactions": {
@@ -5468,7 +7236,8 @@
                   "amountPaise": 40000,
                   "categoryId": "cat_sys_settle_in",
                   "date": "2026-10-10",
-                  "paymentMethod": "upi",
+                  "accountId": "acc_cash",
+                  "channel": "UPI",
                   "counterparty": "Alice",
                   "note": "Settlement · Dinner",
                   "origin": "pendingSettlement",
@@ -5845,6 +7614,28 @@
               ],
               "deleted": []
             },
+            "moneyAccounts": {
+              "upserted": [
+                {
+                  "id": "acc_cash",
+                  "name": "Cash",
+                  "kind": "cash",
+                  "institution": null,
+                  "last4": null,
+                  "openingPaise": 500000,
+                  "openingDate": "2026-01-01",
+                  "creditLimitPaise": null,
+                  "isDefault": true,
+                  "isArchived": false,
+                  "sortOrder": 0,
+                  "note": null,
+                  "createdAt": "2026-10-15T18:00:53.346Z",
+                  "updatedAt": "2026-10-15T18:00:53.481Z",
+                  "version": 2
+                }
+              ],
+              "deleted": []
+            },
             "pending": {
               "upserted": [
                 {
@@ -5878,7 +7669,8 @@
                   "pendingId": "mir_shr_1",
                   "amountPaise": 30000,
                   "date": "2026-10-09",
-                  "method": "upi",
+                  "accountId": null,
+                  "channel": null,
                   "transactionId": null,
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -5888,7 +7680,8 @@
                   "pendingId": "mir_shr_1",
                   "amountPaise": 40000,
                   "date": "2026-10-10",
-                  "method": "upi",
+                  "accountId": "acc_cash",
+                  "channel": "UPI",
                   "transactionId": "tx_6",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"

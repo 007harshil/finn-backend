@@ -147,12 +147,16 @@ describe('POST /api/v1/me/delete', () => {
     const shared = { counterparty: 'x', direction: 'iOwe', kind: 'borrowed', amount: '1000', purpose: 'Dinner', createdDate: '2026-10-01' };
     const mine = await act(a, 'pending.create', { ...shared, linkedUserId: b.userId });
     const bobs = await act(b, 'pending.create', { ...shared, amount: '500', purpose: 'Cab', linkedUserId: a.userId });
-    await act(a, 'pending.settle', { pendingId: mine.id, amount: '200', date: '2026-10-10', method: 'upi' });
+    await act(a, 'pending.settle', { pendingId: mine.id, amount: '200', date: '2026-10-10', channel: 'UPI' });
+    const sbi = await act(a, 'accounts.create', { name: 'SBI', kind: 'bank', openingBalance: '5000', openingDate: '2026-01-01' });
+    await act(a, 'transfers.create', { fromAccountId: sbi.id, toAccountId: 'acc_cash', amount: '1000', date: '2026-10-02', channel: 'ATM' });
 
     const before = await rowsOwnedBy(a.userId);
     expect(before['transactions.user_id']).toBeGreaterThan(0);
     expect(before['loan_payments.user_id']).toBe(1);
     expect(before['assets.user_id']).toBe(1);
+    expect(before['money_accounts.user_id']).toBe(2);
+    expect(before['transfers.user_id']).toBe(1);
     expect(before['pending_payments.shared_with_user_id']).toBe(1);
 
     const code = await requestCode(alice);

@@ -57,7 +57,7 @@ Plans (`server/actions/plans.ts`) prepare and execute multi-step requests step b
 - Kysely over `pg` (transaction-mode pooler, small pool, 15 s statement timeout). Bigint columns are parsed to JS
   numbers (paise, safe to 2^53), `date` columns stay `yyyy-MM-dd` strings.
 - `FinanceSnapshot` (`server/finance/snapshot.ts`) lazily loads the small collections of one user once per request
-  (categories, budgets, goals, movements, loans, payments, subscriptions, pending, settlements, assets).
+  (categories, budgets, goals, movements, loans, payments, subscriptions, pending, settlements, assets, moneyAccounts, transfers).
   **Transactions are never loaded whole**: balances and cash-flow totals are SQL aggregates
   (`server/finance/ledger.ts`); budgets load only one period's expenses; lists are keyset-paginated.
 

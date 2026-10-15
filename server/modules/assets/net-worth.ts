@@ -3,7 +3,7 @@
 //
 //   cash is counted once (earmarked savings are part of cash, shown as a split)
 //   receivables = outstanding principal of lent loans + pending to collect
-//   liabilities = outstanding principal of borrowed loans + pending to pay
+//   liabilities = outstanding principal of borrowed loans + pending to pay + credit card owed
 
 import type { Paise } from '../../core/money';
 import type { Asset } from '../../finance/models';
@@ -39,6 +39,8 @@ export interface NetWorthPendingInput {
 export interface NetWorthInput {
   cashPaise: Paise;
   earmarkedPaise: Paise;
+  /** Amount owed on credit cards: a liability (never part of cash). */
+  creditOwedPaise?: Paise;
   assets: Pick<Asset, 'id' | 'name' | 'type' | 'valuePaise'>[];
   loans: NetWorthLoanInput[];
   pending: NetWorthPendingInput[];
@@ -84,6 +86,9 @@ export function computeNetWorth(input: NetWorthInput): NetWorthSnapshot {
       detail: 'Outstanding principal',
       recordId: l.id,
     });
+  }
+  if ((input.creditOwedPaise ?? 0) > 0) {
+    lines.push({ group: 'liabilities', label: 'Credit card owed', amountPaise: input.creditOwedPaise!, detail: null, recordId: null });
   }
   const owe = sum(input.pending.filter((p) => p.direction === 'iOwe').map((p) => p.outstandingPaise));
   const collect = sum(input.pending.filter((p) => p.direction === 'owedToMe').map((p) => p.outstandingPaise));

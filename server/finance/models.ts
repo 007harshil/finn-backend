@@ -8,7 +8,6 @@ import type { Selectable } from 'kysely';
 import type { Frequency } from '../core/frequency';
 import type { IsoDate } from '../core/dates';
 import type { Paise } from '../core/money';
-import type { PaymentMethod } from '../actions/input';
 import type {
   AssetsTable,
   BudgetsTable,
@@ -17,12 +16,14 @@ import type {
   GoalsTable,
   LoanPaymentsTable,
   LoansTable,
+  MoneyAccountsTable,
   PendingPaymentsTable,
   PendingSettlementsTable,
   ProfilesTable,
   SavingsMovementsTable,
   SubscriptionsTable,
   TransactionsTable,
+  TransfersTable,
   UserPreferencesTable,
 } from '../db/types';
 
@@ -39,15 +40,6 @@ export const ORIGIN_LABELS: Record<TransactionOrigin, string> = {
   pendingSettlement: 'Pending settlement',
 };
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  upi: 'UPI',
-  card: 'Card',
-  cash: 'Cash',
-  bankTransfer: 'Bank Transfer',
-  wallet: 'Wallet',
-  other: 'Other',
-};
-
 const iso = (v: Date | string): Instant => (v instanceof Date ? v.toISOString() : new Date(v).toISOString());
 
 // ---------------------------------------------------------------------------
@@ -58,7 +50,8 @@ export interface Transaction {
   amountPaise: Paise;
   categoryId: string;
   date: IsoDate;
-  paymentMethod: PaymentMethod | null;
+  accountId: string;
+  channel: string | null;
   counterparty: string | null;
   note: string | null;
   origin: TransactionOrigin;
@@ -75,7 +68,8 @@ export function transactionFromRow(r: Selectable<TransactionsTable>): Transactio
     amountPaise: r.amount_paise,
     categoryId: r.category_id,
     date: r.date,
-    paymentMethod: r.payment_method as PaymentMethod | null,
+    accountId: r.account_id,
+    channel: r.channel,
     counterparty: r.counterparty,
     note: r.note,
     origin: r.origin as TransactionOrigin,
@@ -94,7 +88,8 @@ export function transactionToRow(userId: string, t: Transaction) {
     amount_paise: t.amountPaise,
     category_id: t.categoryId,
     date: t.date,
-    payment_method: t.paymentMethod,
+    account_id: t.accountId,
+    channel: t.channel,
     counterparty: t.counterparty,
     note: t.note,
     origin: t.origin,
@@ -347,7 +342,7 @@ export interface Subscription {
   startDate: IsoDate | null;
   status: 'active' | 'paused' | 'cancelled';
   autoRenews: boolean;
-  paymentMethod: PaymentMethod | null;
+  accountId: string | null;
   note: string | null;
   createdAt: Instant;
   updatedAt: Instant;
@@ -365,7 +360,7 @@ export function subscriptionFromRow(r: Selectable<SubscriptionsTable>): Subscrip
     startDate: r.start_date,
     status: r.status,
     autoRenews: r.auto_renews,
-    paymentMethod: r.payment_method as PaymentMethod | null,
+    accountId: r.account_id,
     note: r.note,
     createdAt: iso(r.created_at),
     updatedAt: iso(r.updated_at),
@@ -418,7 +413,8 @@ export interface PendingSettlement {
   pendingId: string;
   amountPaise: Paise;
   date: IsoDate;
-  method: PaymentMethod | null;
+  accountId: string | null;
+  channel: string | null;
   transactionId: string | null;
   note: string | null;
   createdAt: Instant;
@@ -492,7 +488,8 @@ export function settlementFromRow(r: Selectable<PendingSettlementsTable>, viewer
     pendingId: pendingViewId,
     amountPaise: r.amount_paise,
     date: r.date,
-    method: r.method as PaymentMethod | null,
+    accountId: own ? r.account_id : null,
+    channel: own ? r.channel : null,
     transactionId: own ? r.transaction_id : null,
     note: r.note,
     createdAt: iso(r.created_at),
@@ -523,6 +520,92 @@ export function assetFromRow(r: Selectable<AssetsTable>): Asset {
     type: r.type as AssetType,
     valuePaise: r.value_paise,
     valuedOn: r.valued_on,
+    note: r.note,
+    createdAt: iso(r.created_at),
+    updatedAt: iso(r.updated_at),
+    version: r.version,
+  };
+}
+
+// ---------------------------------------------------------------------------
+
+export const ACCOUNT_KINDS = ['cash', 'bank', 'debitCard', 'creditCard', 'promoCard', 'otherCard'] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+
+export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
+  cash: 'Cash',
+  bank: 'Bank account',
+  debitCard: 'Debit card',
+  creditCard: 'Credit card',
+  promoCard: 'Promo / gift card',
+  otherCard: 'Other card',
+};
+
+/** Credit cards hold an amount owed; every other kind holds money. */
+export const isLiabilityKind = (k: AccountKind): boolean => k === 'creditCard';
+
+/** Id of the account every user starts with (and old data migrates into). */
+export const CASH_ACCOUNT_ID = 'acc_cash';
+
+export interface MoneyAccount {
+  id: string;
+  name: string;
+  kind: AccountKind;
+  institution: string | null;
+  last4: string | null;
+  openingPaise: Paise;
+  openingDate: IsoDate;
+  creditLimitPaise: Paise | null;
+  isDefault: boolean;
+  isArchived: boolean;
+  sortOrder: number;
+  note: string | null;
+  createdAt: Instant;
+  updatedAt: Instant;
+  version: number;
+}
+
+export function moneyAccountFromRow(r: Selectable<MoneyAccountsTable>): MoneyAccount {
+  return {
+    id: r.id,
+    name: r.name,
+    kind: r.kind as AccountKind,
+    institution: r.institution,
+    last4: r.last4,
+    openingPaise: r.opening_paise,
+    openingDate: r.opening_date,
+    creditLimitPaise: r.credit_limit_paise,
+    isDefault: r.is_default,
+    isArchived: r.is_archived,
+    sortOrder: r.sort_order,
+    note: r.note,
+    createdAt: iso(r.created_at),
+    updatedAt: iso(r.updated_at),
+    version: r.version,
+  };
+}
+
+export interface Transfer {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amountPaise: Paise;
+  date: IsoDate;
+  channel: string | null;
+  note: string | null;
+  createdAt: Instant;
+  updatedAt: Instant;
+  version: number;
+}
+
+export function transferFromRow(r: Selectable<TransfersTable>): Transfer {
+  return {
+    id: r.id,
+    fromAccountId: r.from_account_id,
+    toAccountId: r.to_account_id,
+    amountPaise: r.amount_paise,
+    date: r.date,
+    channel: r.channel,
     note: r.note,
     createdAt: iso(r.created_at),
     updatedAt: iso(r.updated_at),

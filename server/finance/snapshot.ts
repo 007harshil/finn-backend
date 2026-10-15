@@ -21,11 +21,13 @@ import {
   goalFromRow,
   loanFromRow,
   loanPaymentFromRow,
+  moneyAccountFromRow,
   movementFromRow,
   pendingFromRow,
   settlementFromRow,
   subscriptionFromRow,
   transactionFromRow,
+  transferFromRow,
   type Asset,
   type Budget,
   type BudgetLimitChange,
@@ -34,6 +36,8 @@ import {
   type FinancialProfile,
   type Goal,
   type Loan,
+  type MoneyAccount,
+  type Transfer,
   type LoanPayment,
   type PendingPayment,
   type PendingSettlement,
@@ -114,7 +118,7 @@ export class FinanceSnapshot {
   }
 
   balance(): Promise<BalanceSnapshot> {
-    return this.once('balance', async () => loadBalance(this.tx, this.userId, await this.profile(), this.today));
+    return this.once('balance', async () => loadBalance(this.tx, this.userId, this.today));
   }
 
   /** Cash-flow summary for an inclusive range (memoised per range). */
@@ -271,6 +275,41 @@ export class FinanceSnapshot {
   assets(): Promise<Asset[]> {
     return this.once('assets', async () =>
       (await this.tx.selectFrom('assets').selectAll().where('user_id', '=', this.userId).orderBy('created_at').orderBy('id').execute()).map(assetFromRow),
+    );
+  }
+
+  /** The user's money accounts (archived included), in display order. */
+  moneyAccounts(): Promise<MoneyAccount[]> {
+    return this.once('moneyAccounts', async () =>
+      (
+        await this.tx
+          .selectFrom('money_accounts')
+          .selectAll()
+          .where('user_id', '=', this.userId)
+          .orderBy('sort_order')
+          .orderBy('created_at')
+          .orderBy('id')
+          .execute()
+      ).map(moneyAccountFromRow),
+    );
+  }
+
+  async moneyAccount(id: string): Promise<MoneyAccount | null> {
+    return (await this.moneyAccounts()).find((a) => a.id === id) ?? null;
+  }
+
+  transfers(): Promise<Transfer[]> {
+    return this.once('transfers', async () =>
+      (
+        await this.tx
+          .selectFrom('transfers')
+          .selectAll()
+          .where('user_id', '=', this.userId)
+          .orderBy('date', 'desc')
+          .orderBy('created_at', 'desc')
+          .orderBy('id', 'desc')
+          .execute()
+      ).map(transferFromRow),
     );
   }
 }

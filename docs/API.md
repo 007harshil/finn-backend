@@ -109,7 +109,7 @@ Body field `channel` on actions/plans: `ui` (default) | `agent` | `voice` | `imp
 | Analytics custom range | <= 366 days |
 | Upcoming | `days` 1-90 (`/subscriptions/upcoming`: 1-366) |
 | Split bill | 2-20 people |
-| Import arrays | categories 500, transactions 100,000, budgets 500, goals 500, savingsMovements 20,000, loans 500, loanPayments 20,000, subscriptions 1,000, pending 5,000, settlements 20,000, assets 1,000 |
+| Import arrays | categories 500, transactions 100,000, budgets 500, goals 500, savingsMovements 20,000, loans 500, loanPayments 20,000, subscriptions 1,000, pending 5,000, settlements 20,000, assets 1,000, moneyAccounts 100, transfers 20,000 |
 | Text | transaction note 500, counterparty 80; category name 2-30; asset name 2-40; profile name 1-40; goal name <= 50; handle 3-30 |
 | Amount ceilings (action input, "looks too large" 422) | transaction/loan/pending 10,000,00,000 rupees (1e8 rupees); asset/opening 1e10; goal/emergency 1e9 |
 
@@ -157,21 +157,21 @@ Profile is changed through action `profile.update`, not here.
 | `since` | digits (1-18) | omit, or `"0"`, for a full load |
 | `limit` | int | 50-5000, default 2000 |
 
-Response `{ cursor, hasMore, collections, values }`. `collections` keys (only those changed): `transactions categories budgets goals savingsMovements loans loanPayments subscriptions pending settlements assets`, each `{ upserted: DTO[], deleted: string[] }`. `values` keys (only when changed): `profile, emergencyPlan, preferences, alertInbox, me:{id,name,handle,phoneHint}`. Full load always includes `emergencyPlan` and `alertInbox`.
+Response `{ cursor, hasMore, collections, values }`. `collections` keys (only those changed): `transactions categories budgets goals savingsMovements loans loanPayments subscriptions pending settlements assets moneyAccounts transfers`, each `{ upserted: DTO[], deleted: string[] }`. `values` keys (only when changed): `profile, emergencyPlan, preferences, alertInbox, me:{id,name,handle,phoneHint}`. Full load always includes `emergencyPlan` and `alertInbox`.
 Client algorithm: apply upserts by id, deletions by id, store `cursor`; repeat with the returned cursor while `hasMore`. Fixture (trimmed to 1 item per collection):
 ```json
 {"cursor":"194","hasMore":false,
  "collections":{
-  "transactions":{"upserted":[{"id":"tx_1","type":"income","amountPaise":10000000,"categoryId":"cat_salary","date":"2026-10-01","paymentMethod":"bankTransfer","counterparty":"Acme Corp","note":null,"origin":"manual","originRefId":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":1}],"deleted":["tx_3"]},
+  "transactions":{"upserted":[{"id":"tx_1","type":"income","amountPaise":10000000,"categoryId":"cat_salary","date":"2026-10-01","accountId":"acc_1","channel":"NEFT","counterparty":"Acme Corp","note":null,"origin":"manual","originRefId":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":1}],"deleted":["tx_3"]},
   "categories":{"upserted":[{"id":"cat_food","name":"Food & Dining","type":"expense","iconKey":"utensils","colorIndex":12,"description":"Restaurants, cafés, Swiggy, Zomato","isSystem":false,"isArchived":false,"isEssential":false,"version":1}],"deleted":[]},
   "budgets":{"upserted":[{"id":"bud_1","categoryId":"cat_food","limitPaise":900000,"previousLimits":[],"status":"active","warningThresholdBps":8500,"note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":4}],"deleted":[]},
   "goals":{"upserted":[{"id":"goal_1","name":"Japan trip 2027","category":"travel","targetPaise":20000000,"targetDate":"2027-04-10","plannedMonthlyPaise":null,"colorIndex":2,"status":"active","note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":4}],"deleted":[]},
   "savingsMovements":{"upserted":[{"id":"sv_1","bucketType":"goal","bucketId":"goal_1","kind":"contribution","amountPaise":1000000,"date":"2026-10-10","note":"Starting amount","createdAt":"2026-10-10T03:30:00.000Z"}],"deleted":[]},
   "loans":{"upserted":[{"id":"loan_1","name":"Swift car loan","counterparty":"HDFC Bank","direction":"borrowed","structure":"amortizing","principalPaise":60000000,"rateBps":950,"startDate":"2026-09-01","firstDueDate":"2026-10-05","frequency":"monthly","tenureInstallments":60,"maturityDate":null,"prepaymentStrategy":"reduceTenure","status":"active","disbursementTransactionId":"tx_7","note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":2}],"deleted":[]},
   "loanPayments":{"upserted":[{"id":"lp_1","loanId":"loan_1","kind":"installment","date":"2026-10-05","interestPaise":475000,"principalPaise":785200,"periodNumber":1,"transactionId":"tx_8","note":null,"createdAt":"2026-10-10T03:30:00.000Z"}],"deleted":[]},
-  "subscriptions":{"upserted":[{"id":"sub_1","name":"Netflix","amountPaise":64900,"categoryId":"cat_food","frequency":"monthly","nextDueDate":"2026-12-08","startDate":null,"status":"active","autoRenews":true,"paymentMethod":"upi","note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":6}],"deleted":[]},
+  "subscriptions":{"upserted":[{"id":"sub_1","name":"Netflix","amountPaise":64900,"categoryId":"cat_food","frequency":"monthly","nextDueDate":"2026-12-08","startDate":null,"status":"active","autoRenews":true,"accountId":"acc_1","note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":6}],"deleted":[]},
   "pending":{"upserted":[{"id":"pend_1","counterparty":"Rahul Verma","direction":"owedToMe","kind":"lent","originalPaise":700000,"purpose":"Goa trip hotel share (updated)","createdDate":"2026-10-01","notes":null,"isCancelled":false,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":2,"link":null,"split":null}],"deleted":[]},
-  "settlements":{"upserted":[{"id":"set_1","pendingId":"pend_1","amountPaise":120000,"date":"2026-10-05","method":"upi","transactionId":"tx_4","note":"Part payment","createdAt":"2026-10-10T03:30:00.000Z"}],"deleted":[]},
+  "settlements":{"upserted":[{"id":"set_1","pendingId":"pend_1","amountPaise":120000,"date":"2026-10-05","accountId":"acc_1","channel":"UPI","transactionId":"tx_4","note":"Part payment","createdAt":"2026-10-10T03:30:00.000Z"}],"deleted":[]},
   "assets":{"upserted":[{"id":"asset_1","name":"Gold coins","type":"gold","valuePaise":8200000,"valuedOn":"2026-10-09","note":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":2}],"deleted":[]}},
  "values":{
   "profile":{"exists":true,"displayName":"Alice","openingPaise":2000000,"openingDate":"2026-01-01","monthlyIncomeEstimatePaise":null},
@@ -183,11 +183,11 @@ Client algorithm: apply upserts by id, deletions by id, store `cursor`; repeat w
 ```json
 {"id":"mir_shr_1","counterparty":"Alice","direction":"owedToMe","kind":"lent","originalPaise":100000,"purpose":"Dinner","createdDate":"2026-10-01","notes":null,"isCancelled":false,"version":3,"link":{"userId":"00000000-0000-4000-8000-00000000000a","handle":"@alice","sharedId":"shr_1","createdByMe":false},"split":null}
 ```
-Settlement from the other person: `{"id":"mir_set_3","pendingId":"mir_shr_1","amountPaise":30000,"date":"2026-10-09","method":"upi","transactionId":null,...}`.
+Settlement from the other person: `{"id":"mir_set_3","pendingId":"mir_shr_1","amountPaise":30000,"date":"2026-10-09","accountId":null,"channel":null,"transactionId":null,...}` (the other person never sees the recorder's account).
 
 ### 2.4 Import
 **`POST /import`** one-time upload of on-device data. Header `Idempotency-Key` required. Body cap 25 MB. Only for an account with no financial records yet, else 409 `conflict`. Atomic (all or nothing), client ids preserved. Own pending items only (no mirrors); `link` dropped. Response = full sync payload (same shape as `GET /sync`).
-Body keys (all arrays default empty): `categories transactions budgets goals savingsMovements loans loanPayments subscriptions pending settlements assets` (DTO JSON, array caps in 1.10), `profile` (`{exists:false}` | `{exists:true,displayName(1-40),openingPaise,openingDate,monthlyIncomeEstimatePaise?}`), `emergencyPlan` (`{configured:false}` | `{configured:true,essentialMonthlyPaise,targetMonths 1-24,...}`). Import validation is stricter than action input on some fields (e.g. category `name` 2-30, `iconKey` 1-40, `colorIndex` 0-63, `description` <= 120; amounts are integer paise, instants ISO-8601, `version` default 1).
+Body keys (all arrays default empty): `categories transactions budgets goals savingsMovements loans loanPayments subscriptions pending settlements assets moneyAccounts transfers` (DTO JSON, array caps in 1.10), `profile` (`{exists:false}` | `{exists:true,displayName(1-40),openingPaise,openingDate,monthlyIncomeEstimatePaise?}`), `emergencyPlan` (`{configured:false}` | `{configured:true,essentialMonthlyPaise,targetMonths 1-24,...}`). Accounts: without `moneyAccounts` the bootstrapped Cash account (`acc_cash`) receives the profile's opening balance/date and every transaction without `accountId`; with `moneyAccounts` they replace it (the account flagged `isDefault`, else the first active one, is the default and receives records without `accountId`). Every `accountId` must refer to an included account (422 otherwise). Import validation is stricter than action input on some fields (e.g. category `name` 2-30, `iconKey` 1-40, `colorIndex` 0-63, `description` <= 120; amounts are integer paise, instants ISO-8601, `version` default 1).
 
 ### 2.5 Actions (all writes)
 All state changes go through actions. Ids and input JSON equal the Flutter actions.
@@ -218,9 +218,9 @@ Response is one of:
 ```json
 {"status":"needsConfirmation","actionId":"transactions.delete","preview":{"actionId":"transactions.delete","title":"Delete transaction?","summary":"Delete ₹1,300.25 expense on 5 Oct 2026","lines":[{"label":"Category","value":"Food & Dining"},{"label":"Balance effect","value":"+₹1,300.25","emphasis":true}],"warnings":["This cannot be undone."],"fingerprint":"be40cebd63f28c17.9d193d6e1dfee9e3","requiresConfirmation":true}}
 ```
-2. `{ status:"completed", actionId, result, preview, replayed, changes? }`. `result` is the record DTO (or action output). `changes` is a sync payload (`{cursor,hasMore,collections,values}`) of what this call changed, absent when `replayed: true`. Apply `changes` like a sync page but do NOT advance the stored sync cursor from it (a counterparty's changes may sit between the old cursor and `changes.cursor`); run a normal incremental sync next. Fixture (`transactions.create`, input `{"type":"expense","amount":"42.75","categoryId":"cat_food","date":"2026-10-07","paymentMethod":"cash"}`):
+2. `{ status:"completed", actionId, result, preview, replayed, changes? }`. `result` is the record DTO (or action output). `changes` is a sync payload (`{cursor,hasMore,collections,values}`) of what this call changed, absent when `replayed: true`. Apply `changes` like a sync page but do NOT advance the stored sync cursor from it (a counterparty's changes may sit between the old cursor and `changes.cursor`); run a normal incremental sync next. Fixture (`transactions.create`, input `{"type":"expense","amount":"42.75","categoryId":"cat_food","date":"2026-10-07"}`):
 ```json
-{"status":"completed","actionId":"transactions.create","result":{"id":"tx_10","type":"expense","amountPaise":4275,"categoryId":"cat_food","date":"2026-10-07","paymentMethod":"cash","counterparty":null,"note":null,"origin":"manual","originRefId":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":1},"preview":{"actionId":"transactions.create","title":"Record expense","summary":"Spent ₹42.75","lines":[{"label":"Type","value":"Expense"},{"label":"Amount","value":"₹42.75","emphasis":true},{"label":"Category","value":"Food & Dining"},{"label":"Date","value":"7 Oct 2026"},{"label":"Paid via","value":"Cash"}],"warnings":[],"fingerprint":"8c85dc3f865e73ee","requiresConfirmation":false},"replayed":false,"changes":{"cursor":"194","hasMore":false,"collections":{"transactions":{"upserted":["<tx_10 record>"],"deleted":[]}},"values":{}}}
+{"status":"completed","actionId":"transactions.create","result":{"id":"tx_10","type":"expense","amountPaise":4275,"categoryId":"cat_food","date":"2026-10-07","accountId":"acc_cash","channel":null,"counterparty":null,"note":null,"origin":"manual","originRefId":null,"createdAt":"2026-10-10T03:30:00.000Z","updatedAt":"2026-10-10T03:30:00.000Z","version":1},"preview":{"actionId":"transactions.create","title":"Record expense","summary":"Spent ₹42.75","lines":[{"label":"Type","value":"Expense"},{"label":"Amount","value":"₹42.75","emphasis":true},{"label":"Category","value":"Food & Dining"},{"label":"Date","value":"7 Oct 2026"},{"label":"From","value":"Cash"}],"warnings":[],"fingerprint":"8c85dc3f865e73ee","requiresConfirmation":false},"replayed":false,"changes":{"cursor":"194","hasMore":false,"collections":{"transactions":{"upserted":["<tx_10 record>"],"deleted":[]}},"values":{}}}
 ```
 Errors: 422 (bad key, bad input), 409 `conflict` (key reuse) / `staleData`, 403, 404, 422 `insufficientFunds`/`ambiguous`. Every executed attempt is audited, including failures (see 2.20).
 
@@ -229,7 +229,7 @@ Columns: Conf. = needs confirmation on `ui` (risk `consequential`; always true o
 
 | Action id | Module | Risk | movesMoney | Conf. | Rev. | Input fields |
 |---|---|---|---|---|---|---|
-| `transactions.create` | transactions | low | yes | no | yes | `type`* income/expense; `amount`* money > 0; `categoryId`* id (type-matching, non-archived; system cats only `*_other_out`/`*_other_in`); `date`* date (not future); `paymentMethod` upi/card/cash/bankTransfer/wallet/other; `counterparty` <= 80; `note` <= 500 |
+| `transactions.create` | transactions | low | yes | no | yes | `type`* income/expense; `amount`* money > 0; `categoryId`* id (type-matching, non-archived; system cats only `*_other_out`/`*_other_in`); `date`* date (not future); `accountId` id (existing, non-archived; default: the default account; on update default: keep); `channel` free text <= 30 (trimmed, blank = null); `counterparty` <= 80; `note` <= 500 |
 | `transactions.update` | transactions | low | yes | no | yes | `id`*, `expectedVersion`*, + create fields. Manual-origin transactions only (else 403) |
 | `transactions.delete` | transactions | consequential | yes | yes | no | `id`*. Manual-origin only |
 | `categories.create` | categories | low | no | no | yes | `name`* 2-30 unique per type; `type`* income/expense; `iconKey`*; `colorIndex`* int 0-13; `description`; `isEssential` bool (default false) |
@@ -243,17 +243,17 @@ Columns: Conf. = needs confirmation on `ui` (risk `consequential`; always true o
 | `pending.create` | pending | low | no | no | yes | `counterparty`*; `direction`* iOwe/owedToMe; `kind` borrowed/lent/sharedExpense/reimbursement/other (default other); `amount`* money; `purpose`*; `createdDate`* date; `notes`; `linkedUserId` (FiNN user to share with; find via `/users/search`) |
 | `pending.split` | pending | low | no | no | yes | `direction`*; `kind` (default sharedExpense); `total`* money; `purpose`*; `createdDate`*; `method` equally/exact/percent/shares/adjustment (default equally); `people`* array 2-20 of `{counterparty*, linkedUserId?, value?}` (value unit by method: rupees / % / parts / +- rupees); `includeMe` bool (owedToMe only); `myValue`; `notes`. Creates one item per person |
 | `pending.update` | pending | low | no | no | yes | `id`*, `expectedVersion`*, + create fields |
-| `pending.settle` | pending | consequential | yes | yes | no | `pendingId`* (exact id; use `/pending/resolve`); `amount`* money <= outstanding; `date`*; `method` payment method; `recordCashMovement` bool (default true); `note` |
+| `pending.settle` | pending | consequential | yes | yes | no | `pendingId`* (exact id; use `/pending/resolve`); `amount`* money <= outstanding; `date`*; `accountId` (default: default account; used only with `recordCashMovement`); `channel` <= 30; `recordCashMovement` bool (default true); `note` |
 | `pending.cancel` | pending | consequential | no | yes | yes | `id`* |
 | `pending.delete` | pending | consequential | no | yes | no | `id`* |
-| `loans.create` | loans | low | no | no | yes | `name`*; `counterparty`*; `direction`* borrowed/lent; `structure`* amortizing/interestOnly; `principal`* money; `rateBps`* int; `startDate`*; `firstDueDate`*; `frequency`* monthly/quarterly/halfYearly/yearly; `tenureInstallments` int (amortizing); `maturityDate` (interest-only); `prepaymentStrategy` reduceTenure/reduceEmi (default reduceTenure); `recordDisbursement` bool (default false); `note` |
+| `loans.create` | loans | low | no | no | yes | `name`*; `counterparty`*; `direction`* borrowed/lent; `structure`* amortizing/interestOnly; `principal`* money; `rateBps`* int; `startDate`*; `firstDueDate`*; `frequency`* monthly/quarterly/halfYearly/yearly; `tenureInstallments` int (amortizing); `maturityDate` (interest-only); `prepaymentStrategy` reduceTenure/reduceEmi (default reduceTenure); `recordDisbursement` bool (default false); `accountId`, `channel` (account the disbursement moved through; default account); `note` |
 | `loans.update` | loans | low | no | no | yes | `id`*, `expectedVersion`*, + create fields. Terms locked once payments exist |
-| `loans.recordPayment` | loans | consequential | yes | yes | no | `loanId`*; `kind`* installment/interest/principal; `amount`* money; `date`*; `method`; `recordCashMovement` bool (default true); `note` |
+| `loans.recordPayment` | loans | consequential | yes | yes | no | `loanId`*; `kind`* installment/interest/principal; `amount`* money; `date`*; `accountId`; `channel` <= 30; `recordCashMovement` bool (default true); `note` |
 | `loans.delete` | loans | consequential | yes | yes | no | `id`* |
-| `subscriptions.create` | subscriptions | low | no | no | yes | `name`*; `amount`* money > 0; `categoryId`* (expense cat); `frequency`* weekly/monthly/quarterly/halfYearly/yearly; `nextDueDate`*; `startDate`; `autoRenews` bool; `paymentMethod`; `note` |
+| `subscriptions.create` | subscriptions | low | no | no | yes | `name`*; `amount`* money > 0; `categoryId`* (expense cat); `frequency`* weekly/monthly/quarterly/halfYearly/yearly; `nextDueDate`*; `startDate`; `autoRenews` bool; `accountId` (usually charged); `note` |
 | `subscriptions.update` | subscriptions | low | no | no | yes | `id`*, `expectedVersion`*, + create fields |
 | `subscriptions.setStatus` | subscriptions | low | no | no | yes | `id`*; `status`* active/paused/cancelled |
-| `subscriptions.markPaid` | subscriptions | consequential | yes | yes | no | `subscriptionId`*; `cycleDate` (default next due); `date` (not future, default due date); `amount` money (default subscription amount); `method` |
+| `subscriptions.markPaid` | subscriptions | consequential | yes | yes | no | `subscriptionId`*; `cycleDate` (default next due); `date` (not future, default due date); `amount` money (default subscription amount); `accountId` (default: the subscription's account, then the default account); `channel` <= 30 |
 | `subscriptions.skipCycle` | subscriptions | low | no | no | no | `subscriptionId`*; `cycleDate` |
 | `subscriptions.delete` | subscriptions | consequential | no | yes | no | `id`* |
 | `goals.create` | goals | low | no | no | yes | `name`* <= 50 unique among active; `category` travel/purchase/education/investment/home/vehicle/wedding/health/other (default other); `target`* money; `targetDate` (future); `plannedMonthlyContribution` money; `initialAllocation` money; `colorIndex` int (default 5); `note` |
@@ -268,11 +268,20 @@ Columns: Conf. = needs confirmation on `ui` (risk `consequential`; always true o
 | `assets.create` | assets | low | no | no | yes | `name`* 2-40; `type`* bankDeposit/investment/retirement/gold/property/vehicle/other; `value`* money >= 0; `valuedOn`* (not future); `note` |
 | `assets.update` | assets | low | no | no | yes | `id`*, `expectedVersion`*, + create fields |
 | `assets.delete` | assets | consequential | no | yes | no | `id`* |
-| `profile.update` | profile | consequential | no | yes | yes | `displayName`* 1-40; `openingBalance`* money >= 0; `openingDate`* (not future); `monthlyIncomeEstimate` money |
+| `accounts.create` | accounts | low | no | no | yes | `name`* 1-40; `kind`* cash/bank/debitCard/creditCard/promoCard/otherCard; `institution` <= 40; `last4` exactly 4 digits (cards only); `openingBalance`* money >= 0 (credit card: amount owed); `openingDate` (default today, not future); `creditLimit` money (credit cards only, 0 = none); `isDefault` bool; `note` <= 200. Same name+kind only warns. Result: MoneyAccountDto |
+| `accounts.update` | accounts | low | no | no | yes | `id`*; `expectedVersion` (alias `version`, both optional: omitted = no stale check); `name`*, `kind`*, `institution`, `last4`, `openingBalance`*, `openingDate`*, `creditLimit`, `note`. Switching between creditCard and any other kind needs an account without movements |
+| `accounts.setBalance` | accounts | low | no | no | yes | `id`*; `expectedVersion`/`version`; `balance`* money >= 0 (credit card: amount owed); `asOf` date (default today, not future). Sets `openingPaise` so the computed balance on `asOf` equals `balance` (if that needs a negative opening, the opening date moves to `asOf` instead). Preview line `Balance` (or `Owed`): `old -> new` |
+| `accounts.setDefault` | accounts | low | no | no | yes | `id`* (not archived); unsets the previous default |
+| `accounts.archive` | accounts | low | no | no | yes | `id`*; `archived`* bool. 422 for the default account or the last active one |
+| `accounts.delete` | accounts | consequential | no | yes | no | `id`*. 422 when any transaction, transfer, subscription or settlement refers to it (archive instead) or it is the last active account; deleting the default hands the default to the next active account |
+| `transfers.create` | transfers | low | yes | no | yes | `fromAccountId`*, `toAccountId`* (different, existing, non-archived); `amount`* money > 0; `date`* (not future); `channel` <= 30; `note` <= 500. Not income or spending. Warning when the source (non-credit) account holds less. Result: TransferDto |
+| `transfers.update` | transfers | low | yes | no | yes | `id`*; `expectedVersion`/`version`; same fields as create (an edit may keep an archived account it already uses) |
+| `transfers.delete` | transfers | consequential | yes | yes | no | `id`* |
+| `profile.update` | profile | consequential | no | yes | yes | `displayName`* 1-40; `openingBalance`* money >= 0 (also written to the Cash account `acc_cash` with `openingDate`); `openingDate`* (not future); `monthlyIncomeEstimate` money |
 
 Notes: `movesMoney` means the action records/changes a cash movement (never moves real money). `profile.update` is consequential per descriptor (registered in the `account/actions.ts` module, descriptor module name `profile`). Real input examples for every action id are in `docs/contract/fixtures.json` under `actions[].input`, e.g.:
 ```json
-{"actionId":"pending.settle","input":{"pendingId":"pend_1","amount":"1200","date":"2026-10-05","method":"upi","recordCashMovement":true,"note":"Part payment"}}
+{"actionId":"pending.settle","input":{"pendingId":"pend_1","amount":"1200","date":"2026-10-05","accountId":"acc_1","channel":"UPI","recordCashMovement":true,"note":"Part payment"}}
 {"actionId":"pending.split","input":{"direction":"owedToMe","total":"3000","purpose":"Weekend cabin","createdDate":"2026-10-10","method":"equally","includeMe":true,"people":[{"counterparty":"Asha"},{"counterparty":"Bina"}]}}
 {"actionId":"loans.recordPayment","input":{"loanId":"loan_1","kind":"installment","amount":"12602","date":"2026-10-05","recordCashMovement":true}}
 ```
@@ -299,7 +308,8 @@ Optional `history` (agent turns): `{ runId (^[A-Za-z0-9._\-]{8,64}$), request (1
 | `from`, `to` | date | `from <= to` else 422 (`fieldErrors.from`) |
 | `type` | enum | income, expense |
 | `categoryIds` | csv | first 100 |
-| `methods` | csv | upi, card, cash, bankTransfer, wallet, other (`other` also matches null method) |
+| `accountIds` | csv | account ids (first 100) |
+| `channels` | csv | exact channel texts (first 20) |
 | `origins` | csv | transaction origin values (`manual`, ... per `TRANSACTION_ORIGINS`) |
 | `minPaise`, `maxPaise` | int (digits) | paise; `min <= max` |
 | `q` | string <= 100 | matches counterparty, note, category name, or amount typed as digits (`1250`, `1250.5`) |
@@ -358,6 +368,17 @@ Response `{ quote: {installmentPaise, installments, totalInterestPaise, ...} | n
 | `amount` | money (rupees) | outstanding amount to tell items with one person apart |
 
 Response: `{status:"found", item}` | `{status:"ambiguous", message, candidates}` | `{status:"none", message}`. HTTP is 200 for all three; it never picks one of several matches.
+
+### 2.14a Money accounts and transfers
+Accounts and transfers are written only through the actions above and read through sync (collections `moneyAccounts`, `transfers`) and the balance read model. Money inputs are rupees (number or string, as everywhere).
+
+`MoneyAccountDto`: `{"id":"acc_cash","name":"Cash","kind":"cash","institution":null,"last4":null,"openingPaise":250000,"openingDate":"2026-09-01","creditLimitPaise":null,"isDefault":true,"isArchived":false,"sortOrder":0,"note":null,"createdAt":"...","updatedAt":"...","version":1}`. `kind` is `cash|bank|debitCard|creditCard|promoCard|otherCard`; `creditCard` is the only liability.
+
+`TransferDto`: `{"id":"trf_1","fromAccountId":"acc_sbi","toAccountId":"acc_cash","amountPaise":200000,"date":"2026-10-10","channel":"ATM","note":null,"createdAt":"...","updatedAt":"...","version":1}`.
+
+Balance rules (counting movements dated `openingDate <= date <= today` per account): `flow = income - expense + transfers in - transfers out`; asset balance `= openingPaise + flow`; credit card owed `= openingPaise - flow`. `cashPaise` is the sum of asset balances (archived included), `creditOwedPaise` the sum owed, `availablePaise = cashPaise - earmarkedPaise`. Net worth subtracts credit owed (liability line "Credit card owed"). Recording a transaction or transfer dated before an account's `openingDate` moves that account's `openingDate` (and the profile's tracking start) back to that date.
+
+Balance read model (`GET /dashboard` -> `balance`, also `FinanceSnapshot.balance()`): `{openingBalancePaise (sum of asset openings), totalInflowPaise, totalOutflowPaise, earmarkedGoalsPaise, earmarkedEmergencyPaise, cashPaise, creditOwedPaise, earmarkedPaise, availablePaise, accounts:[{accountId, balancePaise}]}` where `balancePaise` is the amount owed for credit cards. `GET /analytics`: `methods` is replaced by `accounts:[{accountId,label,kind,amountPaise,shareBps}]` and `channels:[{channel,amountPaise,shareBps}]` (expense only, descending); the internal period summary has `byAccount:[{accountId,amountPaise}]` and `byChannel:[{channel,amountPaise}]` instead of `byMethod`. `baselines.digitalShareBps` is the share of spending not on `cash` accounts.
 
 ### 2.15 Assets
 **`GET /assets`** returns `{ assets: AssetDto[], totalPaise }`. Note this uses key `assets`, not `items`.

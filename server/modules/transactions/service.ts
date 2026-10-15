@@ -5,7 +5,7 @@
 
 import { sql, type SqlBool, type Expression } from 'kysely';
 import { z } from 'zod';
-import { PAYMENT_METHODS, zDate } from '../../actions/input';
+import { zDate } from '../../actions/input';
 import { AppFailure } from '../../core/failure';
 import type { Tx } from '../../db/tx';
 import { TRANSACTION_ORIGINS, transactionFromRow, type Transaction } from '../../finance/models';
@@ -41,7 +41,14 @@ export const listQuerySchema = z
       .string()
       .optional()
       .transform((s) => (s ? s.split(',').map((p) => p.trim()).filter(Boolean).slice(0, 100) : [])),
-    methods: csv(PAYMENT_METHODS),
+    accountIds: z
+      .string()
+      .optional()
+      .transform((s) => (s ? s.split(',').map((p) => p.trim()).filter(Boolean).slice(0, 100) : [])),
+    channels: z
+      .string()
+      .optional()
+      .transform((s) => (s ? s.split(',').map((p) => p.trim()).filter(Boolean).slice(0, 20) : [])),
     origins: csv(TRANSACTION_ORIGINS),
     minPaise: intParam.optional(),
     maxPaise: intParam.optional(),
@@ -96,14 +103,8 @@ export async function listTransactions(tx: Tx, userId: string, query: ListQuery)
   if (query.to) q = q.where('t.date', '<=', query.to);
   if (query.type) q = q.where('t.type', '=', query.type);
   if (query.categoryIds.length > 0) q = q.where('t.category_id', 'in', query.categoryIds);
-  if (query.methods.length > 0) {
-    const methods = query.methods;
-    q = q.where((eb) =>
-      methods.includes('other')
-        ? eb.or([eb('t.payment_method', 'in', methods), eb('t.payment_method', 'is', null)])
-        : eb('t.payment_method', 'in', methods),
-    );
-  }
+  if (query.accountIds.length > 0) q = q.where('t.account_id', 'in', query.accountIds);
+  if (query.channels.length > 0) q = q.where('t.channel', 'in', query.channels);
   if (query.origins.length > 0) q = q.where('t.origin', 'in', query.origins);
   if (query.minPaise !== undefined) q = q.where('t.amount_paise', '>=', query.minPaise);
   if (query.maxPaise !== undefined) q = q.where('t.amount_paise', '<=', query.maxPaise);
