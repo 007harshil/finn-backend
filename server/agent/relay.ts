@@ -12,6 +12,7 @@ import { AppFailure } from '../core/failure';
 import { agentEnv, type AgentEnv } from '../env';
 import { parseWith, readJson, type RequestContext } from '../http/handler';
 import { logger } from '../http/logger';
+import { checkInput, checkOutput, guardedInput, refusalContent, withGuardrailPolicy, type GuardrailRule } from './guardrails';
 import { modelCooldownSeconds, noteModelRateLimited, takeAgentRequest } from './rate-limit';
 import { AGENT_MAX_BODY_BYTES, completionRequestSchema, type CompletionRequest } from './schema';
 
@@ -38,6 +39,8 @@ export interface CompletionResult {
   finish_reason: string | null;
   message: { content: string | null; refusal?: string; tool_calls: CompletionToolCall[] };
   usage: CompletionUsage | null;
+  /** Set when a guardrail replaced the reply with a refusal (the rule that fired). */
+  guardrail?: GuardrailRule;
 }
 
 const UNAVAILABLE = 'The assistant is unavailable right now. Please try again.';
@@ -88,9 +91,10 @@ export function buildUpstreamBody(
   model: string = config.OPENAI_MODEL,
 ): Record<string, unknown> {
   const explicitCache = config.OPENAI_PROMPT_CACHE === 'explicit';
+  const messages = withGuardrailPolicy(req.messages);
   const body: Record<string, unknown> = {
     model,
-    messages: explicitCache ? withSystemCacheBreakpoint(req.messages) : req.messages,
+    messages: explicitCache ? withSystemCacheBreakpoint(messages) : messages,
     max_completion_tokens: Math.min(req.max_completion_tokens ?? config.AGENT_MAX_OUTPUT_TOKENS, config.AGENT_MAX_OUTPUT_TOKENS),
     safety_identifier: safetyIdentifier(userId),
   };
@@ -189,6 +193,41 @@ function usageCounts(payload: unknown): Record<string, number | undefined> {
   };
 }
 
+/**
+ * True when OpenAI's moderation endpoint flags [input]. Never throws: an
+ * outage or timeout counts as not flagged (the other guardrails still apply).
+ */
+async function isFlagged(input: string, config: AgentEnv, signal: AbortSignal): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.OPENAI_BASE_URL}/moderations`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${config.OPENAI_API_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: config.AGENT_MODERATION_MODEL, input }),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+    });
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => undefined);
+      return false;
+    }
+    const payload: unknown = await res.json();
+    const first = isRecord(payload) && Array.isArray(payload.results) ? payload.results[0] : null;
+    return isRecord(first) && first.flagged === true;
+  } catch {
+    return false;
+  }
+}
+
+/** The reply a guardrail sends instead of the model's (same contract, no tool calls). */
+function refused(req: CompletionRequest, rule: GuardrailRule, from: CompletionResult | null): CompletionResult {
+  return {
+    id: from?.id ?? null,
+    finish_reason: 'stop',
+    message: { content: refusalContent(req), tool_calls: [] },
+    usage: from?.usage ?? null,
+    guardrail: rule,
+  };
+}
+
 /** Handles POST /api/v1/agent/completions for an authenticated user. */
 export async function relayCompletion(ctx: RequestContext): Promise<CompletionResult> {
   const config = agentEnv();
@@ -213,10 +252,21 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   }
 
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
+
+  // Input rail: out-of-scope or injection requests never reach the model.
+  const inputHit = checkInput(req);
+  if (inputHit) {
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'input', rule: inputHit.rule });
+    return refused(req, inputHit.rule, null);
+  }
+
   const started = Date.now();
   const timeout = AbortSignal.timeout(config.OPENAI_TIMEOUT_MS);
   // Also stop paying for the call if the app disconnects.
   const signal = ctx.request.signal ? AbortSignal.any([timeout, ctx.request.signal]) : timeout;
+  // Moderation runs alongside the completion, so it adds no latency.
+  const input = guardedInput(req);
+  const flagged = config.AGENT_MODERATION === 'on' && input ? isFlagged(input, config, signal) : Promise.resolve(false);
 
   // Rate limits are metered per model, so a rate-limited model is skipped for
   // the next fallback (if any) instead of making the user wait. Models known
@@ -318,5 +368,21 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   }
 
   logger.info('agent.upstream', { requestId: ctx.requestId, user, model, upstreamStatus, ms, ...usageCounts(payload) });
+
+  // Moderation and output rails: a harmful request, or a reply carrying code,
+  // secrets or the instructions themselves, is replaced by a refusal.
+  if (await flagged) {
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'moderation', rule: 'moderation' });
+    return refused(req, 'moderation', result);
+  }
+  const outputHit = checkOutput(
+    withGuardrailPolicy(req.messages),
+    result.message.content,
+    result.message.tool_calls.map((c) => c.function.arguments),
+  );
+  if (outputHit) {
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'output', rule: outputHit.rule });
+    return refused(req, outputHit.rule, result);
+  }
   return result;
 }

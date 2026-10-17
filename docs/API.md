@@ -436,6 +436,14 @@ conversation and never logs prompt, message or output content (only request id, 
 and token counts). Tool calls returned in `message.tool_calls` are run by the app through the normal action/plan
 endpoints. No streaming.
 
+Guardrails (`server/agent/guardrails.ts`; the app answers in scope only): the server pins a scope policy in front of
+`messages[0]` (added as the system message when there is none); the user's latest message is refused without a provider
+call when it asks for code, app internals or secrets or tries to override the rules; with `AGENT_MODERATION=on`
+(default) OpenAI moderation screens it in parallel (an outage never blocks); a reply whose text (plan fields, content,
+tool arguments) carries code, a secret or the instructions is replaced. A refusal is a normal 200 with
+`message.content` = `{"ops":[],"reply":"<refusal>"}` (plain text when no `response_format`), `tool_calls: []`, and
+`guardrail` = `code` | `internals` | `injection` | `moderation` | `secret` | `leak`. Only the rule name is logged.
+
 Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`, `service_tier`, `stream`,
 `reasoning_effort`, `prompt_cache_options`, `prompt_cache_key`, is 422; max 600,000 bytes):
 | Field | Type | Rules |

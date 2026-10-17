@@ -4,6 +4,7 @@
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as relayRoute from '@/app/api/v1/agent/completions/route';
+import { GUARDRAIL_POLICY } from '@/server/agent/guardrails';
 import { resetAgentRateLimits } from '@/server/agent/rate-limit';
 import { upstreamModels } from '@/server/agent/relay';
 import { agentEnv } from '@/server/env';
@@ -33,6 +34,7 @@ beforeEach(() => {
   vi.stubEnv('AGENT_MAX_OUTPUT_TOKENS', '1000');
   vi.stubEnv('AGENT_RATE_LIMIT_PER_MINUTE', '50');
   vi.stubEnv('AGENT_DAILY_REQUEST_LIMIT', '500');
+  vi.stubEnv('AGENT_MODERATION', 'off');
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -152,7 +154,8 @@ describe('POST /agent/completions', () => {
       model: 'test-model',
       // The system message becomes the only prompt-cache breakpoint.
       messages: [
-        { role: 'system', content: [{ type: 'text', text: 'You are FiNN.', prompt_cache_breakpoint: { mode: 'explicit' } }] },
+        // The server's guardrail policy is pinned in front of the client's instructions.
+        { role: 'system', content: [{ type: 'text', text: `${GUARDRAIL_POLICY}\n\nYou are FiNN.`, prompt_cache_breakpoint: { mode: 'explicit' } }] },
         ...messages.slice(1),
       ],
       prompt_cache_options: { mode: 'explicit' },
@@ -289,7 +292,7 @@ describe('POST /agent/completions', () => {
     const u = await t.createUser();
     const res = await call(relayRoute.POST, 'POST', PATH, { user: u, body: body() });
     expect(res.status).toBe(200);
-    expect(sent.messages[0]).toEqual({ role: 'system', content: 'You are FiNN.' });
+    expect(sent.messages[0]).toEqual({ role: 'system', content: `${GUARDRAIL_POLICY}\n\nYou are FiNN.` });
     expect(sent).not.toHaveProperty('prompt_cache_options');
   });
 

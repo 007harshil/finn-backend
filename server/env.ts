@@ -78,6 +78,13 @@ const agentSchema = z.object({
   AGENT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
   /** Relay requests per user per rolling 24 hours (per server instance). */
   AGENT_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(300),
+  /**
+   * Guardrail: screen the user's latest message with OpenAI's moderation
+   * endpoint (free, run in parallel with the completion) and refuse flagged
+   * requests. `off` skips it; a moderation outage never blocks the agent.
+   */
+  AGENT_MODERATION: z.enum(['on', 'off']).default('on'),
+  AGENT_MODERATION_MODEL: emptyToUndefined(z.string().trim().min(1).max(100).default('omni-moderation-latest')),
   /** Groq API key for speech-to-text. Unset or empty = transcription answers `unavailable`. */
   GROQ_API_KEY: z
     .string()
