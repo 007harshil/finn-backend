@@ -84,7 +84,7 @@ export interface SyncChanges {
     emergencyPlan?: unknown;
     preferences?: unknown;
     alertInbox?: { read: string[]; dismissed: string[] };
-    me?: { id: string; name: string; handle: string; phoneHint: string | null };
+    me?: { id: string; name: string; handle: string; phoneHint: string | null; finnId: string };
   };
 }
 
@@ -221,7 +221,7 @@ export async function changesSince(tx: Tx, userId: string, since: number, limit 
   if (profile) {
     track([profile as unknown as Row]);
     values.profile = profileDto(financialProfileFromRow(profile));
-    values.me = { id: profile.user_id, name: profile.display_name, handle: profile.handle, phoneHint: profile.phone_hint };
+    values.me = { id: profile.user_id, name: profile.display_name, handle: profile.handle, phoneHint: profile.phone_hint, finnId: profile.finn_id };
   }
   const plan = await tx.selectFrom('emergency_plans').selectAll().where('user_id', '=', userId).where('sync_seq', '>', since).executeTakeFirst();
   if (plan) {

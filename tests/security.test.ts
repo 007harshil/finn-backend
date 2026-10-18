@@ -51,6 +51,7 @@ describe('Data API cannot reach FiNN tables', () => {
   it('the other party of a shared item cannot rewrite it, even with raw SQL as the API role', async () => {
     const alice = await t.createUser('sec-alice@example.com');
     const bob = await t.createUser('sec-bob@example.com');
+    await t.befriend(alice, bob);
     const p = await act(alice, 'pending.create', item({ linkedUserId: bob.userId }));
     await expect(
       withUserTx(bob, (tx) =>
@@ -80,6 +81,7 @@ describe('sharing an item that already has settlements', () => {
   it('shows the other person the same outstanding amount and prevents over-settlement', async () => {
     const alice = await t.createUser('share-alice@example.com');
     const bob = await t.createUser('share-bob@example.com');
+    await t.befriend(alice, bob);
     const p = await act(alice, 'pending.create', item());
     await act(alice, 'pending.settle', { pendingId: p.id, amount: '600', date: '2026-10-05', recordCashMovement: false });
     const before = await call(syncRoute.GET, 'GET', '/api/v1/sync', { user: bob });

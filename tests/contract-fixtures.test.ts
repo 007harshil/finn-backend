@@ -51,6 +51,7 @@ beforeAll(async () => {
   fixClock();
   alice = await t.createUser('alice@example.com');
   bob = await t.createUser('bob@example.com');
+  await t.befriend(alice, bob);
 });
 afterAll(async () => t.close());
 

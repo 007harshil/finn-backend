@@ -6,7 +6,8 @@
 // other person sees a derived view with id `mir_<sharedId>` (direction and
 // borrowed/lent reversed). Actions accept either id form and resolve it to
 // the underlying row. Rules (docs/BACKEND_INTEGRATION.md "Shared pending"):
-// only the creator edits details or deletes; either person records
+// sharing needs an accepted friendship (docs FRIENDS.md; an existing link
+// survives the friendship ending); only the creator edits details or deletes; either person records
 // settlements (a linked transaction belongs to the recorder only); only the
 // person who is owed writes the rest off; the person never changes. Before
 // touching a shared item the other user's write lock is taken, so both
@@ -32,6 +33,7 @@ import {
 } from '../../finance/models';
 import { directoryEntries, type DirectoryEntry } from '../../finance/snapshot';
 import { SystemCategories } from '../account/standard-categories';
+import { friendIdsAmong } from '../friends/service';
 import { channelError, resolveAccountId } from '../accounts/resolve';
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { buildLinkedTransaction, insertTransaction } from '../transactions/repo';
@@ -54,6 +56,7 @@ export const MAX_SPLIT_PEOPLE = 20;
 const DIRECTIONS = ['iOwe', 'owedToMe'] as const;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NOT_FOUND = 'This item no longer exists.';
+const NOT_FRIEND = 'You can share only with friends. Send them a friend request first.';
 const STALE = 'This item changed since you opened it. Reload and try again.';
 
 type PendingRow = Selectable<PendingPaymentsTable>;
@@ -62,10 +65,10 @@ type PendingRow = Selectable<PendingPaymentsTable>;
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-/** FiNN users among [ids] (the caller and malformed ids are never "known"). */
+/** The caller's friends among [ids]: the only users an item can be newly shared with. */
 async function knownUsers(ctx: ActionContext, ids: (string | null)[]): Promise<Map<string, DirectoryEntry>> {
   const valid = ids.filter((id): id is string => !!id && id !== ctx.userId && UUID_RE.test(id));
-  return directoryEntries(ctx.tx, valid);
+  return directoryEntries(ctx.tx, [...(await friendIdsAmong(ctx.tx, ctx.userId, valid))]);
 }
 
 // ---------------------------------------------------------------------------
@@ -75,11 +78,11 @@ async function knownUsers(ctx: ActionContext, ids: (string | null)[]): Promise<M
 
 type LockScope = { tx: Tx; userId: string };
 
-/** Only users that exist are locked: arbitrary ids must not let a caller hold other people's locks. */
+/** Only friends are locked: arbitrary ids must not let a caller hold other people's locks. */
 async function linkedIds(scope: LockScope, ids: (string | null | undefined)[]): Promise<string[]> {
   const candidates = [...new Set(ids.filter((id): id is string => !!id && id !== scope.userId && UUID_RE.test(id)))];
   if (candidates.length === 0 || candidates.length > MAX_SPLIT_PEOPLE) return [];
-  return [...(await directoryEntries(scope.tx, candidates)).keys()];
+  return [...(await friendIdsAmong(scope.tx, scope.userId, candidates))];
 }
 
 async function otherPartyOf(scope: LockScope, id: string): Promise<string[]> {
@@ -202,7 +205,7 @@ const pendingFields: FieldSpec[] = [
   {
     name: 'linkedUserId',
     kind: 'id',
-    description: 'FiNN user to share with; the item then also appears in their account. Find ids with the user directory.',
+    description: 'FiNN friend to share with; the item then also appears in their account. Only friends can be linked.',
     required: false,
   },
 ];
@@ -212,7 +215,7 @@ function validatePending(i: PendingInput, ctx: ActionContext, users: Map<string,
   const link = i.linkedUserId;
   if (link != null) {
     if (link === ctx.userId) e.linkedUserId = 'You cannot share an item with yourself.';
-    else if (!users.has(link)) e.linkedUserId = 'That FiNN user could not be found. Search again.';
+    else if (!users.has(link)) e.linkedUserId = NOT_FRIEND;
   }
   if (i.counterparty.trim() === '') e.counterparty = "Enter the person's name.";
   if (i.counterparty.length > 60) e.counterparty = 'Keep the name under 60 characters.';
@@ -371,7 +374,7 @@ function validateSplit(i: SplitInput, ctx: ActionContext, users: Map<string, Dir
     const link = p.linkedUserId;
     if (link != null) {
       if (link === ctx.userId) e[`people.${n}.linkedUserId`] = 'You are already in the split. Use "Include me" instead.';
-      else if (!users.has(link)) e[`people.${n}.linkedUserId`] = 'That FiNN user could not be found. Search again.';
+      else if (!users.has(link)) e[`people.${n}.linkedUserId`] = NOT_FRIEND;
     }
     const key = link ?? name.toLowerCase();
     if (name === '' && link == null) {
@@ -560,7 +563,8 @@ export const updatePending = defineAction({
     if (link && input.linkedUserId != null && input.linkedUserId !== link.userId) {
       throw AppFailure.notPermitted('The person on a shared item cannot change.');
     }
-    const users = await knownUsers(ctx, [input.linkedUserId]);
+    // A shared item keeps its person even after the friendship ends.
+    const users = link ? await directoryEntries(ctx.tx, [link.userId]) : await knownUsers(ctx, [input.linkedUserId]);
     throwIfErrors(validatePending(input, ctx, users, v.settledPaise));
     const lines: PreviewLine[] = [
       { label: 'Original amount', value: formatInr(input.amount), emphasis: true },

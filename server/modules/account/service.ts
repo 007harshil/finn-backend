@@ -74,7 +74,7 @@ export async function loadMe(tx: Tx, user: AuthUser) {
   const row = await tx.selectFrom('profiles').selectAll().where('user_id', '=', user.userId).executeTakeFirst();
   if (!row) throw AppFailure.notFound('Profile not found.');
   return {
-    user: { id: row.user_id, name: row.display_name, handle: row.handle, phoneHint: row.phone_hint, email: user.email },
+    user: { id: row.user_id, name: row.display_name, handle: row.handle, phoneHint: row.phone_hint, finnId: row.finn_id, email: user.email },
     profile: profileDto(financialProfileFromRow(row)),
     preferences: await loadPreferences(tx, user.userId),
   };

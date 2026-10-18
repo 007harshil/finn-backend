@@ -12,6 +12,7 @@ export interface ProfilesTable {
   display_name: string;
   handle: string;
   phone_hint: string | null;
+  finn_id: Generated<string>;
   opening_paise: number | null;
   opening_date: string | null;
   monthly_income_estimate_paise: number | null;
@@ -365,6 +366,19 @@ export interface AuthRefreshTokensTable {
   created_at: Ts;
 }
 
+export interface FriendRequestsTable {
+  id: Generated<string>;
+  requester_id: string;
+  addressee_id: string;
+  created_at: Ts;
+}
+
+export interface FriendshipsTable {
+  user_low: string;
+  user_high: string;
+  created_at: Ts;
+}
+
 export interface Database {
   profiles: ProfilesTable;
   user_preferences: UserPreferencesTable;
@@ -387,6 +401,8 @@ export interface Database {
   idempotency_keys: IdempotencyKeysTable;
   audit_log: AuditLogTable;
   agent_runs: AgentRunsTable;
+  friend_requests: FriendRequestsTable;
+  friendships: FriendshipsTable;
   deleted_records: DeletedRecordsTable;
   'finn_auth.users': AuthUsersTable;
   'finn_auth.email_otps': AuthEmailOtpsTable;

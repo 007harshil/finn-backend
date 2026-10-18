@@ -145,6 +145,7 @@ describe('POST /api/v1/me/delete', () => {
     await act(a, 'goals.contribute', { goalId: goal.id, amount: 3000, date: '2026-10-10' });
     await act(a, 'assets.create', { name: 'Gold coins', type: 'gold', value: 95000, valuedOn: '2026-10-01' });
     const shared = { counterparty: 'x', direction: 'iOwe', kind: 'borrowed', amount: '1000', purpose: 'Dinner', createdDate: '2026-10-01' };
+    await t.befriend(a, b);
     const mine = await act(a, 'pending.create', { ...shared, linkedUserId: b.userId });
     const bobs = await act(b, 'pending.create', { ...shared, amount: '500', purpose: 'Cab', linkedUserId: a.userId });
     await act(a, 'pending.settle', { pendingId: mine.id, amount: '200', date: '2026-10-10', channel: 'UPI' });

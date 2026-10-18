@@ -43,6 +43,8 @@ export interface TestDb {
   createUser(email?: string): Promise<AuthUser>;
   /** Bearer token accepted by the test verifier for [user]. */
   tokenFor(user: AuthUser): string;
+  /** Makes [a] and [b] friends (sharing a pending item needs a friendship). */
+  befriend(a: AuthUser, b: AuthUser): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -92,6 +94,10 @@ export async function createTestDb(): Promise<TestDb> {
     },
     tokenFor(user) {
       return `token-${user.userId}`;
+    },
+    async befriend(a, b) {
+      const [low, high] = [a.userId, b.userId].sort();
+      await pglite.query('insert into public.friendships (user_low, user_high) values ($1, $2) on conflict do nothing', [low, high]);
     },
     async close() {
       setDb(null);

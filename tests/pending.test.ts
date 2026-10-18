@@ -264,7 +264,7 @@ describe('pending actions', () => {
     });
     for (const bad of ['not-a-user', '00000000-0000-4000-8000-000000000000']) {
       await expect(act(me, 'pending.create', item({ linkedUserId: bad }))).rejects.toMatchObject({
-        fieldErrors: { linkedUserId: 'That FiNN user could not be found. Search again.' },
+        fieldErrors: { linkedUserId: 'You can share only with friends. Send them a friend request first.' },
       });
     }
   });
@@ -462,6 +462,7 @@ describe('shared pending items', () => {
     alice = await newUser('alice@example.com');
     bob = await newUser('bob@example.com');
     carol = await newUser('carol@example.com');
+    await t.befriend(alice, bob);
     shared = await act<PendingPayment>(alice, 'pending.create', {
       counterparty: 'x',
       direction: 'iOwe',

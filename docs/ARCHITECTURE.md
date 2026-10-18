@@ -102,6 +102,11 @@ id `mir_<sharedId>`; settlements recorded by the other person appear as `mir_<id
 can record settlements (own linked transaction only); only the creator edits/deletes; only the owed person writes off.
 Writes lock both users in sorted order.
 
+Sharing needs an accepted friendship (`friendships`; requests in `friend_requests`, see finn/docs/FRIENDS.md).
+Strangers are found only by exact FiNN ID (`profiles.finn_id`, `GET /users/lookup`); `GET /users/search` lists
+friends only, and `private.directory_entries` returns only connected people (friend, open request, shared item).
+An existing shared item keeps its person after the friendship ends.
+
 ## Performance
 
 - Stateless instances; horizontal scaling behind any load balancer.
