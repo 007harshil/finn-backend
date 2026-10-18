@@ -7,6 +7,15 @@ export default function Home() {
         <code className="rounded bg-black/[.06] px-1 dark:bg-white/[.08]">/api/v1</code> and requires a Supabase Auth
         access token.
       </p>
+      <p className="text-zinc-600 dark:text-zinc-400">
+        <a className="underline underline-offset-2" href="/privacy">
+          Privacy Policy
+        </a>
+        {' · '}
+        <a className="underline underline-offset-2" href="/delete-account">
+          Delete your account
+        </a>
+      </p>
     </main>
   );
 }
