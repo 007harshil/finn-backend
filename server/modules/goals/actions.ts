@@ -10,6 +10,7 @@ import { MonthKey, formatMonthYear } from '../../core/dates';
 import { AppFailure, throwIfErrors } from '../../core/failure';
 import { formatInr } from '../../core/money';
 import { GOAL_CATEGORIES, goalFromRow, movementFromRow, type Goal } from '../../finance/models';
+import { holdingsOf, notEnoughOn, planRelease, resolveSetAsideAccount } from '../savings/allocation';
 import { loadOneGoalProgress } from './service';
 
 /** ₹100 crore, guards against typos. */
@@ -26,6 +27,7 @@ const goalShape = {
   targetDate: zDateOpt,
   plannedMonthlyContribution: zMoneyOpt,
   initialAllocation: zMoneyOpt,
+  accountId: zTextOpt,
   note: zTextOpt,
 };
 const goalInput = z.object(goalShape);
@@ -37,7 +39,8 @@ const goalFields: FieldSpec[] = [
   { name: 'target', kind: 'money', description: 'Target amount', required: true },
   { name: 'targetDate', kind: 'date', description: 'Target date (in the future)', required: false },
   { name: 'plannedMonthlyContribution', kind: 'money', description: 'Planned monthly amount', required: false },
-  { name: 'initialAllocation', kind: 'money', description: 'Amount to earmark now (create only; ignored on update)', required: false },
+  { name: 'initialAllocation', kind: 'money', description: 'Amount to set aside now (create only; ignored on update)', required: false },
+  { name: 'accountId', kind: 'id', description: 'Account the starting amount is set aside on (default account when omitted)', required: false },
   { name: 'colorIndex', kind: 'integer', description: 'Colour swatch index (default 5)', required: false },
   { name: 'note', kind: 'string', description: 'Free-text note', required: false },
 ];
@@ -61,8 +64,13 @@ async function validateGoal(i: GoalInput, ctx: ActionContext, exceptId?: string)
   if ((i.note?.length ?? 0) > 500) e.note = 'Keep the note under 500 characters.';
   const init = i.initialAllocation;
   if (init !== null && init > 0) {
-    const available = (await ctx.snapshot.balance()).availablePaise;
-    if (init > available) e.initialAllocation = `Only ${formatInr(available)} is available to set aside.`;
+    try {
+      const here = await resolveSetAsideAccount(ctx, i.accountId);
+      if (init > here.available) e.initialAllocation = notEnoughOn(here.account, here.available);
+    } catch (err) {
+      if (!(err instanceof AppFailure) || Object.keys(err.fieldErrors).length === 0) throw err;
+      Object.assign(e, err.fieldErrors);
+    }
   }
   return e;
 }
@@ -106,8 +114,11 @@ export const createGoal = defineAction({
     if (input.targetDate) lines.push({ label: 'By', value: formatMonthYear(MonthKey.of(input.targetDate)) });
     if (init > 0) {
       const available = (await ctx.snapshot.balance()).availablePaise;
-      lines.push({ label: 'Earmarked now', value: formatInr(init) });
-      lines.push({ label: 'Available to spend', value: `${formatInr(available)} → ${formatInr(available - init)}` });
+      const here = await resolveSetAsideAccount(ctx, input.accountId);
+      lines.push({ label: 'Set aside now', value: formatInr(init) });
+      lines.push({ label: 'Set aside on', value: here.account.name });
+      lines.push({ label: `Free to spend in ${here.account.name}`, value: `${formatInr(here.available)} → ${formatInr(here.available - init)}` });
+      lines.push({ label: 'Available to spend (total)', value: `${formatInr(available)} → ${formatInr(available - init)}` });
     }
     return {
       title: `Create ${name}`,
@@ -138,6 +149,7 @@ export const createGoal = defineAction({
     ctx.touched.push(row.id);
     const init = input.initialAllocation ?? 0;
     if (init > 0) {
+      const here = await resolveSetAsideAccount(ctx, input.accountId);
       const mv = await ctx.tx
         .insertInto('savings_movements')
         .values({
@@ -147,6 +159,7 @@ export const createGoal = defineAction({
           bucket_id: row.id,
           kind: 'contribution',
           amount_paise: init,
+          account_id: here.account.id,
           date: ctx.today,
           note: 'Starting amount',
           created_at: now,
@@ -198,10 +211,17 @@ export const updateGoalAction = defineAction({
   },
 });
 
-const movementShape = { goalId: zId, amount: zMoney, date: zDate, note: zTextOpt };
+const movementShape = { goalId: zId, amount: zMoney, accountId: zTextOpt, date: zDate, note: zTextOpt };
 const movementFields: FieldSpec[] = [
   { name: 'goalId', kind: 'id', description: 'Goal id', required: true },
   { name: 'amount', kind: 'money', description: 'Amount in rupees', required: true },
+  {
+    name: 'accountId',
+    kind: 'id',
+    description:
+      'Account the money is set aside on (contribution: default account when omitted) or released from (withdrawal: the accounts holding the most when omitted)',
+    required: false,
+  },
   { name: 'date', kind: 'date', description: 'Date', required: true },
   { name: 'note', kind: 'string', description: 'Note', required: false },
 ];
@@ -214,8 +234,8 @@ function movementAction(kind: 'contribution' | 'withdrawal') {
       module: 'goals',
       title: isContribution ? 'Add money to a goal' : 'Withdraw from a goal',
       description: isContribution
-        ? 'Earmarks available cash for a goal. Not an expense; net worth is unchanged.'
-        : 'Releases earmarked money back to available cash. Not income.',
+        ? 'Sets money aside for a goal on an account. Not an expense: the account balance and net worth are unchanged, but the money can no longer be spent.'
+        : 'Releases money set aside for a goal back to spendable. Not income.',
       risk: 'consequential',
       movesMoney: false,
       reversible: true,
@@ -229,9 +249,8 @@ function movementAction(kind: 'contribution' | 'withdrawal') {
       const e: Record<string, string> = {};
       if (input.amount <= 0) e.amount = 'Enter an amount greater than zero.';
       if (input.date > ctx.today) e.date = 'The date cannot be in the future.';
-      if (isContribution && input.amount > available) e.amount = `Only ${formatInr(available)} is available to set aside.`;
-      if (!isContribution && input.amount > p.saved) e.amount = `Only ${formatInr(p.saved)} is saved in this goal.`;
       if ((input.note?.length ?? 0) > 500) e.note = 'Keep the note under 500 characters.';
+      const plan = await accountPlan(ctx, input, p.saved, e);
       throwIfErrors(e);
       const name = p.goal.name;
       const savedAfter = isContribution ? p.saved + input.amount : p.saved - input.amount;
@@ -241,8 +260,9 @@ function movementAction(kind: 'contribution' | 'withdrawal') {
         summary: isContribution ? `Set aside ${formatInr(input.amount)} for ${name}` : `Release ${formatInr(input.amount)} from ${name}`,
         lines: [
           { label: 'Amount', value: formatInr(input.amount), emphasis: true },
+          ...plan.lines,
           { label: 'Saved in goal', value: `${formatInr(p.saved)} → ${formatInr(savedAfter)}` },
-          { label: 'Available to spend', value: `${formatInr(available)} → ${formatInr(availAfter)}` },
+          { label: 'Available to spend (total)', value: `${formatInr(available)} → ${formatInr(availAfter)}` },
           { label: 'Net worth', value: 'Unchanged' },
         ],
         warnings: isContribution && savedAfter >= p.goal.targetPaise && !p.isAchieved ? ['This completes your goal!'] : [],
@@ -250,25 +270,68 @@ function movementAction(kind: 'contribution' | 'withdrawal') {
       };
     },
     async execute(input, ctx) {
-      const row = await ctx.tx
-        .insertInto('savings_movements')
-        .values({
-          user_id: ctx.userId,
-          id: ctx.ids.next('sv'),
-          bucket_type: 'goal',
-          bucket_id: input.goalId,
-          kind,
-          amount_paise: input.amount,
-          date: input.date,
-          note: input.note,
-          created_at: ctx.now.toISOString(),
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      ctx.touched.push(row.id);
-      return movementFromRow(row);
+      const p = await existingGoal(ctx, input.goalId);
+      const plan = await accountPlan(ctx, input, p.saved, {});
+      let first: ReturnType<typeof movementFromRow> | null = null;
+      for (const r of plan.releases) {
+        const row = await ctx.tx
+          .insertInto('savings_movements')
+          .values({
+            user_id: ctx.userId,
+            id: ctx.ids.next('sv'),
+            bucket_type: 'goal',
+            bucket_id: input.goalId,
+            kind,
+            amount_paise: r.amountPaise,
+            account_id: r.accountId,
+            date: input.date,
+            note: input.note,
+            created_at: ctx.now.toISOString(),
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
+        ctx.touched.push(row.id);
+        first ??= movementFromRow(row);
+      }
+      return first!;
     },
   });
+
+  /** Which account(s) the amount lands on or leaves, with preview lines; problems go into [e]. */
+  async function accountPlan(
+    ctx: ActionContext,
+    input: { goalId: string; amount: number; accountId: string | null },
+    saved: number,
+    e: Record<string, string>,
+  ): Promise<{ releases: { accountId: string | null; amountPaise: number }[]; lines: PreviewLine[] }> {
+    if (isContribution) {
+      const here = await resolveSetAsideAccount(ctx, input.accountId);
+      if (input.amount > here.available) e.amount = notEnoughOn(here.account, here.available);
+      return {
+        releases: [{ accountId: here.account.id, amountPaise: input.amount }],
+        lines: [
+          { label: 'Set aside on', value: here.account.name },
+          { label: `Free to spend in ${here.account.name}`, value: `${formatInr(here.available)} → ${formatInr(here.available - input.amount)}` },
+        ],
+      };
+    }
+    if (input.amount > saved) e.amount = `Only ${formatInr(saved)} is saved in this goal.`;
+    const names = new Map((await ctx.snapshot.moneyAccounts()).map((a) => [a.id, a.name]));
+    if (input.accountId !== null && !names.has(input.accountId)) e.accountId = 'This account does not exist.';
+    const held = holdingsOf(await ctx.snapshot.movements(), 'goal', input.goalId, ctx.today);
+    const out = planRelease(held, input.amount, input.accountId, names);
+    if (out.error !== null) {
+      e.amount ??= out.error;
+      return { releases: [], lines: [] };
+    }
+    return {
+      releases: out.releases,
+      lines: out.releases.map((r) => ({
+        label: `Released on ${r.accountId ? (names.get(r.accountId) ?? 'account') : 'no account'}`,
+        value: formatInr(r.amountPaise),
+      })),
+    };
+  }
 }
 
 export const contributeGoal = movementAction('contribution');

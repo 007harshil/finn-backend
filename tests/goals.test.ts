@@ -40,6 +40,7 @@ function mv(rupees: number, date: string, o: { withdraw?: boolean; bucket?: stri
     bucketType: o.type ?? 'goal',
     bucketId: o.bucket ?? 'g1',
     kind: o.withdraw ? 'withdrawal' : 'contribution',
+    accountId: 'acc_cash',
     amountPaise: rs(rupees),
     date,
     note: null,
@@ -219,7 +220,7 @@ describe('goals actions', () => {
     it('limits contributions to available and withdrawals to saved; checks date and amount', async () => {
       const b = await bal();
       const tooMuch = await act(alice, 'goals.contribute', move(id, (b.availablePaise + 100) / 100)).catch((e) => e);
-      expect(tooMuch.fieldErrors.amount).toMatch(/^Only ₹.* is available to set aside\.$/);
+      expect(tooMuch.fieldErrors.amount).toMatch(/^Only ₹.* in Cash is free to set aside.$/);
       const over = await act(alice, 'goals.withdraw', move(id, 25001)).catch((e) => e);
       expect(over.fieldErrors.amount).toBe('Only ₹25,000 is saved in this goal.');
       expect((await act(alice, 'goals.contribute', move(id, 0)).catch((e) => e)).fieldErrors.amount).toBeDefined();

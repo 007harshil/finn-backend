@@ -214,6 +214,8 @@ export interface SavingsMovement {
   bucketId: string;
   kind: 'contribution' | 'withdrawal';
   amountPaise: Paise;
+  /** The account the money is set aside on; null for old allocations that sit on no account. */
+  accountId: string | null;
   date: IsoDate;
   note: string | null;
   createdAt: Instant;
@@ -226,6 +228,7 @@ export function movementFromRow(r: Selectable<SavingsMovementsTable>): SavingsMo
     bucketId: r.bucket_id,
     kind: r.kind,
     amountPaise: r.amount_paise,
+    accountId: r.account_id,
     date: r.date,
     note: r.note,
     createdAt: iso(r.created_at),

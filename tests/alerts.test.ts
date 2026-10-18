@@ -166,6 +166,7 @@ const movement = (bucketType: 'goal' | 'emergencyFund', rupees: number, date: st
   bucketType,
   bucketId,
   kind: 'contribution',
+  accountId: 'acc_cash',
   amountPaise: rs(rupees),
   date,
   note: null,

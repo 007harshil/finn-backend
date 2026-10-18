@@ -57,16 +57,17 @@ export async function clearDefaultExcept(tx: Tx, userId: string, exceptId: strin
   await q.execute();
 }
 
-/** How many records reference the account (transactions, transfers, subscriptions, settlements). */
+/** How many records reference the account (transactions, transfers, subscriptions, settlements, savings). */
 export async function accountUsage(tx: Tx, userId: string, id: string): Promise<{ movements: number; references: number }> {
-  const r = await sql<{ tx: string; tr: string; sub: string; st: string }>`
+  const r = await sql<{ tx: string; tr: string; sub: string; st: string; sv: string }>`
     select (select count(*) from public.transactions where user_id = ${userId} and account_id = ${id}) as tx,
            (select count(*) from public.transfers where user_id = ${userId} and (from_account_id = ${id} or to_account_id = ${id})) as tr,
            (select count(*) from public.subscriptions where user_id = ${userId} and account_id = ${id}) as sub,
-           (select count(*) from public.pending_settlements where user_id = ${userId} and account_id = ${id}) as st`.execute(tx);
+           (select count(*) from public.pending_settlements where user_id = ${userId} and account_id = ${id}) as st,
+           (select count(*) from public.savings_movements where user_id = ${userId} and account_id = ${id}) as sv`.execute(tx);
   const row = r.rows[0]!;
   const movements = Number(row.tx) + Number(row.tr);
-  return { movements, references: movements + Number(row.sub) + Number(row.st) };
+  return { movements, references: movements + Number(row.sub) + Number(row.st) + Number(row.sv) };
 }
 
 /** Creates the Cash account every user starts with (idempotent). */

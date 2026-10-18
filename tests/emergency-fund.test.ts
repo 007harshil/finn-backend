@@ -21,6 +21,7 @@ function efMv(rupees: number, date: string, withdraw = false, type: 'goal' | 'em
     bucketType: type,
     bucketId: type === 'goal' ? 'g1' : 'emergency_fund',
     kind: withdraw ? 'withdrawal' : 'contribution',
+    accountId: 'acc_cash',
     amountPaise: rs(rupees),
     date,
     note: null,
@@ -151,7 +152,7 @@ describe('emergency fund actions', () => {
   it('limits: available cash, saved amount, dates, note length', async () => {
     const b = await bal();
     const tooMuch = await act(alice, 'emergencyFund.contribute', move((b.availablePaise + 100) / 100)).catch((e) => e);
-    expect(tooMuch.fieldErrors.amount).toMatch(/^Only ₹.* is available to set aside\.$/);
+    expect(tooMuch.fieldErrors.amount).toMatch(/^Only ₹.* in Cash is free to set aside.$/);
     const over = await act(alice, 'emergencyFund.withdraw', move(20001)).catch((e) => e);
     expect(over.fieldErrors.amount).toBe('Only ₹20,000 is in your emergency fund.');
     expect((await act(alice, 'emergencyFund.contribute', move(1, { date: '2026-10-11' })).catch((e) => e)).fieldErrors.date).toBeDefined();

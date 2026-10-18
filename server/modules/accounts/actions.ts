@@ -402,7 +402,7 @@ export const deleteAccountAction = defineAction({
     module: 'accounts',
     title: 'Delete an account',
     description:
-      'Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions or settlements must be archived instead.',
+      'Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions, settlements or set-aside savings must be archived instead.',
     risk: 'consequential',
     movesMoney: false,
     reversible: false,

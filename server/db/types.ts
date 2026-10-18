@@ -126,6 +126,7 @@ export interface SavingsMovementsTable {
   bucket_id: string;
   kind: 'contribution' | 'withdrawal';
   amount_paise: number;
+  account_id: string | null;
   date: string;
   note: string | null;
   created_at: Ts;

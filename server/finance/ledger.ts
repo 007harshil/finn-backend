@@ -9,6 +9,8 @@
 //   creditOwed = Σ credit card owed
 //   earmarked = Σ goal movements + Σ emergency-fund movements (dated up to today)
 //   available = cash − earmarked
+//   per account: set aside = Σ savings movements on it; available to spend = balance − set aside.
+//   Setting money aside never changes an account's balance (saving is not spending).
 
 import { sql } from 'kysely';
 import { ratioBps, type Paise } from '../core/money';
@@ -19,6 +21,10 @@ export interface AccountBalance {
   accountId: string;
   /** Money in the account; for credit cards the amount owed. */
   balancePaise: Paise;
+  /** Set aside for goals / the emergency fund on this account (asset accounts; 0 for cards). */
+  earmarkedPaise: Paise;
+  /** balance − set aside: what can be spent from this account (asset accounts; = balance for cards). */
+  availablePaise: Paise;
 }
 
 export interface BalanceSnapshot {
@@ -34,6 +40,8 @@ export interface BalanceSnapshot {
   creditOwedPaise: Paise;
   earmarkedPaise: Paise;
   availablePaise: Paise;
+  /** Old set-aside amounts that sit on no account (counted in earmarkedPaise only). */
+  earmarkedUnassignedPaise: Paise;
   accounts: AccountBalance[];
 }
 
@@ -80,6 +88,12 @@ export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, overrid
            sum(case when kind = 'contribution' then amount_paise else -amount_paise end) filter (where bucket_type = 'emergencyFund') as emergency
     from public.savings_movements
     where user_id = ${userId} and date <= ${asOf}::date`.execute(tx);
+  const perAccount = await sql<{ account_id: string | null; held: string }>`
+    select account_id, sum(case when kind = 'contribution' then amount_paise else -amount_paise end) as held
+    from public.savings_movements
+    where user_id = ${userId} and date <= ${asOf}::date
+    group by account_id`.execute(tx);
+  const heldBy = new Map(perAccount.rows.map((r) => [r.account_id, num(r.held)]));
   let opening = 0;
   let cash = 0;
   let owed = 0;
@@ -90,7 +104,8 @@ export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, overrid
     const liability = r.kind === 'creditCard';
     const flow = num(r.flow);
     const balance = liability ? num(r.opening) - flow : num(r.opening) + flow;
-    accounts.push({ accountId: r.id, balancePaise: balance });
+    const held = liability ? 0 : (heldBy.get(r.id) ?? 0);
+    accounts.push({ accountId: r.id, balancePaise: balance, earmarkedPaise: held, availablePaise: balance - held });
     if (liability) owed += balance;
     else {
       cash += balance;
@@ -112,6 +127,7 @@ export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, overrid
     creditOwedPaise: owed,
     earmarkedPaise: earmarked,
     availablePaise: cash - earmarked,
+    earmarkedUnassignedPaise: heldBy.get(null) ?? 0,
     accounts,
   };
 }

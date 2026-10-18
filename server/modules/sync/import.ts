@@ -90,6 +90,7 @@ const movement = z.object({
   bucketId: id,
   kind: z.enum(['contribution', 'withdrawal']),
   amountPaise: positive,
+  accountId: z.string().min(1).max(64).nullable().optional(),
   date,
   note: text(500),
   createdAt: instant,
@@ -472,6 +473,7 @@ async function writeAll(tx: Tx, userId: string, p: ImportPayload): Promise<void>
           bucket_id: m.bucketId,
           kind: m.kind,
           amount_paise: m.amountPaise,
+          account_id: m.accountId ?? defaultAccountOf(p),
           date: m.date,
           note: m.note,
           created_at: m.createdAt,
@@ -664,6 +666,7 @@ function validateReferences(p: ImportPayload): void {
   for (const t of p.transactions) known(t.accountId, 'transactions');
   for (const s of p.subscriptions) known(s.accountId, 'subscriptions');
   for (const s of p.settlements) known(s.accountId, 'settlements');
+  for (const m of p.savingsMovements) known(m.accountId ?? null, 'savingsMovements');
   for (const t of p.transfers) {
     known(t.fromAccountId, 'transfers');
     known(t.toAccountId, 'transfers');

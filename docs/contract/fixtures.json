@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T18:00:57.769Z",
+  "generatedAt": "2026-10-18T15:39:09.173Z",
   "actions": [
     {
       "actionId": "profile.update",
@@ -208,7 +208,7 @@
         "isArchived": false,
         "sortOrder": 0,
         "note": null,
-        "createdAt": "2026-10-15T18:00:53.246Z",
+        "createdAt": "2026-10-18T15:39:07.933Z",
         "updatedAt": "2026-10-10T03:30:00.000Z",
         "version": 4
       }
@@ -1507,6 +1507,7 @@
         "bucketId": "goal_1",
         "kind": "contribution",
         "amountPaise": 500000,
+        "accountId": "acc_cash",
         "date": "2026-10-10",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -1525,6 +1526,7 @@
         "bucketId": "goal_1",
         "kind": "withdrawal",
         "amountPaise": 100000,
+        "accountId": "acc_cash",
         "date": "2026-10-10",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -1639,6 +1641,7 @@
         "bucketId": "emergency_fund",
         "kind": "contribution",
         "amountPaise": 300000,
+        "accountId": "acc_cash",
         "date": "2026-10-10",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -1656,6 +1659,7 @@
         "bucketId": "emergency_fund",
         "kind": "withdrawal",
         "amountPaise": 50000,
+        "accountId": "acc_cash",
         "date": "2026-10-10",
         "note": null,
         "createdAt": "2026-10-10T03:30:00.000Z"
@@ -2352,7 +2356,7 @@
                 {
                   "name": "linkedUserId",
                   "kind": "id",
-                  "description": "FiNN user to share with; the item then also appears in their account. Find ids with the user directory.",
+                  "description": "FiNN friend to share with; the item then also appears in their account. Only friends can be linked.",
                   "required": false
                 }
               ]
@@ -2523,7 +2527,7 @@
                 {
                   "name": "linkedUserId",
                   "kind": "id",
-                  "description": "FiNN user to share with; the item then also appears in their account. Find ids with the user directory.",
+                  "description": "FiNN friend to share with; the item then also appears in their account. Only friends can be linked.",
                   "required": false
                 }
               ]
@@ -3282,7 +3286,13 @@
                 {
                   "name": "initialAllocation",
                   "kind": "money",
-                  "description": "Amount to earmark now (create only; ignored on update)",
+                  "description": "Amount to set aside now (create only; ignored on update)",
+                  "required": false
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the starting amount is set aside on (default account when omitted)",
                   "required": false
                 },
                 {
@@ -3364,7 +3374,13 @@
                 {
                   "name": "initialAllocation",
                   "kind": "money",
-                  "description": "Amount to earmark now (create only; ignored on update)",
+                  "description": "Amount to set aside now (create only; ignored on update)",
+                  "required": false
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the starting amount is set aside on (default account when omitted)",
                   "required": false
                 },
                 {
@@ -3385,7 +3401,7 @@
               "id": "goals.contribute",
               "module": "goals",
               "title": "Add money to a goal",
-              "description": "Earmarks available cash for a goal. Not an expense; net worth is unchanged.",
+              "description": "Sets money aside for a goal on an account. Not an expense: the account balance and net worth are unchanged, but the money can no longer be spent.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": true,
@@ -3401,6 +3417,12 @@
                   "kind": "money",
                   "description": "Amount in rupees",
                   "required": true
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money is set aside on (contribution: default account when omitted) or released from (withdrawal: the accounts holding the most when omitted)",
+                  "required": false
                 },
                 {
                   "name": "date",
@@ -3420,7 +3442,7 @@
               "id": "goals.withdraw",
               "module": "goals",
               "title": "Withdraw from a goal",
-              "description": "Releases earmarked money back to available cash. Not income.",
+              "description": "Releases money set aside for a goal back to spendable. Not income.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": true,
@@ -3436,6 +3458,12 @@
                   "kind": "money",
                   "description": "Amount in rupees",
                   "required": true
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money is set aside on (contribution: default account when omitted) or released from (withdrawal: the accounts holding the most when omitted)",
+                  "required": false
                 },
                 {
                   "name": "date",
@@ -3518,7 +3546,7 @@
               "id": "emergencyFund.contribute",
               "module": "emergencyFund",
               "title": "Add to the emergency fund",
-              "description": "Earmarks available cash for emergencies. Not an expense; net worth is unchanged.",
+              "description": "Sets money aside for emergencies on an account. Not an expense: the account balance and net worth are unchanged, but the money can no longer be spent.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": true,
@@ -3528,6 +3556,12 @@
                   "kind": "money",
                   "description": "Amount in rupees",
                   "required": true
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money is set aside on (contribution: default account when omitted) or released from (withdrawal: the accounts holding the most when omitted)",
+                  "required": false
                 },
                 {
                   "name": "date",
@@ -3547,7 +3581,7 @@
               "id": "emergencyFund.withdraw",
               "module": "emergencyFund",
               "title": "Withdraw from the emergency fund",
-              "description": "Releases earmarked emergency money back to available cash. Not income.",
+              "description": "Releases emergency money back to spendable. Not income.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": true,
@@ -3557,6 +3591,12 @@
                   "kind": "money",
                   "description": "Amount in rupees",
                   "required": true
+                },
+                {
+                  "name": "accountId",
+                  "kind": "id",
+                  "description": "Account the money is set aside on (contribution: default account when omitted) or released from (withdrawal: the accounts holding the most when omitted)",
+                  "required": false
                 },
                 {
                   "name": "date",
@@ -3944,7 +3984,7 @@
               "id": "accounts.delete",
               "module": "accounts",
               "title": "Delete an account",
-              "description": "Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions or settlements must be archived instead.",
+              "description": "Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions, settlements or set-aside savings must be archived instead.",
               "risk": "consequential",
               "movesMoney": false,
               "reversible": false,
@@ -4810,7 +4850,7 @@
               "recordIds": [
                 "tx_10"
               ],
-              "at": "2026-10-15T18:00:57.407Z"
+              "at": "2026-10-18T15:39:09.071Z"
             },
             {
               "id": "73",
@@ -4823,7 +4863,7 @@
               "recordIds": [
                 "asset_2"
               ],
-              "at": "2026-10-15T18:00:57.303Z"
+              "at": "2026-10-18T15:39:09.041Z"
             },
             {
               "id": "72",
@@ -4836,7 +4876,7 @@
               "recordIds": [
                 "asset_2"
               ],
-              "at": "2026-10-15T18:00:57.257Z"
+              "at": "2026-10-18T15:39:09.030Z"
             },
             {
               "id": "71",
@@ -4849,7 +4889,7 @@
               "recordIds": [
                 "asset_1"
               ],
-              "at": "2026-10-15T18:00:57.222Z"
+              "at": "2026-10-18T15:39:09.016Z"
             },
             {
               "id": "70",
@@ -4862,7 +4902,7 @@
               "recordIds": [
                 "asset_1"
               ],
-              "at": "2026-10-15T18:00:57.185Z"
+              "at": "2026-10-18T15:39:09.006Z"
             },
             {
               "id": "69",
@@ -4875,7 +4915,7 @@
               "recordIds": [
                 "sv_5"
               ],
-              "at": "2026-10-15T18:00:57.142Z"
+              "at": "2026-10-18T15:39:08.993Z"
             },
             {
               "id": "68",
@@ -4888,7 +4928,7 @@
               "recordIds": [
                 "sv_4"
               ],
-              "at": "2026-10-15T18:00:57.080Z"
+              "at": "2026-10-18T15:39:08.976Z"
             },
             {
               "id": "67",
@@ -4901,7 +4941,7 @@
               "recordIds": [
                 "emergency_plan"
               ],
-              "at": "2026-10-15T18:00:57.024Z"
+              "at": "2026-10-18T15:39:08.961Z"
             },
             {
               "id": "66",
@@ -4914,7 +4954,7 @@
               "recordIds": [
                 "goal_2"
               ],
-              "at": "2026-10-15T18:00:56.988Z"
+              "at": "2026-10-18T15:39:08.950Z"
             },
             {
               "id": "65",
@@ -4927,7 +4967,7 @@
               "recordIds": [
                 "goal_2"
               ],
-              "at": "2026-10-15T18:00:56.944Z"
+              "at": "2026-10-18T15:39:08.935Z"
             },
             {
               "id": "64",
@@ -4940,7 +4980,7 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-15T18:00:56.906Z"
+              "at": "2026-10-18T15:39:08.925Z"
             },
             {
               "id": "63",
@@ -4953,7 +4993,7 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-15T18:00:56.863Z"
+              "at": "2026-10-18T15:39:08.914Z"
             },
             {
               "id": "62",
@@ -4966,7 +5006,7 @@
               "recordIds": [
                 "sv_3"
               ],
-              "at": "2026-10-15T18:00:56.823Z"
+              "at": "2026-10-18T15:39:08.902Z"
             },
             {
               "id": "61",
@@ -4979,7 +5019,7 @@
               "recordIds": [
                 "sv_2"
               ],
-              "at": "2026-10-15T18:00:56.763Z"
+              "at": "2026-10-18T15:39:08.882Z"
             },
             {
               "id": "60",
@@ -4992,7 +5032,7 @@
               "recordIds": [
                 "goal_1"
               ],
-              "at": "2026-10-15T18:00:56.704Z"
+              "at": "2026-10-18T15:39:08.863Z"
             },
             {
               "id": "59",
@@ -5006,7 +5046,7 @@
                 "goal_1",
                 "sv_1"
               ],
-              "at": "2026-10-15T18:00:56.654Z"
+              "at": "2026-10-18T15:39:08.848Z"
             },
             {
               "id": "58",
@@ -5019,7 +5059,7 @@
               "recordIds": [
                 "sub_2"
               ],
-              "at": "2026-10-15T18:00:56.593Z"
+              "at": "2026-10-18T15:39:08.831Z"
             },
             {
               "id": "57",
@@ -5032,7 +5072,7 @@
               "recordIds": [
                 "sub_2"
               ],
-              "at": "2026-10-15T18:00:56.543Z"
+              "at": "2026-10-18T15:39:08.815Z"
             },
             {
               "id": "56",
@@ -5045,7 +5085,7 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.500Z"
+              "at": "2026-10-18T15:39:08.806Z"
             },
             {
               "id": "55",
@@ -5058,7 +5098,7 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.465Z"
+              "at": "2026-10-18T15:39:08.793Z"
             },
             {
               "id": "54",
@@ -5071,7 +5111,7 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.426Z"
+              "at": "2026-10-18T15:39:08.783Z"
             },
             {
               "id": "53",
@@ -5085,7 +5125,7 @@
                 "tx_9",
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.369Z"
+              "at": "2026-10-18T15:39:08.765Z"
             },
             {
               "id": "52",
@@ -5098,7 +5138,7 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.300Z"
+              "at": "2026-10-18T15:39:08.746Z"
             },
             {
               "id": "51",
@@ -5111,7 +5151,7 @@
               "recordIds": [
                 "sub_1"
               ],
-              "at": "2026-10-15T18:00:56.254Z"
+              "at": "2026-10-18T15:39:08.731Z"
             },
             {
               "id": "50",
@@ -5124,7 +5164,7 @@
               "recordIds": [
                 "loan_2"
               ],
-              "at": "2026-10-15T18:00:56.211Z"
+              "at": "2026-10-18T15:39:08.720Z"
             },
             {
               "id": "49",
@@ -5137,7 +5177,7 @@
               "recordIds": [
                 "loan_2"
               ],
-              "at": "2026-10-15T18:00:56.165Z"
+              "at": "2026-10-18T15:39:08.706Z"
             },
             {
               "id": "48",
@@ -5151,7 +5191,7 @@
                 "tx_8",
                 "lp_1"
               ],
-              "at": "2026-10-15T18:00:56.109Z"
+              "at": "2026-10-18T15:39:08.692Z"
             },
             {
               "id": "47",
@@ -5165,7 +5205,7 @@
                 "loan_1",
                 "tx_7"
               ],
-              "at": "2026-10-15T18:00:56.041Z"
+              "at": "2026-10-18T15:39:08.671Z"
             },
             {
               "id": "46",
@@ -5179,7 +5219,7 @@
                 "tx_7",
                 "loan_1"
               ],
-              "at": "2026-10-15T18:00:55.996Z"
+              "at": "2026-10-18T15:39:08.658Z"
             },
             {
               "id": "44",
@@ -5194,7 +5234,7 @@
                 "set_3",
                 "pend_6"
               ],
-              "at": "2026-10-15T18:00:55.838Z"
+              "at": "2026-10-18T15:39:08.608Z"
             },
             {
               "id": "43",
@@ -5207,7 +5247,7 @@
               "recordIds": [
                 "pend_6"
               ],
-              "at": "2026-10-15T18:00:55.774Z"
+              "at": "2026-10-18T15:39:08.588Z"
             },
             {
               "id": "42",
@@ -5221,7 +5261,7 @@
                 "pend_4",
                 "pend_5"
               ],
-              "at": "2026-10-15T18:00:55.730Z"
+              "at": "2026-10-18T15:39:08.573Z"
             },
             {
               "id": "41",
@@ -5234,7 +5274,7 @@
               "recordIds": [
                 "pend_3"
               ],
-              "at": "2026-10-15T18:00:55.660Z"
+              "at": "2026-10-18T15:39:08.558Z"
             },
             {
               "id": "40",
@@ -5247,7 +5287,7 @@
               "recordIds": [
                 "pend_3"
               ],
-              "at": "2026-10-15T18:00:55.607Z"
+              "at": "2026-10-18T15:39:08.545Z"
             },
             {
               "id": "39",
@@ -5260,7 +5300,7 @@
               "recordIds": [
                 "pend_2"
               ],
-              "at": "2026-10-15T18:00:55.558Z"
+              "at": "2026-10-18T15:39:08.532Z"
             },
             {
               "id": "38",
@@ -5273,7 +5313,7 @@
               "recordIds": [
                 "pend_2"
               ],
-              "at": "2026-10-15T18:00:55.506Z"
+              "at": "2026-10-18T15:39:08.520Z"
             },
             {
               "id": "37",
@@ -5287,7 +5327,7 @@
                 "set_2",
                 "pend_1"
               ],
-              "at": "2026-10-15T18:00:55.462Z"
+              "at": "2026-10-18T15:39:08.505Z"
             },
             {
               "id": "36",
@@ -5302,7 +5342,7 @@
                 "set_1",
                 "pend_1"
               ],
-              "at": "2026-10-15T18:00:55.395Z"
+              "at": "2026-10-18T15:39:08.485Z"
             },
             {
               "id": "35",
@@ -5315,7 +5355,7 @@
               "recordIds": [
                 "pend_1"
               ],
-              "at": "2026-10-15T18:00:55.326Z"
+              "at": "2026-10-18T15:39:08.464Z"
             },
             {
               "id": "34",
@@ -5328,7 +5368,7 @@
               "recordIds": [
                 "pend_1"
               ],
-              "at": "2026-10-15T18:00:55.288Z"
+              "at": "2026-10-18T15:39:08.453Z"
             },
             {
               "id": "33",
@@ -5341,7 +5381,7 @@
               "recordIds": [
                 "bud_2"
               ],
-              "at": "2026-10-15T18:00:55.244Z"
+              "at": "2026-10-18T15:39:08.440Z"
             },
             {
               "id": "32",
@@ -5354,7 +5394,7 @@
               "recordIds": [
                 "bud_2"
               ],
-              "at": "2026-10-15T18:00:55.180Z"
+              "at": "2026-10-18T15:39:08.424Z"
             },
             {
               "id": "31",
@@ -5367,7 +5407,7 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-15T18:00:55.132Z"
+              "at": "2026-10-18T15:39:08.412Z"
             },
             {
               "id": "30",
@@ -5380,7 +5420,7 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-15T18:00:55.084Z"
+              "at": "2026-10-18T15:39:08.399Z"
             },
             {
               "id": "29",
@@ -5393,7 +5433,7 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-15T18:00:55.024Z"
+              "at": "2026-10-18T15:39:08.385Z"
             },
             {
               "id": "28",
@@ -5406,7 +5446,7 @@
               "recordIds": [
                 "bud_1"
               ],
-              "at": "2026-10-15T18:00:54.960Z"
+              "at": "2026-10-18T15:39:08.371Z"
             },
             {
               "id": "27",
@@ -5419,7 +5459,7 @@
               "recordIds": [
                 "cat_2"
               ],
-              "at": "2026-10-15T18:00:54.910Z"
+              "at": "2026-10-18T15:39:08.359Z"
             },
             {
               "id": "26",
@@ -5432,7 +5472,7 @@
               "recordIds": [
                 "cat_2"
               ],
-              "at": "2026-10-15T18:00:54.849Z"
+              "at": "2026-10-18T15:39:08.344Z"
             },
             {
               "id": "25",
@@ -5445,7 +5485,7 @@
               "recordIds": [
                 "cat_1"
               ],
-              "at": "2026-10-15T18:00:54.802Z"
+              "at": "2026-10-18T15:39:08.333Z"
             },
             {
               "id": "24",
@@ -5458,7 +5498,7 @@
               "recordIds": [
                 "cat_1"
               ],
-              "at": "2026-10-15T18:00:54.756Z"
+              "at": "2026-10-18T15:39:08.320Z"
             }
           ],
           "nextBefore": "24"
@@ -5481,18 +5521,25 @@
             "creditOwedPaise": 130025,
             "earmarkedPaise": 1650000,
             "availablePaise": 70110625,
+            "earmarkedUnassignedPaise": 0,
             "accounts": [
               {
                 "accountId": "acc_cash",
-                "balancePaise": 60955525
+                "balancePaise": 60955525,
+                "earmarkedPaise": 1650000,
+                "availablePaise": 59305525
               },
               {
                 "accountId": "acc_1",
-                "balancePaise": 10805100
+                "balancePaise": 10805100,
+                "earmarkedPaise": 0,
+                "availablePaise": 10805100
               },
               {
                 "accountId": "acc_2",
-                "balancePaise": 130025
+                "balancePaise": 130025,
+                "earmarkedPaise": 0,
+                "availablePaise": 130025
               }
             ]
           },
@@ -6129,8 +6176,8 @@
                   "isArchived": false,
                   "sortOrder": 0,
                   "note": null,
-                  "createdAt": "2026-10-15T18:00:57.686Z",
-                  "updatedAt": "2026-10-15T18:00:57.686Z",
+                  "createdAt": "2026-10-18T15:39:09.150Z",
+                  "updatedAt": "2026-10-18T15:39:09.150Z",
                   "version": 1
                 },
                 {
@@ -6183,7 +6230,8 @@
               "id": "00000000-0000-4000-8000-00000000000c",
               "name": "Aarav",
               "handle": "@device",
-              "phoneHint": null
+              "phoneHint": null,
+              "finnId": "DSQRDVDX"
             },
             "preferences": {
               "monthStartDay": 1,
@@ -6215,6 +6263,7 @@
             "name": "Alice",
             "handle": "@alice",
             "phoneHint": null,
+            "finnId": "W2BRS6V4",
             "email": "alice@example.com"
           },
           "profile": {
@@ -6819,6 +6868,7 @@
                   "bucketId": "goal_1",
                   "kind": "contribution",
                   "amountPaise": 1000000,
+                  "accountId": "acc_cash",
                   "date": "2026-10-10",
                   "note": "Starting amount",
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -6829,6 +6879,7 @@
                   "bucketId": "goal_1",
                   "kind": "contribution",
                   "amountPaise": 500000,
+                  "accountId": "acc_cash",
                   "date": "2026-10-10",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -6839,6 +6890,7 @@
                   "bucketId": "goal_1",
                   "kind": "withdrawal",
                   "amountPaise": 100000,
+                  "accountId": "acc_cash",
                   "date": "2026-10-10",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -6849,6 +6901,7 @@
                   "bucketId": "emergency_fund",
                   "kind": "contribution",
                   "amountPaise": 300000,
+                  "accountId": "acc_cash",
                   "date": "2026-10-10",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -6859,6 +6912,7 @@
                   "bucketId": "emergency_fund",
                   "kind": "withdrawal",
                   "amountPaise": 50000,
+                  "accountId": "acc_cash",
                   "date": "2026-10-10",
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z"
@@ -6985,7 +7039,7 @@
                   "sortOrder": 1,
                   "note": null,
                   "createdAt": "2026-10-10T03:30:00.000Z",
-                  "updatedAt": "2026-10-15T18:00:53.888Z",
+                  "updatedAt": "2026-10-18T15:39:08.097Z",
                   "version": 3
                 },
                 {
@@ -7001,7 +7055,7 @@
                   "isArchived": false,
                   "sortOrder": 0,
                   "note": null,
-                  "createdAt": "2026-10-15T18:00:53.246Z",
+                  "createdAt": "2026-10-18T15:39:07.933Z",
                   "updatedAt": "2026-10-10T03:30:00.000Z",
                   "version": 4
                 }
@@ -7195,7 +7249,8 @@
               "id": "00000000-0000-4000-8000-00000000000a",
               "name": "Alice",
               "handle": "@alice",
-              "phoneHint": null
+              "phoneHint": null,
+              "finnId": "W2BRS6V4"
             },
             "emergencyPlan": {
               "configured": true,
@@ -7629,8 +7684,8 @@
                   "isArchived": false,
                   "sortOrder": 0,
                   "note": null,
-                  "createdAt": "2026-10-15T18:00:53.346Z",
-                  "updatedAt": "2026-10-15T18:00:53.481Z",
+                  "createdAt": "2026-10-18T15:39:07.959Z",
+                  "updatedAt": "2026-10-18T15:39:07.993Z",
                   "version": 2
                 }
               ],
@@ -7702,7 +7757,8 @@
               "id": "00000000-0000-4000-8000-00000000000b",
               "name": "Bob",
               "handle": "@bob",
-              "phoneHint": null
+              "phoneHint": null,
+              "finnId": "8ZR2UJWD"
             },
             "preferences": {
               "monthStartDay": 1,
@@ -7733,7 +7789,8 @@
               "id": "00000000-0000-4000-8000-00000000000b",
               "name": "Bob",
               "handle": "@bob",
-              "phoneHint": null
+              "phoneHint": null,
+              "finnId": "8ZR2UJWD"
             }
           ]
         }

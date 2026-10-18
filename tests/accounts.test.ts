@@ -58,7 +58,7 @@ describe('bootstrap', () => {
     expect(accounts[0]!.openingDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const b = await balances(u);
     expect(b).toMatchObject({ cashPaise: 0, creditOwedPaise: 0, openingBalancePaise: 0 });
-    expect(b.accounts).toEqual([{ accountId: 'acc_cash', balancePaise: 0 }]);
+    expect(b.accounts).toEqual([{ accountId: 'acc_cash', balancePaise: 0, earmarkedPaise: 0, availablePaise: 0 }]);
   });
 
   it('profile.update sets the Cash opening balance and date', async () => {
