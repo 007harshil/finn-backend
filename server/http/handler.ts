@@ -29,7 +29,16 @@ type Handler = (ctx: RequestContext) => Promise<Response | unknown>;
 
 type RouteParams = { params: Promise<Record<string, string | string[]>> };
 
-const bootstrapped = new Set<string>();
+/**
+ * How long an instance trusts that a user's account still exists. Other
+ * instances do not hear about an account deletion, so a leftover access token
+ * works there for at most this long instead of until the instance recycles.
+ */
+const ACCOUNT_RECHECK_MS = 60_000;
+const MAX_BOOTSTRAPPED = 50_000;
+
+/** userId -> when this instance last confirmed the account exists (bootstrapped once). */
+const bootstrapped = new Map<string, number>();
 
 /**
  * `CORS_ORIGINS` entries are exact origins or patterns where `*` matches one
@@ -81,13 +90,22 @@ async function run(request: Request, routeCtx: RouteParams | undefined, handler:
     let user: AuthUser = { userId: '', email: null, claims: { sub: '', role: 'authenticated' } };
     if (authRequired) {
       user = await authenticate(request);
-      if (!bootstrapped.has(user.userId)) {
+      const checkedAt = bootstrapped.get(user.userId);
+      if (checkedAt === undefined || Date.now() - checkedAt > ACCOUNT_RECHECK_MS) {
         // Access tokens outlive a deleted account by up to their lifetime.
         const account = await getDb().selectFrom('finn_auth.users').select('id').where('id', '=', user.userId).executeTakeFirst();
-        if (!account) throw new AppFailure('unauthenticated', 'Your session has expired. Please sign in again.');
-        await withUserTx(user, (tx) => ensureAccount(tx, user), { write: true });
-        bootstrapped.add(user.userId);
-        if (bootstrapped.size > 50_000) bootstrapped.clear();
+        if (!account) {
+          bootstrapped.delete(user.userId);
+          throw new AppFailure('unauthenticated', 'Your session has expired. Please sign in again.');
+        }
+        if (checkedAt === undefined) await withUserTx(user, (tx) => ensureAccount(tx, user), { write: true });
+        bootstrapped.delete(user.userId);
+        bootstrapped.set(user.userId, Date.now());
+        // Evict the longest-unchecked users (Map keeps insertion order).
+        for (const id of bootstrapped.keys()) {
+          if (bootstrapped.size <= MAX_BOOTSTRAPPED) break;
+          bootstrapped.delete(id);
+        }
       }
     }
     const result = await handler({ request, user, requestId, params, url });

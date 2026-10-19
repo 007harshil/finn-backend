@@ -86,6 +86,10 @@ function decodeCursor(s: string): CursorKey {
   try {
     const k = JSON.parse(Buffer.from(s, 'base64url').toString('utf8')) as CursorKey;
     if (typeof k.d !== 'string' || typeof k.a !== 'number' || typeof k.c !== 'string' || typeof k.i !== 'string') throw new Error();
+    // Values reach SQL casts: a forged cursor must be a 4xx, not a cast error.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k.d) || new Date(`${k.d}T00:00:00Z`).toISOString().slice(0, 10) !== k.d) throw new Error();
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/.test(k.c) || Number.isNaN(Date.parse(k.c))) throw new Error();
+    if (!Number.isSafeInteger(k.a) || k.i.length > 128) throw new Error();
     return k;
   } catch {
     throw AppFailure.validation('The page cursor is invalid. Start again from the first page.', { cursor: 'Invalid' });

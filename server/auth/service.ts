@@ -98,7 +98,8 @@ export async function issueCode(
   message: (code: string, ttlMinutes: number) => MailMessage,
   now = new Date(),
 ): Promise<CodeSent> {
-  const ttl = authEnv().AUTH_OTP_TTL_SECONDS;
+  const config = authEnv();
+  const ttl = config.AUTH_OTP_TTL_SECONDS;
   const code = newOtpCode();
 
   const otpId = await getDb()
@@ -131,7 +132,37 @@ export async function issueCode(
         .where('consumed_at', 'is', null)
         .execute();
       // Housekeeping: codes older than a day are useless.
-      await tx.deleteFrom('finn_auth.email_otps').where('created_at', '<', new Date(now.getTime() - 86_400_000)).execute();
+      const dayAgo = new Date(now.getTime() - 86_400_000);
+      await tx.deleteFrom('finn_auth.email_otps').where('created_at', '<', dayAgo).execute();
+      // Global send budget for addresses without an account: the per-email
+      // limits above do not bound how many distinct addresses an anonymous
+      // caller can mail. Existing accounts (and deletion codes, which only go
+      // to them) are exempt, so filling this budget cannot lock anyone out of
+      // an account they already have; it only pauses new sign-ups. (While it is
+      // full, "busy" answers only unknown addresses: a weak existence signal,
+      // available only to whoever keeps the budget full.)
+      const existing =
+        purpose !== 'sign_in' ||
+        (await tx.selectFrom('finn_auth.users').select('id').where('email', '=', email).executeTakeFirst()) !== undefined;
+      if (!existing) {
+        const sent = await tx
+          .selectFrom('finn_auth.email_otps as o')
+          .select([
+            sql<number>`(count(*) filter (where o.created_at > ${hourAgo}))::int`.as('hour'),
+            sql<number>`count(*)::int`.as('day'),
+          ])
+          .where('o.created_at', '>', dayAgo)
+          .where(({ not, exists, selectFrom }) =>
+            not(exists(selectFrom('finn_auth.users as u').select('u.id').whereRef('u.email', '=', 'o.email'))),
+          )
+          .executeTakeFirstOrThrow();
+        if (sent.hour >= config.AUTH_OTP_GLOBAL_HOURLY_LIMIT || sent.day >= config.AUTH_OTP_GLOBAL_DAILY_LIMIT) {
+          throw new AppFailure('unavailable', 'Sign-in is busy right now. Please try again in a few minutes.', {
+            retryable: true,
+            details: { retryAfterSeconds: 300 },
+          });
+        }
+      }
       const row = await tx
         .insertInto('finn_auth.email_otps')
         .values({
@@ -216,7 +247,9 @@ async function openSession(tx: Tx, user: { id: string; email: string }, familyId
     accessToken: access.token,
     refreshToken,
     tokenType: 'Bearer',
-    expiresIn: Math.round((access.expiresAt.getTime() - now.getTime()) / 1000),
+    // exp counts from iat, which is floored to whole seconds; ceil keeps the
+    // reported lifetime equal to the configured TTL.
+    expiresIn: Math.ceil((access.expiresAt.getTime() - now.getTime()) / 1000),
     expiresAt: access.expiresAt.toISOString(),
     user,
   };

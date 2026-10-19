@@ -15,6 +15,7 @@ import { logger } from '../http/logger';
 import { checkInput, checkOutput, guardedInput, refusalContent, withGuardrailPolicy, type GuardrailRule } from './guardrails';
 import { modelCooldownSeconds, noteModelRateLimited, takeAgentRequest } from './rate-limit';
 import { AGENT_MAX_BODY_BYTES, completionRequestSchema, type CompletionRequest } from './schema';
+import { enforceDailyUsage } from './usage';
 
 export interface CompletionToolCall {
   id: string;
@@ -250,7 +251,6 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
       details: { reason: 'rateLimited', retryAfterSeconds: decision.retryAfterSeconds },
     });
   }
-
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
 
   // Input rail: out-of-scope or injection requests never reach the model.
@@ -259,6 +259,17 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'input', rule: inputHit.rule });
     return refused(req, inputHit.rule, null);
   }
+
+  // Durable budgets shared by every instance, counted only for requests that
+  // will reach the provider: per-user requests and input bytes, a pool for new
+  // accounts, and an overall ceiling.
+  await enforceDailyUsage(ctx.user.userId, 'completion', Buffer.byteLength(JSON.stringify(req)), {
+    perUserRequests: config.AGENT_DAILY_REQUEST_LIMIT,
+    perUserBytes: config.AGENT_DAILY_INPUT_BYTES,
+    newAccountRequests: config.AGENT_NEW_ACCOUNT_DAILY_REQUEST_LIMIT,
+    newAccountDays: config.AGENT_NEW_ACCOUNT_DAYS,
+    globalRequests: config.AGENT_GLOBAL_DAILY_REQUEST_LIMIT,
+  });
 
   const started = Date.now();
   const timeout = AbortSignal.timeout(config.OPENAI_TIMEOUT_MS);

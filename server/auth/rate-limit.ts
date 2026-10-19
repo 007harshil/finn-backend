@@ -37,6 +37,11 @@ export class WindowLimiter {
     for (const [key, list] of this.hits) {
       if (list.length === 0 || list[list.length - 1] <= now - this.windowMs) this.hits.delete(key);
     }
-    if (this.hits.size > MAX_TRACKED_KEYS) this.hits.clear();
+    // Still too many active keys: evict the longest-tracked ones (Map keeps
+    // insertion order) rather than reset every client's window at once.
+    for (const key of this.hits.keys()) {
+      if (this.hits.size <= MAX_TRACKED_KEYS) break;
+      this.hits.delete(key);
+    }
   }
 }

@@ -3,7 +3,8 @@
 // In-memory and PER SERVER INSTANCE: serverless instances (and multiple
 // processes) do not share it, so the effective limit across a deployment is
 // up to N x the configured value. It protects the provider bill from a single
-// runaway client loop; it is not a billing-grade quota.
+// runaway client loop; it is not a billing-grade quota. The durable daily
+// budgets (per user and global) are in usage.ts.
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
@@ -41,8 +42,12 @@ export function createLimiter(): KeyedLimiter {
     for (const [user, list] of hits) {
       if (list.length === 0 || list[list.length - 1] <= now - DAY_MS) hits.delete(user);
     }
-    // Still too many active users: drop everything rather than grow unbounded.
-    if (hits.size > MAX_TRACKED_USERS) hits.clear();
+    // Still too many active users: evict the longest-tracked ones (Map keeps
+    // insertion order) rather than grow unbounded or reset everyone's window.
+    for (const user of hits.keys()) {
+      if (hits.size < MAX_TRACKED_USERS) break;
+      hits.delete(user);
+    }
   }
 
   const limiter: KeyedLimiter = {

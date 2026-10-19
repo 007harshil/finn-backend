@@ -76,8 +76,20 @@ const agentSchema = z.object({
   AGENT_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(1).max(100_000).default(2048),
   /** Relay requests per user per rolling minute (per server instance). */
   AGENT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(20),
-  /** Relay requests per user per rolling 24 hours (per server instance). */
+  /** Relay requests per user per day (per instance rolling 24 h, and durable per UTC day in the database). */
   AGENT_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(300),
+  /** Relay request body bytes per user per UTC day (durable): bounds input tokens, not just request count. */
+  AGENT_DAILY_INPUT_BYTES: z.coerce.number().int().min(1_000).max(10_000_000_000).default(20_000_000),
+  /**
+   * Relay requests per UTC day shared by all accounts younger than
+   * AGENT_NEW_ACCOUNT_DAYS (durable). Throwaway accounts can only fill this
+   * pool, never the budget of established users.
+   */
+  AGENT_NEW_ACCOUNT_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(1_000),
+  /** Account age (days) below which agent usage draws on the new-account pools. */
+  AGENT_NEW_ACCOUNT_DAYS: z.coerce.number().int().min(0).max(365).default(7),
+  /** Relay requests across all users per UTC day (durable): an overall spend ceiling, set well above normal use. */
+  AGENT_GLOBAL_DAILY_REQUEST_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(20_000),
   /**
    * Guardrail: screen the user's latest message with OpenAI's moderation
    * endpoint (free, run in parallel with the completion) and refuse flagged
@@ -120,8 +132,14 @@ const agentSchema = z.object({
   GROQ_STT_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(30_000),
   /** Transcription requests per user per rolling minute (per server instance). */
   AGENT_STT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(10),
-  /** Transcription requests per user per rolling 24 hours (per server instance). */
+  /** Transcription requests per user per day (per instance rolling 24 h, and durable per UTC day in the database). */
   AGENT_STT_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(200),
+  /** Decoded audio bytes per user per UTC day (durable). */
+  AGENT_STT_DAILY_BYTES: z.coerce.number().int().min(1_000).max(100_000_000_000).default(100_000_000),
+  /** Transcription requests per UTC day shared by accounts younger than AGENT_NEW_ACCOUNT_DAYS (durable). */
+  AGENT_STT_NEW_ACCOUNT_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(400),
+  /** Transcription requests across all users per UTC day (durable): an overall ceiling. */
+  AGENT_STT_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(8_000),
 });
 
 export type AgentEnv = z.infer<typeof agentSchema>;
@@ -153,6 +171,15 @@ const authSchema = z.object({
   AUTH_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   /** One-time code lifetime in seconds. */
   AUTH_OTP_TTL_SECONDS: z.coerce.number().int().min(60).max(3_600).default(600),
+  /**
+   * Codes emailed to addresses without an account, per rolling hour and per
+   * rolling 24 hours. Keeps anonymous callers from spending the SMTP account's
+   * send quota (Gmail suspends sending past its daily limit, which would block
+   * every sign-in). Existing accounts are exempt, so filling it only pauses
+   * new sign-ups.
+   */
+  AUTH_OTP_GLOBAL_HOURLY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(100),
+  AUTH_OTP_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(450),
 });
 
 export type AuthEnv = z.infer<typeof authSchema>;

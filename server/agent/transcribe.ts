@@ -12,6 +12,7 @@ import { agentEnv } from '../env';
 import { parseWith, readJson, type RequestContext } from '../http/handler';
 import { logger } from '../http/logger';
 import { takeTranscriptionRequest } from './rate-limit';
+import { enforceDailyUsage } from './usage';
 
 /** Decoded audio ceiling. */
 export const STT_MAX_AUDIO_BYTES = 10 * 1024 * 1024;
@@ -116,9 +117,7 @@ export async function relayTranscription(ctx: RequestContext): Promise<Transcrip
     });
   }
 
-  const req = parseWith(transcriptionRequestSchema, await readJson(ctx.request, STT_MAX_BODY_BYTES));
-  const audio = decodeAudio(req.audio);
-
+  // Limit before reading the (up to 14 MB) body, so a throttled client costs no parse work.
   const decision = takeTranscriptionRequest(ctx.user.userId, {
     perMinute: config.AGENT_STT_RATE_LIMIT_PER_MINUTE,
     perDay: config.AGENT_STT_DAILY_LIMIT,
@@ -129,6 +128,18 @@ export async function relayTranscription(ctx: RequestContext): Promise<Transcrip
       details: { reason: 'rateLimited', retryAfterSeconds: decision.retryAfterSeconds },
     });
   }
+
+  const req = parseWith(transcriptionRequestSchema, await readJson(ctx.request, STT_MAX_BODY_BYTES));
+  const audio = decodeAudio(req.audio);
+  // Durable budgets shared by every instance: per-user requests and audio
+  // bytes, a pool for new accounts, and an overall ceiling.
+  await enforceDailyUsage(ctx.user.userId, 'transcription', audio.length, {
+    perUserRequests: config.AGENT_STT_DAILY_LIMIT,
+    perUserBytes: config.AGENT_STT_DAILY_BYTES,
+    newAccountRequests: config.AGENT_STT_NEW_ACCOUNT_DAILY_LIMIT,
+    newAccountDays: config.AGENT_NEW_ACCOUNT_DAYS,
+    globalRequests: config.AGENT_STT_GLOBAL_DAILY_LIMIT,
+  });
 
   const form = new FormData();
   form.append('file', new Blob([new Uint8Array(audio)], { type: req.mimeType }), `audio.${EXTENSIONS[req.mimeType]}`);

@@ -232,8 +232,16 @@ export async function cancelRequest(tx: Tx, userId: string, id: string): Promise
 /** DELETE /friends/{userId}. Shared items stay; new shares need a new friendship. */
 export async function removeFriend(tx: Tx, userId: string, otherId: string): Promise<{ ok: true }> {
   if (!UUID_RE.test(otherId) || otherId === userId) throw AppFailure.notFound('You are not friends with this person.');
-  await lockUsers(tx, [userId, otherId]);
   const p = pair(userId, otherId);
+  // Only a friend's lock may be taken: an arbitrary id must not let a caller hold other people's locks.
+  const friends = await tx
+    .selectFrom('friendships')
+    .select('user_low')
+    .where('user_low', '=', p.user_low)
+    .where('user_high', '=', p.user_high)
+    .executeTakeFirst();
+  if (!friends) throw AppFailure.notFound('You are not friends with this person.');
+  await lockUsers(tx, [userId, otherId]);
   const gone = await tx
     .deleteFrom('friendships')
     .where('user_low', '=', p.user_low)

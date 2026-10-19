@@ -367,6 +367,17 @@ export interface AuthRefreshTokensTable {
   created_at: Ts;
 }
 
+export type AgentUsageKind = 'completion' | 'transcription';
+
+export interface AuthAgentUsageTable {
+  user_id: string;
+  /** UTC day, YYYY-MM-DD. */
+  day: string;
+  kind: AgentUsageKind;
+  requests: Generated<number>;
+  bytes: Generated<number>;
+}
+
 export interface FriendRequestsTable {
   id: Generated<string>;
   requester_id: string;
@@ -408,4 +419,5 @@ export interface Database {
   'finn_auth.users': AuthUsersTable;
   'finn_auth.email_otps': AuthEmailOtpsTable;
   'finn_auth.refresh_tokens': AuthRefreshTokensTable;
+  'finn_auth.agent_usage': AuthAgentUsageTable;
 }
