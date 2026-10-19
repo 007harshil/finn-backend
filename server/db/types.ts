@@ -391,6 +391,25 @@ export interface FriendshipsTable {
   created_at: Ts;
 }
 
+export interface UserBlocksTable {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: Ts;
+}
+
+export type AgentReportReason = 'offensive' | 'harmful' | 'inaccurate' | 'other';
+
+export interface AgentReportsTable {
+  id: Generated<string>;
+  user_id: string;
+  reason: AgentReportReason;
+  request: string | null;
+  reply: string;
+  note: string | null;
+  status: Generated<'open' | 'reviewed'>;
+  created_at: Ts;
+}
+
 export interface Database {
   profiles: ProfilesTable;
   user_preferences: UserPreferencesTable;
@@ -415,6 +434,8 @@ export interface Database {
   agent_runs: AgentRunsTable;
   friend_requests: FriendRequestsTable;
   friendships: FriendshipsTable;
+  user_blocks: UserBlocksTable;
+  agent_reports: AgentReportsTable;
   deleted_records: DeletedRecordsTable;
   'finn_auth.users': AuthUsersTable;
   'finn_auth.email_otps': AuthEmailOtpsTable;

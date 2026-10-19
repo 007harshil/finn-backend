@@ -14,8 +14,8 @@ export default function DeleteAccountPage() {
     <main className="mx-auto flex min-h-full max-w-2xl flex-col gap-3 px-6 py-16 font-sans leading-relaxed">
       <h1 className="text-2xl font-semibold">Delete your FiNN account</h1>
       <p className={body}>
-        This page is for the FiNN app (Android package app.finn.money). Deleting your account removes your data and
-        cannot be undone.
+        This page is for the FiNN app by Zenvora Labs (Android package app.finn.money). Deleting your account removes
+        your data and cannot be undone.
       </p>
 
       <h2 className={h2}>Option 1: in the app (immediate)</h2>
@@ -42,7 +42,7 @@ export default function DeleteAccountPage() {
           All your finance data: transactions, accounts, budgets, goals, loans, subscriptions, and pending items.
         </li>
         <li>Your profile, preferences, FiNN ID, sign-in sessions and friend connections.</li>
-        <li>Your assistant history.</li>
+        <li>Your assistant history, the assistant replies you reported, and your list of blocked people.</li>
       </ul>
 
       <h2 className={h2}>What is kept</h2>
@@ -52,6 +52,7 @@ export default function DeleteAccountPage() {
           your account.
         </li>
         <li>Hosting and infrastructure providers may keep routine technical logs for a limited period.</li>
+        <li>Copies in our database provider&apos;s encrypted backups are overwritten within their backup cycle (up to 30 days).</li>
         <li>Data stored only on your device is removed when you uninstall the app or clear its data.</li>
       </ul>
 

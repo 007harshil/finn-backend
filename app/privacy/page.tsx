@@ -13,10 +13,11 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto flex min-h-full max-w-2xl flex-col gap-3 px-6 py-16 font-sans leading-relaxed">
       <h1 className="text-2xl font-semibold">FiNN Privacy Policy</h1>
-      <p className={body}>Effective date: 19 October 2026. App: FiNN (Android package app.finn.money).</p>
+      <p className={body}>Effective date: 20 October 2026. App: FiNN (Android package app.finn.money).</p>
       <p className={body}>
-        FiNN is a personal finance tracker. It records the finances you enter and never moves money. This page explains
-        what data FiNN handles, why, and the choices you have.
+        FiNN is developed and published by Zenvora Labs (&quot;we&quot;, &quot;us&quot;). FiNN is a personal finance
+        tracker. It records the finances you enter and never moves money, offers no loans, payments or investments, and
+        does not connect to your bank. This page explains what data FiNN handles, why, and the choices you have.
       </p>
 
       <h2 className={h2}>Your account</h2>
@@ -39,7 +40,12 @@ export default function PrivacyPage() {
           and the outcome, so you can review it. Entries older than 180 days are removed automatically. History is not
           sent back to the AI model.
         </li>
-        <li>The app also keeps an offline cache of your data on your device.</li>
+        <li>
+          Reports you send about assistant replies: the reason you chose, the reply, the request that produced it and
+          your optional note. We use them to improve the assistant&apos;s safety filters.
+        </li>
+        <li>People you block. A blocked person cannot send you friend requests or find you by your FiNN ID.</li>
+        <li>The app also keeps an offline cache of your data on your device, so it opens quickly. Your records live in your FiNN account on our servers.</li>
       </ul>
 
       <h2 className={h2}>AI assistant and voice input</h2>
@@ -58,7 +64,16 @@ export default function PrivacyPage() {
       <h2 className={h2}>Where data is kept</h2>
       <p className={body}>
         Your data is stored in a Supabase Postgres database in Singapore (ap-southeast-1). The API runs on Vercel. Data
-        travels between the app and our servers over HTTPS.
+        travels between the app and our servers over HTTPS and is encrypted at rest by our database provider. Access to
+        each account&apos;s records is restricted to that account by row-level security.
+      </p>
+
+      <h2 className={h2}>How long we keep data</h2>
+      <p className={body}>
+        We keep your records for as long as your account exists. Assistant history is removed after 180 days. When you
+        delete your account, your records are deleted from our database right away; copies in our provider&apos;s
+        encrypted backups are overwritten within their backup cycle (up to 30 days). Sign-in codes are removed within a
+        day.
       </p>
 
       <h2 className={h2}>What we do not do</h2>

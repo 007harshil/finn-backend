@@ -39,7 +39,7 @@ export interface FriendRequest {
   user: FriendUser;
   createdAt: string;
 }
-export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'none';
+export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'blocked' | 'none';
 
 const iso = (v: Date | string) => (v instanceof Date ? v : new Date(v)).toISOString();
 const pair = (a: string, b: string) => (a < b ? { user_low: a, user_high: b } : { user_low: b, user_high: a });
@@ -68,6 +68,23 @@ async function requestBetween(tx: Tx, a: string, b: string) {
       ]),
     )
     .executeTakeFirst();
+}
+
+/** Whether the caller blocked [other] (the caller's own rows only). */
+async function iBlocked(tx: Tx, userId: string, other: string): Promise<boolean> {
+  const row = await tx
+    .selectFrom('user_blocks')
+    .select('blocked_id')
+    .where('blocker_id', '=', userId)
+    .where('blocked_id', '=', other)
+    .executeTakeFirst();
+  return !!row;
+}
+
+/** Whether either side blocked the other (security definer: sees the other side's row too). */
+async function blockedBetween(tx: Tx, other: string): Promise<boolean> {
+  const rows = await sql<{ blocked: boolean }>`select private.blocked_between(${other}::uuid) as blocked`.execute(tx);
+  return rows.rows[0]?.blocked === true;
 }
 
 async function areFriends(tx: Tx, a: string, b: string): Promise<boolean> {
@@ -121,11 +138,12 @@ export async function friendEntries(tx: Tx): Promise<FriendEntry[]> {
 
 /** GET /friends */
 export async function listFriends(tx: Tx, userId: string) {
-  const [self, friends, requests, people] = await Promise.all([
+  const [self, friends, requests, people, blocks] = await Promise.all([
     me(tx, userId),
     friendEntries(tx),
     tx.selectFrom('friend_requests').selectAll().orderBy('created_at', 'desc').execute(),
     sql<{ user_id: string; display_name: string; finn_id: string }>`select * from private.request_entries()`.execute(tx),
+    sql<{ user_id: string; display_name: string; finn_id: string; since: Date | string }>`select * from private.block_entries()`.execute(tx),
   ]);
   const byId = new Map(people.rows.map((r) => [r.user_id, { id: r.user_id, name: r.display_name, finnId: r.finn_id }]));
   const toRequest = (r: (typeof requests)[number], other: string): FriendRequest[] => {
@@ -137,6 +155,9 @@ export async function listFriends(tx: Tx, userId: string) {
     friends: friends.map((f): Friend => ({ user: { id: f.id, name: f.name, finnId: f.finnId }, since: f.since })),
     incoming: requests.filter((r) => r.addressee_id === userId).flatMap((r) => toRequest(r, r.requester_id)),
     outgoing: requests.filter((r) => r.requester_id === userId).flatMap((r) => toRequest(r, r.addressee_id)),
+    blocked: blocks.rows
+      .map((r): Friend => ({ user: { id: r.user_id, name: r.display_name, finnId: r.finn_id }, since: iso(r.since) }))
+      .sort((a, b) => a.user.name.localeCompare(b.user.name)),
   };
 }
 
@@ -145,6 +166,9 @@ export async function lookupUser(tx: Tx, userId: string, raw: string) {
   const user = await findByFinnId(tx, requireFinnId(raw));
   if (!user) return { user: null };
   if (user.id === userId) return { user: { ...user, relation: 'self' as Relation } };
+  if (await iBlocked(tx, userId, user.id)) return { user: { ...user, relation: 'blocked' as Relation } };
+  // Someone who blocked the caller looks like an unknown ID.
+  if (await blockedBetween(tx, user.id)) return { user: null };
   if (await areFriends(tx, userId, user.id)) return { user: { ...user, relation: 'friend' as Relation } };
   const request = await requestBetween(tx, userId, user.id);
   if (!request) return { user: { ...user, relation: 'none' as Relation } };
@@ -167,6 +191,8 @@ export async function sendRequest(tx: Tx, userId: string, raw: string, now: Date
   const other = await findByFinnId(tx, code);
   if (!other) throw AppFailure.notFound('No FiNN user has that ID.');
   if (other.id === userId) throw AppFailure.validation('That is your own FiNN ID.', { finnId: 'That is your own FiNN ID.' });
+  if (await iBlocked(tx, userId, other.id)) throw AppFailure.conflict('You blocked this person. Unblock them first.');
+  if (await blockedBetween(tx, other.id)) throw AppFailure.notFound('No FiNN user has that ID.');
   await lockUsers(tx, [userId, other.id]);
   if (await areFriends(tx, userId, other.id)) throw AppFailure.conflict('You are already friends.');
   const existing = await requestBetween(tx, userId, other.id);
@@ -250,3 +276,44 @@ export async function removeFriend(tx: Tx, userId: string, otherId: string): Pro
   if (Number(gone.numDeletedRows) === 0) throw AppFailure.notFound('You are not friends with this person.');
   return { ok: true };
 }
+
+/**
+ * POST /friends/blocks { userId }. Only someone the caller is connected to (a
+ * friend, an open request or a shared pending item) can be blocked. Removes
+ * the friendship and any open request; existing shared items stay.
+ */
+export async function blockUser(tx: Tx, userId: string, otherId: string, now: Date): Promise<{ ok: true }> {
+  const unknown = () => AppFailure.notFound('This person is not in your FiNN network.');
+  if (!UUID_RE.test(otherId) || otherId === userId) throw unknown();
+  if (await iBlocked(tx, userId, otherId)) return { ok: true };
+  const connected = await sql<{ user_id: string }>`select user_id from private.directory_entries(array[${otherId}]::uuid[])`.execute(tx);
+  if (connected.rows.length === 0) throw unknown();
+  await lockUsers(tx, [userId, otherId]);
+  const p = pair(userId, otherId);
+  await tx.deleteFrom('friendships').where('user_low', '=', p.user_low).where('user_high', '=', p.user_high).execute();
+  await tx
+    .deleteFrom('friend_requests')
+    .where((eb) =>
+      eb.or([
+        eb.and([eb('requester_id', '=', userId), eb('addressee_id', '=', otherId)]),
+        eb.and([eb('requester_id', '=', otherId), eb('addressee_id', '=', userId)]),
+      ]),
+    )
+    .execute();
+  await tx
+    .insertInto('user_blocks')
+    .values({ blocker_id: userId, blocked_id: otherId, created_at: now })
+    .onConflict((oc) => oc.doNothing())
+    .execute();
+  return { ok: true };
+}
+
+/** DELETE /friends/blocks/{userId}. They can send requests again; the friendship is not restored. */
+export async function unblockUser(tx: Tx, userId: string, otherId: string): Promise<{ ok: true }> {
+  if (!UUID_RE.test(otherId)) throw AppFailure.notFound('You have not blocked this person.');
+  const gone = await tx.deleteFrom('user_blocks').where('blocker_id', '=', userId).where('blocked_id', '=', otherId).executeTakeFirst();
+  if (Number(gone.numDeletedRows) === 0) throw AppFailure.notFound('You have not blocked this person.');
+  return { ok: true };
+}
+
+export const blockSchema = z.object({ userId: z.string().max(64) });

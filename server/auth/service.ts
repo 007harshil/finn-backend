@@ -23,6 +23,7 @@ import { sendMail, type MailMessage } from '../mail/mailer';
 import { otpEmail } from '../mail/templates';
 import { hashesEqual, keyedHash, newOtpCode, newRefreshToken, signAccessToken } from './tokens';
 import { WindowLimiter } from './rate-limit';
+import { reviewCodeFor, seedReviewAccount } from './review-account';
 
 /** Minimum gap between two codes for one email. */
 export const OTP_RESEND_SECONDS = 60;
@@ -100,7 +101,9 @@ export async function issueCode(
 ): Promise<CodeSent> {
   const config = authEnv();
   const ttl = config.AUTH_OTP_TTL_SECONDS;
-  const code = newOtpCode();
+  // The store-review address gets its fixed code and no email (review-account.ts).
+  const reviewCode = reviewCodeFor(email);
+  const code = reviewCode ?? newOtpCode();
 
   const otpId = await getDb()
     .transaction()
@@ -177,6 +180,7 @@ export async function issueCode(
       return row.id;
     });
 
+  if (reviewCode !== null) return { sent: true, expiresInSeconds: ttl, resendAfterSeconds: OTP_RESEND_SECONDS };
   try {
     await sendMail(message(code, Math.round(ttl / 60)));
   } catch (err) {
@@ -278,6 +282,10 @@ export async function verifyOtp(rawEmail: unknown, rawCode: unknown, ip: string,
     });
 
   if (!outcome.ok) throw new AppFailure('unauthenticated', INVALID_CODE);
+  if (reviewCodeFor(email) !== null) {
+    const { id, email: userEmail } = outcome.session.user;
+    await seedReviewAccount({ userId: id, email: userEmail, claims: { sub: id, role: 'authenticated', email: userEmail } }, now);
+  }
   return outcome.session;
 }
 

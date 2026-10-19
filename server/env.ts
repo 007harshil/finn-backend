@@ -137,6 +137,20 @@ const authSchema = z.object({
    */
   AUTH_OTP_GLOBAL_HOURLY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(100),
   AUTH_OTP_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(450),
+  /**
+   * App-store review sign-in. When both are set, codes for REVIEW_EMAIL are not
+   * emailed: the code is always REVIEW_CODE (6 digits), with the usual attempt
+   * and rate limits. The account is seeded with demo data on first sign-in.
+   * Leave empty to turn it off.
+   */
+  REVIEW_EMAIL: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim().toLowerCase() : undefined),
+    z.email().optional(),
+  ),
+  REVIEW_CODE: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined),
+    z.string().regex(/^\d{6}$/).optional(),
+  ),
 });
 
 export type AuthEnv = z.infer<typeof authSchema>;
