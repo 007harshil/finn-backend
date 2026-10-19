@@ -5,6 +5,14 @@
 import { sql } from 'kysely';
 import type { Tx } from '../../db/tx';
 
+/**
+ * Most inbox rows kept per user. Real alert keys are per record and period,
+ * so a year of heavy use stays well below this; past it the oldest rows
+ * (by sync_seq) are dropped, which only lets a long-gone alert show as
+ * unread again if it ever recurs.
+ */
+export const MAX_INBOX_ENTRIES = 1000;
+
 export interface AlertInbox {
   read: string[];
   dismissed: string[];
@@ -41,6 +49,20 @@ export async function markInbox(tx: Tx, userId: string, read: string[], dismisse
           read_at: sql`coalesce(alert_inbox.read_at, excluded.read_at)`,
           dismissed_at: sql`coalesce(alert_inbox.dismissed_at, excluded.dismissed_at)`,
         }),
+      )
+      .execute();
+    await tx
+      .deleteFrom('alert_inbox')
+      .where('user_id', '=', userId)
+      .where(
+        'alert_key',
+        'in',
+        tx
+          .selectFrom('alert_inbox')
+          .select('alert_key')
+          .where('user_id', '=', userId)
+          .orderBy('sync_seq', 'desc')
+          .offset(MAX_INBOX_ENTRIES),
       )
       .execute();
   }

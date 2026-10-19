@@ -5,6 +5,7 @@ import * as inboxRoute from '@/app/api/v1/alerts/inbox/route';
 import * as planPreviewRoute from '@/app/api/v1/plans/preview/route';
 import * as planExecuteRoute from '@/app/api/v1/plans/execute/route';
 import * as actionRoute from '@/app/api/v1/actions/[actionId]/route';
+import { MAX_INBOX_ENTRIES } from '@/server/modules/alerts/inbox';
 import { createTestDb, type TestDb } from './support/db';
 import { makeClient, newKey } from './support/http';
 import { act, fixClock, read } from './support/actions';
@@ -120,6 +121,18 @@ describe('alert inbox', () => {
     expect(res.body.data).toEqual({ read: ['a', 'b', 'c'], dismissed: ['b'] });
     const restored = await call(inboxRoute.PUT, 'PUT', '/api/v1/alerts/inbox', { user, body: { restore: ['b'] } });
     expect(restored.body.data).toEqual({ read: ['a', 'b', 'c'], dismissed: [] });
+  });
+
+  it('keeps at most MAX_INBOX_ENTRIES rows, dropping the oldest', async () => {
+    const user = await t.createUser('inbox-cap@example.com');
+    const batch = (n: number) => Array.from({ length: 500 }, (_, i) => `k${n}_${String(i).padStart(3, '0')}`);
+    for (const n of [0, 1, 2]) {
+      await call(inboxRoute.PUT, 'PUT', '/api/v1/alerts/inbox', { user, body: { read: batch(n) } });
+    }
+    const res = await call(inboxRoute.GET, 'GET', '/api/v1/alerts/inbox', { user });
+    expect(res.body.data.read).toHaveLength(MAX_INBOX_ENTRIES);
+    expect(res.body.data.read).not.toContain('k0_499');
+    expect(res.body.data.read).toContain('k2_000');
   });
 });
 
