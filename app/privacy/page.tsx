@@ -46,12 +46,12 @@ export default function PrivacyPage() {
       <p className={body}>
         When you use the assistant, the text of your request, and the app data it needs to answer, is sent through our
         server to OpenAI to plan actions. If content moderation is enabled, the same text is also checked with
-        OpenAI&apos;s moderation service. When you use the voice button, the audio clip is sent through our server to
-        Groq (Whisper) only to turn it into text.
+        OpenAI&apos;s moderation service. When you use the voice button, your device&apos;s built-in speech recognition
+        (for example Google on Android or Apple on iOS) turns your speech into text. The audio never reaches our
+        servers; only the resulting text is sent, as if you had typed it.
       </p>
       <p className={body}>
-        We do not store your audio or the transcript on our servers, and we do not write prompts, audio or transcripts
-        to our logs. The providers process the data under their own terms. The assistant only proposes changes; you
+        We do not store your voice requests on our servers, and we do not write prompts or transcripts to our logs. The providers process the data under their own terms. The assistant only proposes changes; you
         confirm them.
       </p>
 
@@ -70,8 +70,8 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Service providers</h2>
       <p className={body}>
-        We use Supabase (database), Vercel (hosting), Google (email delivery), OpenAI (assistant) and Groq (voice
-        transcription). They process data only to provide those services. Hosting and infrastructure providers may keep
+        We use Supabase (database), Vercel (hosting), Google (email delivery), and OpenAI (assistant). Voice input
+        uses the speech recognition service of your device&apos;s operating system. They process data only to provide those services. Hosting and infrastructure providers may keep
         routine technical logs (such as request time and status) for a limited period.
       </p>
 

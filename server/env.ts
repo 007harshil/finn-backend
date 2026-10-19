@@ -97,49 +97,6 @@ const agentSchema = z.object({
    */
   AGENT_MODERATION: z.enum(['on', 'off']).default('on'),
   AGENT_MODERATION_MODEL: emptyToUndefined(z.string().trim().min(1).max(100).default('omni-moderation-latest')),
-  /** Groq API key for speech-to-text. Unset or empty = transcription answers `unavailable`. */
-  GROQ_API_KEY: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v ? v : undefined)),
-  /** Groq OpenAI-compatible base URL for speech-to-text (no trailing slash needed). */
-  GROQ_BASE_URL: z
-    .string()
-    .url()
-    .default('https://api.groq.com/openai/v1')
-    .transform((v) => v.replace(/\/+$/, '')),
-  /** Speech-to-text model (Groq Whisper). */
-  GROQ_STT_MODEL: emptyToUndefined(z.string().trim().min(1).max(100).default('whisper-large-v3')),
-  /** Default ISO-639-1 language for transcription; unset/empty = Whisper auto-detects. */
-  GROQ_STT_LANGUAGE: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v ? v : undefined))
-    .pipe(z.string().regex(/^[a-z]{2}$/).optional()),
-  /** Vocabulary hint sent as Whisper `prompt` (keep under 224 tokens). */
-  GROQ_STT_PROMPT: emptyToUndefined(
-    z
-      .string()
-      .trim()
-      .max(1000)
-      .default(
-        'FiNN personal finance app. Indian rupees, ₹, lakh, crore, UPI, EMI, SIP, GST, Paytm, PhonePe, GPay, Swiggy, Zomato, Amazon, Flipkart, Netflix, budget, groceries, rent, salary, loan, goal, emergency fund.',
-      ),
-  ),
-  /** Transcription upstream timeout in milliseconds. */
-  GROQ_STT_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(30_000),
-  /** Transcription requests per user per rolling minute (per server instance). */
-  AGENT_STT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(10),
-  /** Transcription requests per user per day (per instance rolling 24 h, and durable per UTC day in the database). */
-  AGENT_STT_DAILY_LIMIT: z.coerce.number().int().min(1).max(1_000_000).default(200),
-  /** Decoded audio bytes per user per UTC day (durable). */
-  AGENT_STT_DAILY_BYTES: z.coerce.number().int().min(1_000).max(100_000_000_000).default(100_000_000),
-  /** Transcription requests per UTC day shared by accounts younger than AGENT_NEW_ACCOUNT_DAYS (durable). */
-  AGENT_STT_NEW_ACCOUNT_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(400),
-  /** Transcription requests across all users per UTC day (durable): an overall ceiling. */
-  AGENT_STT_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(100_000_000).default(8_000),
 });
 
 export type AgentEnv = z.infer<typeof agentSchema>;

@@ -1,4 +1,4 @@
-// Per-user sliding-window limiter for the agent relay and transcription endpoints.
+// Per-user sliding-window limiter for the agent relay.
 //
 // In-memory and PER SERVER INSTANCE: serverless instances (and multiple
 // processes) do not share it, so the effective limit across a deployment is
@@ -86,17 +86,12 @@ export function createLimiter(): KeyedLimiter {
 }
 
 const completionsLimiter = createLimiter();
-const transcriptionsLimiter = createLimiter();
 
 /** Records one completions request for [userId] if both windows allow it. */
 export function takeAgentRequest(userId: string, limits: RateLimits, now = Date.now()): RateDecision {
   return completionsLimiter.take(userId, limits, now);
 }
 
-/** Records one transcription request for [userId] if both windows allow it (separate budget). */
-export function takeTranscriptionRequest(userId: string, limits: RateLimits, now = Date.now()): RateDecision {
-  return transcriptionsLimiter.take(userId, limits, now);
-}
 
 /**
  * When each upstream model may be called again after the provider rate limited
