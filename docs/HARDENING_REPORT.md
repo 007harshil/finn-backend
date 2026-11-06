@@ -122,7 +122,7 @@ Already in place, confirmed during the audit:
 
 The contract test now compares live responses with the committed `docs/contract/fixtures.json`, the same file the app decodes. It ignores only wall-clock timestamps and random FiNN IDs, and I confirmed it fails when a fixture is altered. It passes on the final code, so routes, response shapes, status codes and error formats are unchanged.
 
-The only new response field is none. The relay's upstream request gained `prompt_cache_key`; the app never sees that request.
+No response field was added. The relay's upstream request gained `prompt_cache_key`; the app never sees that request.
 
 All tests pass:
 - backend: 476 passing, plus the opt-in perf harness;
