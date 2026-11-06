@@ -3,7 +3,7 @@
 // real responses to docs/contract/fixtures.json so the Flutter client can
 // verify it decodes them. Without the env var it is an end-to-end smoke test.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as actionRoute from '@/app/api/v1/actions/[actionId]/route';
@@ -36,6 +36,22 @@ async function run<T = any>(user: AuthUser, actionId: string, input: Record<stri
   const result = await act<T>(user, actionId, input);
   actions.push({ actionId, input, result });
   return result;
+}
+
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+/** Replaces values that differ on every run (wall-clock instants, random FiNN IDs) with placeholders. */
+function normaliseVolatile(value: unknown, key = ''): unknown {
+  if (typeof value === 'string') {
+    if (ISO_INSTANT.test(value)) return '<instant>';
+    if (key === 'finnId') return '<finnId>';
+    return value;
+  }
+  if (Array.isArray(value)) return value.map((v) => normaliseVolatile(v));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, normaliseVolatile(v, k)]));
+  }
+  return value;
 }
 
 async function capture(name: string, p: Promise<{ status: number; body: any }>, expectStatus = 200) {
@@ -271,6 +287,21 @@ describe('contract fixtures', () => {
       const file = join(__dirname, '..', 'docs', 'contract', 'fixtures.json');
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, text);
+    } else {
+      // Contract lock: today's responses must match the committed fixtures the
+      // Flutter client decodes, apart from wall-clock timestamps and random
+      // FiNN IDs. Any other difference is an API change and needs approval
+      // (then regenerate with WRITE_CONTRACT_FIXTURES=1).
+      const ids: [string, string][] = [
+        [alice.userId, '00000000-0000-4000-8000-00000000000a'],
+        [bob.userId, '00000000-0000-4000-8000-00000000000b'],
+        [fresh.userId, '00000000-0000-4000-8000-00000000000c'],
+      ];
+      let text = JSON.stringify({ actions, http: Object.fromEntries(Object.entries(http).sort(([x], [y]) => x.localeCompare(y))) });
+      for (const [from, to] of ids) text = text.split(from).join(to);
+      const committed = JSON.parse(readFileSync(join(__dirname, '..', 'docs', 'contract', 'fixtures.json'), 'utf8'));
+      delete committed.generatedAt;
+      expect(normaliseVolatile(JSON.parse(text))).toEqual(normaliseVolatile(committed));
     }
   }, 120_000);
 });

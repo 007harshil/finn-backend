@@ -1,0 +1,85 @@
+{
+  "label": "baseline",
+  "transactions": 3000,
+  "iterations": 30,
+  "note": "PGlite in-process; excludes network RTT",
+  "endpoints": {
+    "GET /dashboard": {
+      "status": 200,
+      "queries": 29,
+      "p50Ms": 14.72,
+      "p95Ms": 16.39,
+      "maxMs": 16.76
+    },
+    "GET /transactions": {
+      "status": 200,
+      "queries": 2,
+      "p50Ms": 2.3,
+      "p95Ms": 2.89,
+      "maxMs": 3.03
+    },
+    "GET /timeline": {
+      "status": 200,
+      "queries": 16,
+      "p50Ms": 15.09,
+      "p95Ms": 18.25,
+      "maxMs": 18.71
+    },
+    "GET /budgets": {
+      "status": 200,
+      "queries": 6,
+      "p50Ms": 2.88,
+      "p95Ms": 4.86,
+      "maxMs": 6.61
+    },
+    "GET /analytics?period=month": {
+      "status": 200,
+      "queries": 27,
+      "p50Ms": 14.02,
+      "p95Ms": 17.29,
+      "maxMs": 17.98
+    },
+    "GET /net-worth": {
+      "status": 200,
+      "queries": 10,
+      "p50Ms": 4.38,
+      "p95Ms": 5.45,
+      "maxMs": 5.61
+    },
+    "GET /upcoming": {
+      "status": 200,
+      "queries": 5,
+      "p50Ms": 1.64,
+      "p95Ms": 2.82,
+      "maxMs": 3.46
+    },
+    "GET /me": {
+      "status": 200,
+      "queries": 3,
+      "p50Ms": 1.12,
+      "p95Ms": 2.56,
+      "maxMs": 3.27
+    },
+    "GET /sync (first page)": {
+      "status": 200,
+      "queries": 20,
+      "p50Ms": 31.02,
+      "p95Ms": 37.36,
+      "maxMs": 38.22
+    },
+    "POST /actions/transactions.create": {
+      "status": 200,
+      "queries": 41,
+      "p50Ms": 17.35,
+      "p95Ms": 20.26,
+      "maxMs": 28.03
+    },
+    "POST /plans/preview (1 step)": {
+      "status": 200,
+      "queries": 7,
+      "p50Ms": 3.79,
+      "p95Ms": 4.75,
+      "maxMs": 5.78
+    }
+  }
+}
