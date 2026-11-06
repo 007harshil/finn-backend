@@ -11,6 +11,27 @@ Status key:
 - **Gap**: needs a fix. The fix keeps behaviour and the API contract unchanged.
 - **Approval**: the fix changes behaviour, the contract, a dependency major version, cost, or the live database. Ask first.
 
+## Implementation status (2026-11-06, branch `hardening/perf-security`)
+
+The tables below are the research record. What changed since:
+
+| Item | Now | Where |
+|---|---|---|
+| R3 attach pool | Done | `server/db/client.ts` (`@vercel/functions` 3.10.3). Confirm Fluid compute is on in Vercel. |
+| D2 RLS subselect | Done (already) | Every policy uses `(select private.uid())`. |
+| D5 round trips | Partly done | Writes: claims + role + lock in one statement (−1 round trip per write). Remaining: `transactions.create` sends 40 statements, 19 of them for the `changes` payload, and the balance aggregate runs 3×. Reducing that means restructuring the dispatcher (see the report). |
+| H2 `Cache-Control` | Done (already) | `json()` sends `no-store` on every API response. |
+| S1 BOLA | Done + tested | `tests/authorization-matrix.test.ts`. |
+| S4 shared rate limits | Done | `server/http/durable-limit.ts`, migration `20261106150000_finn_rate_limits` (**not yet applied live**). |
+| S10 nodemailer | Done | 10.3.1. `npm audit --omit=dev`: 0. |
+| M2 retention | Done (already) | `docs/API.md` §1.7: about 30 days. |
+| M3 concurrency | Done + tested | `tests/concurrency.test.ts`. |
+| A1 timings | Done | `agent.timing` log line per relay request. |
+| A3 cache key | Done | `prompt_cache_key` (kill switch `OPENAI_PROMPT_CACHE_KEY=off`). |
+| A8 evals | Done | 15 question cases graded against figures computed from the data (`answerOf`). |
+| Contract lock | Done | `tests/contract-fixtures.test.ts` fails on any response change. |
+| Open | Needs decision | R7 DB TLS fail-closed, H4 `after()`, S6 OTP/agent-pool abuse, A4 streaming, S11 key rotation. |
+
 ## 1. Runtime, region and connections
 
 | # | Practice | Status | FiNN notes |
