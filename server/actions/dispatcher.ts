@@ -113,8 +113,12 @@ export async function dispatch(user: AuthUser, actionId: string, rawInput: unkno
     return await withUserTx(
       user,
       async (tx) => {
-        const extra = action.extraLocks ? await action.extraLocks(input, { tx, userId: user.userId }) : [];
-        await lockUsers(tx, [user.userId, ...extra]);
+        // Without extra locks the caller's lock was taken with the claims
+        // (same statement, see withUserTx); otherwise lock everyone, sorted.
+        if (action.extraLocks) {
+          const extra = await action.extraLocks(input, { tx, userId: user.userId });
+          await lockUsers(tx, [user.userId, ...extra]);
+        }
         const existing = await tx
           .selectFrom('idempotency_keys')
           .select(['action_id', 'request_fingerprint', 'response'])
@@ -176,8 +180,9 @@ export async function dispatch(user: AuthUser, actionId: string, rawInput: unkno
           opts.includeChanges === false ? undefined : await changesSince(tx, user.userId, Number(baseline.rows[0]!.seq));
         return { status: 'completed', actionId, result, preview, replayed: false, changes } as const;
       },
-      // Locks are taken inside (caller + extraLocks, sorted) before any read.
-      { write: false },
+      // Locks are taken before any read: the caller's alone with the claims,
+      // or inside (caller + extraLocks, sorted) when the action declares more.
+      { write: !action.extraLocks },
     );
   } catch (err) {
     const failure = toFailure(err);
