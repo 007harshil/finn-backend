@@ -3,6 +3,7 @@
 // deletion, cursor validation, and friend-only locking. Providers are stubbed.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetDurableLimits } from '@/server/http/durable-limit';
 import { sql } from 'kysely';
 import * as otpRoute from '@/app/api/v1/auth/otp/route';
 import * as completionsRoute from '@/app/api/v1/agent/completions/route';
@@ -31,6 +32,7 @@ afterAll(async () => {
   await t.close();
 });
 beforeEach(async () => {
+  await resetDurableLimits();
   outbox.length = 0;
   for (const l of Object.values(limiters)) l.reset();
   resetAgentRateLimits();

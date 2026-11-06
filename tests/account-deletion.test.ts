@@ -3,6 +3,7 @@
 // and unlinks shared items from the other person without touching their data.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { resetDurableLimits } from '@/server/http/durable-limit';
 import * as otpRoute from '@/app/api/v1/auth/otp/route';
 import * as verifyRoute from '@/app/api/v1/auth/verify/route';
 import * as refreshRoute from '@/app/api/v1/auth/refresh/route';
@@ -34,7 +35,8 @@ afterAll(async () => {
   setMailSender(null);
   await t.close();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await resetDurableLimits();
   outbox.length = 0;
   for (const l of Object.values(limiters)) l.reset();
 });

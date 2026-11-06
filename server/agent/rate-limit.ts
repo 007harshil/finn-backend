@@ -1,10 +1,11 @@
 // Per-user sliding-window limiter for the agent relay.
 //
 // In-memory and PER SERVER INSTANCE: serverless instances (and multiple
-// processes) do not share it, so the effective limit across a deployment is
-// up to N x the configured value. It protects the provider bill from a single
-// runaway client loop; it is not a billing-grade quota. The durable daily
-// budgets (per user and global) are in usage.ts.
+// processes) do not share it, so on its own the effective limit across a
+// deployment is up to N x the configured value. It is the cheap first gate;
+// the relay then enforces the per-minute limit across every instance with the
+// shared limiter (server/http/durable-limit.ts). The durable daily budgets
+// (per user and global) are in usage.ts.
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
@@ -27,6 +28,8 @@ function prune(list: number[], now: number): number[] {
 export interface KeyedLimiter {
   /** Records one request for [userId] if both windows allow it. */
   take(userId: string, limits: RateLimits, now?: number): RateDecision;
+  /** Forgets the request recorded for [userId] at [at] (a later check refused it). */
+  release(userId: string, at: number): void;
   /** Test-only: forget every recorded request. */
   reset(): void;
 }
@@ -77,6 +80,11 @@ export function createLimiter(): KeyedLimiter {
       hits.set(userId, list);
       return { allowed: true };
     },
+    release(userId, at) {
+      const list = hits.get(userId);
+      const i = list?.lastIndexOf(at) ?? -1;
+      if (list && i >= 0) list.splice(i, 1);
+    },
     reset() {
       hits.clear();
     },
@@ -90,6 +98,11 @@ const completionsLimiter = createLimiter();
 /** Records one completions request for [userId] if both windows allow it. */
 export function takeAgentRequest(userId: string, limits: RateLimits, now = Date.now()): RateDecision {
   return completionsLimiter.take(userId, limits, now);
+}
+
+/** Forgets the completions request recorded for [userId] at [at]. */
+export function releaseAgentRequest(userId: string, at: number): void {
+  completionsLimiter.release(userId, at);
 }
 
 

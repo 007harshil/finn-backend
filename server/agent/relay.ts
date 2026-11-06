@@ -13,7 +13,8 @@ import { agentEnv, type AgentEnv } from '../env';
 import { parseWith, readJson, type RequestContext } from '../http/handler';
 import { logger } from '../http/logger';
 import { checkInput, checkOutput, guardedInput, refusalContent, withGuardrailPolicy, type GuardrailRule } from './guardrails';
-import { modelCooldownSeconds, noteModelRateLimited, takeAgentRequest } from './rate-limit';
+import { takeDurable } from '../http/durable-limit';
+import { modelCooldownSeconds, noteModelRateLimited, releaseAgentRequest, takeAgentRequest } from './rate-limit';
 import { AGENT_MAX_BODY_BYTES, completionRequestSchema, type CompletionRequest } from './schema';
 import { enforceDailyUsage } from './usage';
 
@@ -280,6 +281,13 @@ function refused(req: CompletionRequest, rule: GuardrailRule, from: CompletionRe
 }
 
 /** Handles POST /api/v1/agent/completions for an authenticated user. */
+function tooQuickly(retryAfterSeconds: number): AppFailure {
+  return new AppFailure('unavailable', "You're sending requests too quickly. Please wait a moment.", {
+    retryable: true,
+    details: { reason: 'rateLimited', retryAfterSeconds },
+  });
+}
+
 export async function relayCompletion(ctx: RequestContext): Promise<CompletionResult> {
   const config = agentEnv();
   if (!config.OPENAI_API_KEY) {
@@ -291,15 +299,20 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
 
   const req = parseWith(completionRequestSchema(config.AGENT_MAX_OUTPUT_TOKENS), await readJson(ctx.request, AGENT_MAX_BODY_BYTES));
 
-  const decision = takeAgentRequest(ctx.user.userId, {
-    perMinute: config.AGENT_RATE_LIMIT_PER_MINUTE,
-    perDay: config.AGENT_DAILY_REQUEST_LIMIT,
+  const takenAt = Date.now();
+  const decision = takeAgentRequest(
+    ctx.user.userId,
+    { perMinute: config.AGENT_RATE_LIMIT_PER_MINUTE, perDay: config.AGENT_DAILY_REQUEST_LIMIT },
+    takenAt,
+  );
+  if (!decision.allowed) throw tooQuickly(decision.retryAfterSeconds);
+  // The per-minute limit across every instance (the daily budgets are durable in usage.ts).
+  const shared = await takeDurable('agent.completions', ctx.user.userId, [{ ms: 60_000, limit: config.AGENT_RATE_LIMIT_PER_MINUTE }], {
+    now: takenAt,
   });
-  if (!decision.allowed) {
-    throw new AppFailure('unavailable', "You're sending requests too quickly. Please wait a moment.", {
-      retryable: true,
-      details: { reason: 'rateLimited', retryAfterSeconds: decision.retryAfterSeconds },
-    });
+  if (!shared.allowed) {
+    releaseAgentRequest(ctx.user.userId, takenAt);
+    throw tooQuickly(shared.retryAfterSeconds);
   }
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
   const prompt = promptHash(req);

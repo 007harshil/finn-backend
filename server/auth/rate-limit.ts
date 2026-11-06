@@ -1,7 +1,10 @@
 // Per-key sliding-window limiter for the public sign-in endpoints (keyed by
 // client IP). In-memory and PER SERVER INSTANCE, like the agent limiter: it
-// blunts floods from one client. The durable per-email limits live in the
-// database (see service.ts).
+// blunts floods from one client cheaply. The same limit is then enforced
+// across every instance by the shared limiter (server/http/durable-limit.ts),
+// and the durable per-email limits live in the database (see service.ts).
+
+import type { DurableBucket } from '../http/durable-limit';
 
 const MAX_TRACKED_KEYS = 50_000;
 
@@ -11,8 +14,10 @@ export class WindowLimiter {
   private readonly hits = new Map<string, number[]>();
 
   constructor(
-    private readonly limit: number,
-    private readonly windowMs: number,
+    readonly limit: number,
+    readonly windowMs: number,
+    /** Shared (all-instance) bucket enforcing the same limit. */
+    readonly bucket: DurableBucket,
   ) {}
 
   /** Records one hit for [key] if the window allows it. */
@@ -27,6 +32,13 @@ export class WindowLimiter {
     this.hits.set(key, list);
     if (this.hits.size > MAX_TRACKED_KEYS) this.sweep(now);
     return { allowed: true };
+  }
+
+  /** Forgets the hit recorded for [key] at [at] (the shared limiter refused that request). */
+  release(key: string, at: number): void {
+    const list = this.hits.get(key);
+    const i = list?.lastIndexOf(at) ?? -1;
+    if (list && i >= 0) list.splice(i, 1);
   }
 
   reset(): void {

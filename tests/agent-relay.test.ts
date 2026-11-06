@@ -3,6 +3,7 @@
 // global fetch; every key here is fake.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetDurableLimits } from '@/server/http/durable-limit';
 import * as relayRoute from '@/app/api/v1/agent/completions/route';
 import { GUARDRAIL_POLICY } from '@/server/agent/guardrails';
 import { resetAgentRateLimits } from '@/server/agent/rate-limit';
@@ -23,7 +24,8 @@ beforeAll(async () => {
 });
 afterAll(async () => t.close());
 
-beforeEach(() => {
+beforeEach(async () => {
+  await resetDurableLimits();
   resetAgentRateLimits();
   vi.stubEnv('OPENAI_API_KEY', KEY);
   vi.stubEnv('OPENAI_BASE_URL', 'https://openai.test/v1/');

@@ -3,6 +3,7 @@
 // rotate with reuse detection.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { resetDurableLimits } from '@/server/http/durable-limit';
 import { sql } from 'kysely';
 import * as otpRoute from '@/app/api/v1/auth/otp/route';
 import * as verifyRoute from '@/app/api/v1/auth/verify/route';
@@ -32,7 +33,8 @@ afterAll(async () => {
   setMailSender(null);
   await t.close();
 });
-beforeEach(() => {
+beforeEach(async () => {
+  await resetDurableLimits();
   outbox.length = 0;
   for (const l of Object.values(limiters)) l.reset();
 });

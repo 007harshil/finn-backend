@@ -22,6 +22,7 @@ import { AppFailure } from '../core/failure';
 import { sendMail, type MailMessage } from '../mail/mailer';
 import { otpEmail } from '../mail/templates';
 import { hashesEqual, keyedHash, newOtpCode, newRefreshToken, signAccessToken } from './tokens';
+import { takeDurable } from '../http/durable-limit';
 import { WindowLimiter } from './rate-limit';
 import { reviewCodeFor, seedReviewAccount } from './review-account';
 
@@ -37,9 +38,9 @@ const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
 
 /** Per client IP, per instance. */
 export const limiters = {
-  otp: new WindowLimiter(10, 10 * 60_000),
-  verify: new WindowLimiter(30, 10 * 60_000),
-  refresh: new WindowLimiter(120, 10 * 60_000),
+  otp: new WindowLimiter(10, 10 * 60_000, 'auth.otp'),
+  verify: new WindowLimiter(30, 10 * 60_000, 'auth.verify'),
+  refresh: new WindowLimiter(120, 10 * 60_000, 'auth.refresh'),
 };
 
 export interface Session {
@@ -68,9 +69,16 @@ function tooMany(retryAfterSeconds: number): AppFailure {
   });
 }
 
-export function limit(limiter: WindowLimiter, ip: string): void {
-  const decision = limiter.take(ip);
-  if (!decision.allowed) throw tooMany(decision.retryAfterSeconds);
+/** Per-IP limit: this instance's limiter first (cheap), then the same limit across every instance. */
+export async function limit(limiter: WindowLimiter, ip: string): Promise<void> {
+  const now = Date.now();
+  const local = limiter.take(ip, now);
+  if (!local.allowed) throw tooMany(local.retryAfterSeconds);
+  const shared = await takeDurable(limiter.bucket, ip, [{ ms: limiter.windowMs, limit: limiter.limit }], { now });
+  if (!shared.allowed) {
+    limiter.release(ip, now);
+    throw tooMany(shared.retryAfterSeconds);
+  }
 }
 
 export async function lockEmail(tx: Tx, email: string): Promise<void> {
@@ -85,7 +93,7 @@ export interface CodeSent {
 
 export async function requestOtp(rawEmail: unknown, ip: string, now = new Date()): Promise<CodeSent> {
   const email = normaliseEmail(rawEmail);
-  limit(limiters.otp, ip);
+  await limit(limiters.otp, ip);
   return issueCode(email, 'sign_in', (code, ttlMinutes) => otpEmail(email, code, ttlMinutes), now);
 }
 
@@ -262,7 +270,7 @@ async function openSession(tx: Tx, user: { id: string; email: string }, familyId
 export async function verifyOtp(rawEmail: unknown, rawCode: unknown, ip: string, now = new Date()): Promise<Session> {
   const email = normaliseEmail(rawEmail);
   const code = readCode(rawCode);
-  limit(limiters.verify, ip);
+  await limit(limiters.verify, ip);
 
   // A wrong guess must be committed before failing, so the transaction
   // returns an outcome instead of throwing.
@@ -296,7 +304,7 @@ function readRefreshToken(raw: unknown): string {
 
 export async function refreshSession(raw: unknown, ip: string, now = new Date()): Promise<Session> {
   const token = readRefreshToken(raw);
-  limit(limiters.refresh, ip);
+  await limit(limiters.refresh, ip);
   const outcome = await getDb()
     .transaction()
     .execute(async (tx): Promise<Session | null> => {

@@ -30,14 +30,14 @@ async function accountEmail(userId: string): Promise<string> {
 }
 
 export async function requestAccountDeletionCode(userId: string, ip: string, now = new Date()): Promise<CodeSent> {
-  limit(limiters.otp, ip);
+  await limit(limiters.otp, ip);
   const email = await accountEmail(userId);
   return issueCode(email, 'delete_account', (code, ttlMinutes) => accountDeletionCodeEmail(email, code, ttlMinutes), now);
 }
 
 export async function deleteAccount(userId: string, rawCode: unknown, ip: string, now = new Date()): Promise<{ deleted: true }> {
   const code = readCode(rawCode);
-  limit(limiters.verify, ip);
+  await limit(limiters.verify, ip);
   const email = await accountEmail(userId);
 
   // A wrong guess must be committed before failing, so the transaction
