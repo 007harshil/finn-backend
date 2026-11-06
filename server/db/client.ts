@@ -2,6 +2,7 @@
 // pool connected to the Supabase pooler (transaction mode). Tests replace it
 // with an in-process PGlite database via setDb().
 
+import { attachDatabasePool } from '@vercel/functions';
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 import { env } from '../env';
@@ -44,6 +45,10 @@ function createDb(): Db {
     } as pg.CustomTypesConfig,
   });
   pool.on('error', (err) => logger.error('db.pool', { message: err.message }));
+  // Vercel Fluid compute: keeps a suspended instance alive just long enough for
+  // idle connections to close, so the pooler never holds leaked connections.
+  // No-op outside Vercel (local, tests, builds).
+  attachDatabasePool(pool);
   return new Kysely<Database>({ dialect: new PostgresDialect({ pool }) });
 }
 

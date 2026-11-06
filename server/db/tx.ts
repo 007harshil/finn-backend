@@ -33,8 +33,15 @@ export async function withUserTx<T>(user: AuthUser, fn: (tx: Tx) => Promise<T>, 
   let builder = getDb().transaction();
   if (opts.isolation) builder = builder.setIsolationLevel(opts.isolation);
   return builder.execute(async (tx) => {
-      await sql`select set_config('request.jwt.claims', ${JSON.stringify(user.claims)}, true), set_config('role', 'finn_api', true)`.execute(tx);
-      if (opts.write) await lockUsers(tx, [user.userId, ...(opts.alsoLock ?? [])]);
+      const claims = JSON.stringify(user.claims);
+      const lockIds = opts.write ? [...new Set([user.userId, ...(opts.alsoLock ?? [])])] : [];
+      if (lockIds.length === 1) {
+        // Common write path: claims, role and the user's lock in one round trip.
+        await sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'finn_api', true), pg_advisory_xact_lock(hashtextextended(${lockIds[0]}, 7))`.execute(tx);
+      } else {
+        await sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'finn_api', true)`.execute(tx);
+        if (lockIds.length > 1) await lockUsers(tx, lockIds);
+      }
       return fn(tx);
     });
 }
