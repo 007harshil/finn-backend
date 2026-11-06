@@ -15,6 +15,7 @@ import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { buildLinkedTransaction, insertTransaction } from '../transactions/repo';
 import { isCyclePaid, nextCycleAfterCurrent, paymentNote, subscriptionMonthly } from './calculator';
 import { deleteSubscription, insertSubscription, updateSubscription } from './repo';
+import { checkOverdraft } from '../../finance/overdraft';
 
 const STATUS_LABELS = { active: 'Active', paused: 'Paused', cancelled: 'Cancelled' } as const;
 const lc = (s: string) => s.toLowerCase();
@@ -289,6 +290,7 @@ export const markSubscriptionPaid = defineAction({
   input: markPaidInput,
   async prepare(input, ctx) {
     const p = await plan(input, ctx);
+    await checkOverdraft(ctx, [{ accountId: p.accountId, paise: -p.amount }]);
     const balance = await ctx.snapshot.balance();
     const warnings: string[] = [];
     if (p.amount > balance.availablePaise) warnings.push(`This is more than your available balance of ${formatInr(balance.availablePaise)}.`);

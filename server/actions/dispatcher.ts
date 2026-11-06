@@ -19,6 +19,8 @@ import { lockUsers, withUserTx, type Tx } from '../db/tx';
 import { fromZod, toFailure } from '../core/errors';
 import { logger } from '../http/logger';
 import { FinanceSnapshot } from '../finance/snapshot';
+import { loadBalance } from '../finance/ledger';
+import { assertNoNewOverdraft } from '../finance/overdraft';
 import { loadPreferences } from '../modules/account/preferences';
 import { changesSince, type SyncChanges } from '../modules/sync/service';
 import { channelRequiresConfirmation, checkPolicy } from './policy';
@@ -137,7 +139,13 @@ export async function dispatch(user: AuthUser, actionId: string, rawInput: unkno
 
         const baseline = await sql<{ seq: string | number }>`select nextval('public.finn_sync_seq') as seq`.execute(tx);
         executing = { preview };
+        const balanceBefore = await loadBalance(tx, user.userId, ctx.today);
         const result = await action.execute(input, ctx);
+        // Safety net: no operation may push a cash/bank/debit account below
+        // zero. Throwing here rolls back every write of this operation.
+        const balanceAfter = await loadBalance(tx, user.userId, ctx.today);
+        const names = new Map((await tx.selectFrom('money_accounts').select(['id', 'name']).where('user_id', '=', user.userId).execute()).map((a) => [a.id, a.name]));
+        assertNoNewOverdraft(balanceBefore, balanceAfter, names);
 
         await tx
           .insertInto('idempotency_keys')

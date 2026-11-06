@@ -290,6 +290,10 @@ export const setAccountBalance = defineAction({
     const before = (await ctx.snapshot.balance()).accounts.find((x) => x.accountId === a.id)?.balancePaise ?? 0;
     const after = (await loadBalance(ctx.tx, ctx.userId, ctx.today, { accountId: a.id, ...next })).accounts.find((x) => x.accountId === a.id)
       ?.balancePaise ?? 0;
+    if (!isLiabilityKind(a.kind) && after < 0 && after < before) {
+      const message = `Movements after that date would leave ${a.name} at ${formatInr(after)} today. Enter a larger balance or a later date.`;
+      throw new AppFailure('insufficientFunds', message, { fieldErrors: { balance: message } });
+    }
     return {
       title: 'Correct balance',
       summary: `${a.name} set to ${formatInr(input.balance)}`,

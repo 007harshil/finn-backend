@@ -7,8 +7,10 @@ import { defineAction, type ActionContext, type AnyAction, type FieldSpec, type 
 import { formatDate } from '../../core/dates';
 import { AppFailure, throwIfErrors } from '../../core/failure';
 import { formatInr } from '../../core/money';
-import { ORIGIN_LABELS, type Transaction } from '../../finance/models';
+import { legsOf, ORIGIN_LABELS, type Transaction } from '../../finance/models';
 import { channelError, resolveAccountId } from '../accounts/resolve';
+import { assertValidSplits, splitLines, splitsField, zSplits } from '../accounts/splits';
+import { checkOverdraft, transactionChanges } from '../../finance/overdraft';
 import { deleteTransaction, insertTransaction, updateTransaction } from './repo';
 
 /** Maximum single amount (₹10 crore): guards against typos. */
@@ -20,6 +22,7 @@ const dataShape = {
   categoryId: zId,
   date: zDate,
   accountId: zId.nullish().transform((v) => v ?? null),
+  splits: zSplits,
   channel: zTextOpt,
   counterparty: zTextOpt,
   note: zTextOpt,
@@ -33,6 +36,7 @@ const fields: FieldSpec[] = [
   { name: 'categoryId', kind: 'id', description: 'Category id matching the type', required: true },
   { name: 'date', kind: 'date', description: 'Date the money moved (not in the future)', required: true },
   { name: 'accountId', kind: 'id', description: 'Account the money moved through (defaults to the default account)', required: false },
+  splitsField,
   { name: 'channel', kind: 'string', description: 'How it moved: UPI, IMPS, NEFT, Cheque, ATM… (free text, up to 30 characters)', required: false },
   { name: 'counterparty', kind: 'string', description: 'Merchant or person', required: false },
   { name: 'note', kind: 'string', description: 'Free-text note', required: false },
@@ -44,7 +48,7 @@ export async function validateTransaction(i: TransactionInput, ctx: ActionContex
   const errors: Record<string, string> = {};
   const ce = channelError(i.channel);
   if (ce) errors.channel = ce;
-  if (i.accountId !== null) {
+  if (i.accountId !== null && i.splits.length === 0) {
     const acc = await ctx.snapshot.moneyAccount(i.accountId);
     if (!acc) errors.accountId = 'This account does not exist.';
     else if (acc.isArchived && acc.id !== keepAccountId) errors.accountId = 'This account is archived.';
@@ -72,7 +76,8 @@ async function lines(i: TransactionInput, ctx: ActionContext, accountId: string)
     { label: 'Category', value: (await ctx.snapshot.category(i.categoryId))?.name ?? '—' },
     { label: 'Date', value: formatDate(i.date) },
   ];
-  out.push({ label: i.type === 'income' ? 'Into' : 'From', value: (await ctx.snapshot.moneyAccount(accountId))?.name ?? '—' });
+  if (i.splits.length > 1) out.push(...(await splitLines(ctx, i.splits)));
+  else out.push({ label: i.type === 'income' ? 'Into' : 'From', value: (await ctx.snapshot.moneyAccount(accountId))?.name ?? '—' });
   if (i.channel) out.push({ label: 'Via', value: i.channel });
   if (i.counterparty) out.push({ label: i.type === 'income' ? 'From' : 'To', value: i.counterparty });
   return out;
@@ -92,7 +97,13 @@ export const createTransaction = defineAction({
   input: transactionInput,
   async prepare(input, ctx) {
     throwIfErrors(await validateTransaction(input, ctx));
+    await assertValidSplits(ctx, input.amount, input.splits);
     const accountId = await resolveAccountId(ctx, input.accountId);
+    await checkOverdraft(
+      ctx,
+      transactionChanges({ type: input.type, accountId, amountPaise: input.amount, splits: input.splits }),
+      { canSplit: input.type === 'expense' && input.splits.length === 0 },
+    );
     const warnings: string[] = [];
     const balance = await ctx.snapshot.balance();
     if (input.type === 'expense' && input.amount > balance.availablePaise) {
@@ -114,7 +125,8 @@ export const createTransaction = defineAction({
       amountPaise: input.amount,
       categoryId: input.categoryId,
       date: input.date,
-      accountId,
+      accountId: input.splits.length > 1 ? input.splits[0]!.accountId : accountId,
+      splits: input.splits.length > 1 ? input.splits : [],
       channel: input.channel,
       counterparty: input.counterparty,
       note: input.note,
@@ -166,7 +178,15 @@ export const updateTransactionAction = defineAction({
       throw AppFailure.stale('This transaction changed since you opened it. Reload and try again.');
     }
     throwIfErrors(await validateTransaction(input, ctx, existing.accountId));
-    const accountId = await resolveAccountId(ctx, input.accountId, { fallback: existing.accountId, keep: existing.accountId });
+    await assertValidSplits(ctx, input.amount, input.splits, legsOf(existing).map((l) => l.accountId));
+    const accountId = await resolveAccountId(ctx, input.splits.length > 1 ? input.splits[0]!.accountId : input.accountId, {
+      fallback: existing.accountId,
+      keep: existing.accountId,
+    });
+    await checkOverdraft(ctx, [
+      ...transactionChanges(existing, -1),
+      ...transactionChanges({ type: input.type, accountId, amountPaise: input.amount, splits: input.splits }),
+    ], { canSplit: input.type === 'expense' && input.splits.length === 0 });
     return {
       title: 'Save changes',
       summary: `Update ${formatInr(existing.amountPaise)} ${typeLabel(existing.type).toLowerCase()} to ${formatInr(input.amount)}`,
@@ -175,7 +195,10 @@ export const updateTransactionAction = defineAction({
   },
   async execute(input, ctx) {
     const existing = (await ctx.snapshot.transaction(input.id))!;
-    const accountId = await resolveAccountId(ctx, input.accountId, { fallback: existing.accountId, keep: existing.accountId });
+    const accountId = await resolveAccountId(ctx, input.splits.length > 1 ? input.splits[0]!.accountId : input.accountId, {
+      fallback: existing.accountId,
+      keep: existing.accountId,
+    });
     const updated = await updateTransaction(
       ctx.tx,
       ctx.userId,
@@ -186,6 +209,7 @@ export const updateTransactionAction = defineAction({
         categoryId: input.categoryId,
         date: input.date,
         accountId,
+        splits: input.splits.length > 1 ? input.splits : [],
         channel: input.channel,
         counterparty: input.counterparty,
         note: input.note,
@@ -213,6 +237,7 @@ export const deleteTransactionAction = defineAction({
   input: z.object({ id: zId }),
   async prepare(input, ctx) {
     const t = await editable(input.id, ctx, 'reverse');
+    await checkOverdraft(ctx, transactionChanges(t, -1), { field: 'id' });
     const effect = t.type === 'income' ? -t.amountPaise : t.amountPaise;
     return {
       title: 'Delete transaction?',

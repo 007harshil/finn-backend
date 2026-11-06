@@ -29,6 +29,7 @@ afterAll(async () => t.close());
 /** A fresh user per test (the Flutter harness starts empty every test). */
 async function freshUser(): Promise<AuthUser> {
   const user = await t.createUser();
+  await t.fund(user, 1_000_000);
   await withUserTx(user, (tx) => ensureAccount(tx, user), { write: true });
   users.push(user);
   return user;

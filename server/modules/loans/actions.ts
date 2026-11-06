@@ -44,6 +44,7 @@ import {
   type LoanPaymentPreview,
 } from './calculator';
 import { loadLoanState } from './service';
+import { checkOverdraft, transactionChanges } from '../../finance/overdraft';
 
 // ---------------------------------------------------------------------------
 // Input (LoanInput.toJson)
@@ -220,7 +221,12 @@ export const createLoan = defineAction({
   input: loanInput,
   async prepare(input, ctx) {
     fail(validateLoan(input, ctx.today));
-    if (input.recordDisbursement) await resolveAccountId(ctx, input.accountId);
+    if (input.recordDisbursement) {
+      const accountId = await resolveAccountId(ctx, input.accountId);
+      if (input.direction !== 'borrowed') {
+        await checkOverdraft(ctx, [{ accountId, paise: -input.principal }], { field: 'principal' });
+      }
+    }
     const ppy = FREQUENCY_INFO[input.frequency].periodsPerYear;
     const lines: PreviewLine[] = [
       { label: 'Principal', value: fmtMoney(input.principal), emphasis: true },
@@ -462,10 +468,13 @@ export const recordLoanPayment = defineAction({
   async prepare(input, ctx) {
     const ce = channelError(input.channel);
     if (ce) throw AppFailure.validation(ce, { channel: ce });
-    if (input.recordCashMovement) await resolveAccountId(ctx, input.accountId);
     const { state: st, preview: p } = await splitPayment(input, ctx);
     const loan = st.loan;
     const borrowed = loan.direction === 'borrowed';
+    if (input.recordCashMovement) {
+      const accountId = await resolveAccountId(ctx, input.accountId);
+      await checkOverdraft(ctx, [{ accountId, paise: borrowed ? -input.amount : input.amount }]);
+    }
     const warnings: string[] = [];
     if (borrowed && input.recordCashMovement) {
       const available = (await ctx.snapshot.balance()).availablePaise;
@@ -573,6 +582,10 @@ export const deleteLoan = defineAction({
   async prepare(input, ctx) {
     const st = await existingState(ctx, input.id);
     if (st.payments.length > 0) throw AppFailure.notPermitted('This loan has payments recorded, so it is kept for your history.');
+    if (st.loan.disbursementTransactionId !== null) {
+      const t = await ctx.snapshot.transaction(st.loan.disbursementTransactionId);
+      if (t) await checkOverdraft(ctx, transactionChanges(t, -1), { field: 'id' });
+    }
     const warnings: string[] = [];
     if (st.loan.disbursementTransactionId !== null) warnings.push('The recorded disbursement transaction will also be removed.');
     warnings.push('This cannot be undone.');

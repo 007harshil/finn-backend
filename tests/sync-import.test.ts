@@ -45,6 +45,7 @@ function devicePayload() {
 describe('import', () => {
   it('uploads device data atomically into an empty account, keeping ids and references', async () => {
     const user = await t.createUser('device@example.com');
+    await t.fund(user, 1_000_000);
     const key = newKey();
     const res = await call(importRoute.POST, 'POST', '/api/v1/import', { user, body: devicePayload(), headers: { 'idempotency-key': key } });
     expect(res.status).toBe(200);
@@ -68,6 +69,7 @@ describe('import', () => {
 
   it('writes nothing when any record is invalid', async () => {
     const user = await t.createUser('broken@example.com');
+    await t.fund(user, 1_000_000);
     const payload = devicePayload();
     payload.transactions.push({ id: 'tx_bad', type: 'expense', amountPaise: 100, categoryId: 'cat_missing', date: '2026-09-04', createdAt: at, updatedAt: at, version: 1 } as never);
     const res = await call(importRoute.POST, 'POST', '/api/v1/import', { user, body: payload, headers: { 'idempotency-key': newKey() } });
@@ -80,6 +82,7 @@ describe('import', () => {
 describe('sync', () => {
   it('pages through changes with a cursor and reports hasMore', async () => {
     const user = await t.createUser('pager@example.com');
+    await t.fund(user, 1_000_000);
     for (let i = 0; i < 60; i++) {
       await act(user, 'transactions.create', { type: 'expense', amount: String(i + 1), categoryId: 'cat_food', date: '2026-10-01' });
     }
@@ -102,6 +105,7 @@ describe('sync', () => {
 
   it('returns action changes with the completed result', async () => {
     const user = await t.createUser('changes@example.com');
+    await t.fund(user, 1_000_000);
     const res = await call(actionRoute.POST, 'POST', '/api/v1/actions/transactions.create', {
       user,
       params: { actionId: 'transactions.create' },
@@ -116,6 +120,7 @@ describe('sync', () => {
 describe('alert inbox', () => {
   it('adds read and dismissed keys idempotently', async () => {
     const user = await t.createUser('inbox@example.com');
+    await t.fund(user, 1_000_000);
     await call(inboxRoute.PUT, 'PUT', '/api/v1/alerts/inbox', { user, body: { read: ['a'], dismissed: ['b'] } });
     const res = await call(inboxRoute.PUT, 'PUT', '/api/v1/alerts/inbox', { user, body: { read: ['a', 'c'] } });
     expect(res.body.data).toEqual({ read: ['a', 'b', 'c'], dismissed: ['b'] });
@@ -125,6 +130,7 @@ describe('alert inbox', () => {
 
   it('keeps at most MAX_INBOX_ENTRIES rows, dropping the oldest', async () => {
     const user = await t.createUser('inbox-cap@example.com');
+    await t.fund(user, 1_000_000);
     const batch = (n: number) => Array.from({ length: 500 }, (_, i) => `k${n}_${String(i).padStart(3, '0')}`);
     for (const n of [0, 1, 2]) {
       await call(inboxRoute.PUT, 'PUT', '/api/v1/alerts/inbox', { user, body: { read: batch(n) } });
@@ -139,6 +145,7 @@ describe('alert inbox', () => {
 describe('plans', () => {
   it('previews every step, runs only approved ones and skips dependants', async () => {
     const user = await t.createUser('planner@example.com');
+    await t.fund(user, 1_000_000);
     const plan = {
       planId: 'plan_0001',
       channel: 'agent',
@@ -170,6 +177,7 @@ describe('plans', () => {
 
   it('refuses deletes from the agent channel', async () => {
     const user = await t.createUser('agentdelete@example.com');
+    await t.fund(user, 1_000_000);
     const tx = await act(user, 'transactions.create', { type: 'expense', amount: '5', categoryId: 'cat_food', date: '2026-10-09' });
     await expect(act(user, 'transactions.delete', { id: tx.id }, { channel: 'agent' })).rejects.toMatchObject({ code: 'notPermitted' });
   });

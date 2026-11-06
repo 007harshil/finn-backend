@@ -12,13 +12,15 @@
 //   per account: set aside = Σ savings movements on it; available to spend = balance − set aside.
 //   Setting money aside never changes an account's balance (saving is not spending).
 
-import { sql } from 'kysely';
+import { sql, type SqlBool } from 'kysely';
 import { ratioBps, type Paise } from '../core/money';
 import type { DateRange, IsoDate } from '../core/dates';
 import type { Tx } from '../db/tx';
 
 export interface AccountBalance {
   accountId: string;
+  /** Credit card: the balance is an amount owed. */
+  isLiability: boolean;
   /** Money in the account; for credit cards the amount owed. */
   balancePaise: Paise;
   /** Set aside for goals / the emergency fund on this account (asset accounts; 0 for cards). */
@@ -54,22 +56,44 @@ export interface OpeningOverride {
 
 const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
 
+/**
+ * One row per (transaction, account) part: a payment split across accounts
+ * (account_splits) yields one row per part, any other transaction one row.
+ * Columns: user_id, id, type, date, origin, channel, category_id, account_id, amount_paise.
+ */
+export function transactionLegs(userId: string) {
+  return sql`(
+    select t.user_id, t.id, t.type, t.date, t.origin, t.channel, t.category_id,
+           coalesce(l."accountId", t.account_id) as account_id,
+           coalesce(l."amountPaise", t.amount_paise) as amount_paise
+    from public.transactions t
+    left join lateral jsonb_to_recordset(coalesce(t.account_splits, '[]'::jsonb)) as l("accountId" text, "amountPaise" bigint) on true
+    where t.user_id = ${userId}
+  )`;
+}
+
+/** SQL condition: transaction row `t` moved money through account [id] (any split part). */
+export function touchesAccount(id: string, alias = 't') {
+  return sql<SqlBool>`(${sql.ref(`${alias}.account_id`)} = ${id} or ${sql.ref(`${alias}.account_splits`)} @> jsonb_build_array(jsonb_build_object('accountId', ${id}::text)))`;
+}
+
 export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, override: OpeningOverride | null = null): Promise<BalanceSnapshot> {
   const ovId = override?.accountId ?? null;
   const ovPaise = override?.openingPaise ?? null;
   const ovDate = override?.openingDate ?? null;
+  const legs = transactionLegs(userId);
   const rows = await sql<{ id: string; kind: string; opening: string; flow: string; inflow: string; outflow: string }>`
     select a.id, a.kind, a.opening, (a.inc - a.exp + a.tin - a.tout) as flow, a.inc as inflow, a.exp as outflow
     from (
       select m.id, m.kind, m.sort_order, m.created_at,
              case when m.id = ${ovId}::text then ${ovPaise}::bigint else m.opening_paise end as opening,
              coalesce(
-               (select sum(t.amount_paise) from public.transactions t
-                 where t.user_id = m.user_id and t.account_id = m.id and t.type = 'income'
+               (select sum(t.amount_paise) from ${legs} t
+                 where t.account_id = m.id and t.type = 'income'
                    and t.date <= ${asOf}::date and t.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as inc,
              coalesce(
-               (select sum(t.amount_paise) from public.transactions t
-                 where t.user_id = m.user_id and t.account_id = m.id and t.type = 'expense'
+               (select sum(t.amount_paise) from ${legs} t
+                 where t.account_id = m.id and t.type = 'expense'
                    and t.date <= ${asOf}::date and t.date >= (case when m.id = ${ovId}::text then ${ovDate}::date else m.opening_date end)), 0) as exp,
              coalesce(
                (select sum(x.amount_paise) from public.transfers x
@@ -105,7 +129,7 @@ export async function loadBalance(tx: Tx, userId: string, asOf: IsoDate, overrid
     const flow = num(r.flow);
     const balance = liability ? num(r.opening) - flow : num(r.opening) + flow;
     const held = liability ? 0 : (heldBy.get(r.id) ?? 0);
-    accounts.push({ accountId: r.id, balancePaise: balance, earmarkedPaise: held, availablePaise: balance - held });
+    accounts.push({ accountId: r.id, isLiability: liability, balancePaise: balance, earmarkedPaise: held, availablePaise: balance - held });
     if (liability) owed += balance;
     else {
       cash += balance;
@@ -167,7 +191,7 @@ export async function loadPeriodSummary(tx: Tx, userId: string, range: DateRange
     group by category_id`.execute(tx);
   const accts = await sql<{ account_id: string; total: string }>`
     select account_id, sum(amount_paise) as total
-    from public.transactions
+    from ${transactionLegs(userId)} legs
     where user_id = ${userId} and type = 'expense' and origin <> 'loanDisbursement'
       and date between ${range.start}::date and ${range.end}::date
     group by account_id`.execute(tx);

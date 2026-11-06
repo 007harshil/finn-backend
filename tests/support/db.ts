@@ -43,6 +43,12 @@ export interface TestDb {
   createUser(email?: string): Promise<AuthUser>;
   /** Bearer token accepted by the test verifier for [user]. */
   tokenFor(user: AuthUser): string;
+  /**
+   * Gives [user]'s account [accountId] an opening balance of [rupees] (no
+   * income row, so analytics stay unchanged). Accounts never go below zero,
+   * so tests that spend need money first.
+   */
+  fund(user: AuthUser, rupees: number, accountId?: string): Promise<void>;
   /** Makes [a] and [b] friends (sharing a pending item needs a friendship). */
   befriend(a: AuthUser, b: AuthUser): Promise<void>;
   close(): Promise<void>;
@@ -94,6 +100,13 @@ export async function createTestDb(): Promise<TestDb> {
     },
     tokenFor(user) {
       return `token-${user.userId}`;
+    },
+    async fund(user, rupees, accountId = 'acc_cash') {
+      await pglite.query('update public.money_accounts set opening_paise = $1 where user_id = $2 and id = $3', [
+        Math.round(rupees * 100),
+        user.userId,
+        accountId,
+      ]);
     },
     async befriend(a, b) {
       const [low, high] = [a.userId, b.userId].sort();

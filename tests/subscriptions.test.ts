@@ -32,6 +32,7 @@ beforeAll(async () => {
   fixClock();
   alice = await t.createUser('sub-alice@example.com');
   bob = await t.createUser('sub-bob@example.com');
+  for (const u of [alice, bob]) await t.fund(u, 1_000_000);
   for (const u of [alice, bob]) await withUserTx(u, (tx) => ensureAccount(tx, u), { write: true });
 });
 

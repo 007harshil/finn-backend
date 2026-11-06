@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { AppFailure } from '../../core/failure';
 import type { Tx } from '../../db/tx';
 import { moneyAccountFromRow, type MoneyAccount } from '../../finance/models';
+import { touchesAccount } from '../../finance/ledger';
 
 const rowValues = (a: MoneyAccount) => ({
   name: a.name,
@@ -57,7 +58,7 @@ export interface AccountRecordCounts {
 
 export async function accountRecordCounts(tx: Tx, userId: string, id: string): Promise<AccountRecordCounts> {
   const r = await sql<{ tx: string; tr: string; sub: string; st: string; sv: string }>`
-    select (select count(*) from public.transactions where user_id = ${userId} and account_id = ${id}) as tx,
+    select (select count(*) from public.transactions t where t.user_id = ${userId} and ${touchesAccount(id)}) as tx,
            (select count(*) from public.transfers where user_id = ${userId} and (from_account_id = ${id} or to_account_id = ${id})) as tr,
            (select count(*) from public.subscriptions where user_id = ${userId} and account_id = ${id}) as sub,
            (select count(*) from public.pending_settlements where user_id = ${userId} and account_id = ${id}) as st,
@@ -82,7 +83,8 @@ export async function accountRecordCounts(tx: Tx, userId: string, id: string): P
  * loan outstanding and pending balances do not change.
  */
 export async function purgeAccountRecords(tx: Tx, userId: string, id: string): Promise<void> {
-  const txIds = tx.selectFrom('transactions').select('id').where('user_id', '=', userId).where('account_id', '=', id);
+  // Every transaction that moved money through the account, split parts included.
+  const txIds = tx.selectFrom('transactions as t').select('t.id').where('t.user_id', '=', userId).where(touchesAccount(id));
 
   await tx
     .updateTable('loans')
@@ -116,7 +118,7 @@ export async function purgeAccountRecords(tx: Tx, userId: string, id: string): P
     .where('user_id', '=', userId)
     .where((eb) => eb.or([eb('from_account_id', '=', id), eb('to_account_id', '=', id)]))
     .execute();
-  await tx.deleteFrom('transactions').where('user_id', '=', userId).where('account_id', '=', id).execute();
+  await tx.deleteFrom('transactions as t').where('t.user_id', '=', userId).where(touchesAccount(id)).execute();
 }
 
 /** Clears the default flag everywhere except [exceptId] (so a new default can be set). */
@@ -133,7 +135,7 @@ export async function clearDefaultExcept(tx: Tx, userId: string, exceptId: strin
 /** How many records reference the account (transactions, transfers, subscriptions, settlements, savings). */
 export async function accountUsage(tx: Tx, userId: string, id: string): Promise<{ movements: number; references: number }> {
   const r = await sql<{ tx: string; tr: string; sub: string; st: string; sv: string }>`
-    select (select count(*) from public.transactions where user_id = ${userId} and account_id = ${id}) as tx,
+    select (select count(*) from public.transactions t where t.user_id = ${userId} and ${touchesAccount(id)}) as tx,
            (select count(*) from public.transfers where user_id = ${userId} and (from_account_id = ${id} or to_account_id = ${id})) as tr,
            (select count(*) from public.subscriptions where user_id = ${userId} and account_id = ${id}) as sub,
            (select count(*) from public.pending_settlements where user_id = ${userId} and account_id = ${id}) as st,

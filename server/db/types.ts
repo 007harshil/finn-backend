@@ -61,6 +61,8 @@ export interface TransactionsTable {
   date: string;
   payment_method: string | null;
   account_id: string;
+  /** Split payment parts [{accountId, amountPaise}] (jsonb; written as a JSON string). */
+  account_splits: ColumnType<unknown, string | null | undefined, string | null>;
   channel: string | null;
   counterparty: string | null;
   note: string | null;

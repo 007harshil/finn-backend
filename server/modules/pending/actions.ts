@@ -38,6 +38,8 @@ import { friendIdsAmong } from '../friends/service';
 import { channelError, resolveAccountId } from '../accounts/resolve';
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { buildLinkedTransaction, insertTransaction } from '../transactions/repo';
+import { assertValidSplits, splitLines, splitsField, zSplits } from '../accounts/splits';
+import { checkOverdraft, transactionChanges } from '../../finance/overdraft';
 import {
   collectSplits,
   computeSplit,
@@ -638,6 +640,8 @@ const settleInput = z.object({
   date: zDate,
   /** Account the settlement money moved through (defaults to the default account). */
   accountId: zId.nullish().transform((v) => v ?? null),
+  /** Paid from several accounts: parts adding up to amount (one transaction). */
+  splits: zSplits,
   channel: zTextOpt,
   /**
    * When true, a linked income/expense transaction is created so the cash
@@ -662,6 +666,7 @@ export const settlePending = defineAction({
       { name: 'amount', kind: 'money', description: 'Amount settled now (≤ outstanding)', required: true },
       { name: 'date', kind: 'date', description: 'Settlement date', required: true },
       { name: 'accountId', kind: 'id', description: 'Account the money moved through (defaults to the default account)', required: false },
+      splitsField,
       { name: 'channel', kind: 'string', description: 'How it moved (free text, up to 30 characters)', required: false },
       { name: 'recordCashMovement', kind: 'boolean', description: 'Create the matching cash transaction (default true)', required: false },
       { name: 'note', kind: 'string', description: 'Reference', required: false },
@@ -685,9 +690,17 @@ export const settlePending = defineAction({
     const ce = channelError(input.channel);
     if (ce) e.channel = ce;
     throwIfErrors(e);
-    if (input.recordCashMovement) await resolveAccountId(ctx, input.accountId);
-
     const owe = v.payment.direction === 'iOwe';
+    if (input.recordCashMovement) {
+      await assertValidSplits(ctx, input.amount, input.splits);
+      const accountId = await resolveAccountId(ctx, input.accountId);
+      await checkOverdraft(
+        ctx,
+        transactionChanges({ type: owe ? 'expense' : 'income', accountId, amountPaise: input.amount, splits: input.splits }),
+        { canSplit: owe && input.splits.length === 0 },
+      );
+    }
+
     const remaining = v.outstandingPaise - input.amount;
     const warnings: string[] = [];
     if (owe && input.recordCashMovement) {
@@ -709,6 +722,7 @@ export const settlePending = defineAction({
         { label: 'This settlement', value: formatInr(input.amount), emphasis: true },
         { label: 'Remaining after', value: formatInr(remaining) },
         { label: 'Cash balance', value: cashLine },
+        ...(input.recordCashMovement && input.splits.length > 1 ? await splitLines(ctx, input.splits) : []),
       ],
       warnings,
       basis: { v: v.payment.version, settled: v.settledPaise },
@@ -733,11 +747,13 @@ export const settlePending = defineAction({
           origin: 'pendingSettlement',
           originRefId: v.payment.id,
           accountId,
+          splits: input.splits,
           channel: input.channel,
           counterparty: v.payment.counterparty,
           note: `Settlement · ${v.payment.purpose}`,
         }),
       );
+      accountId = t.accountId;
       transactionId = t.id;
       ctx.touched.push(t.id);
     }

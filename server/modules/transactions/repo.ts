@@ -10,11 +10,11 @@ import { AppFailure } from '../../core/failure';
 import { extendTrackingStart } from '../account/repo';
 import type { Paise } from '../../core/money';
 import type { Tx } from '../../db/tx';
-import { transactionFromRow, transactionToRow, type Transaction, type TransactionOrigin, type TransactionType } from '../../finance/models';
+import { legsOf, transactionFromRow, transactionToRow, type AccountLeg, type Transaction, type TransactionOrigin, type TransactionType } from '../../finance/models';
 
 export async function insertTransaction(tx: Tx, userId: string, t: Transaction): Promise<Transaction> {
   const row = await tx.insertInto('transactions').values(transactionToRow(userId, t)).returningAll().executeTakeFirstOrThrow();
-  await extendTrackingStart(tx, userId, t.date, [t.accountId]);
+  await extendTrackingStart(tx, userId, t.date, legsOf(t).map((l) => l.accountId));
   return transactionFromRow(row);
 }
 
@@ -30,7 +30,7 @@ export async function updateTransaction(tx: Tx, userId: string, next: Transactio
     .returningAll()
     .executeTakeFirst();
   if (!row) throw AppFailure.stale('This transaction changed since you opened it. Reload and try again.');
-  await extendTrackingStart(tx, userId, next.date, [next.accountId]);
+  await extendTrackingStart(tx, userId, next.date, legsOf(next).map((l) => l.accountId));
   return transactionFromRow(row);
 }
 
@@ -49,11 +49,14 @@ export function buildLinkedTransaction(
     origin: Exclude<TransactionOrigin, 'manual'>;
     originRefId: string;
     accountId: string;
+    /** Parts when the payment is split across accounts (two or more). */
+    splits?: AccountLeg[];
     channel?: string | null;
     counterparty?: string | null;
     note?: string | null;
   },
 ): Transaction {
+  const splits = t.splits && t.splits.length > 1 ? t.splits : [];
   const now = ctx.now.toISOString();
   return {
     id: ctx.ids.next('tx'),
@@ -61,7 +64,8 @@ export function buildLinkedTransaction(
     amountPaise: t.amountPaise,
     categoryId: t.categoryId,
     date: t.date,
-    accountId: t.accountId,
+    accountId: splits.length > 0 ? splits[0]!.accountId : t.accountId,
+    splits,
     channel: t.channel ?? null,
     counterparty: t.counterparty ?? null,
     note: t.note ?? null,

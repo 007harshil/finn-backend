@@ -11,6 +11,7 @@ import { isLiabilityKind, type MoneyAccount, type Transfer } from '../../finance
 import { MAX_TRANSACTION_PAISE } from '../transactions/actions';
 import { channelError } from '../accounts/resolve';
 import { deleteTransfer, insertTransfer, updateTransfer } from './repo';
+import { checkOverdraft, transferChanges } from '../../finance/overdraft';
 
 const dataShape = {
   fromAccountId: zId,
@@ -85,16 +86,11 @@ export const createTransfer = defineAction({
   input: createInput,
   async prepare(input, ctx) {
     const { from, to } = await loadAccounts(input, ctx, null);
-    const warnings: string[] = [];
-    if (!isLiabilityKind(from.kind)) {
-      const bal = (await ctx.snapshot.balance()).accounts.find((a) => a.accountId === from.id)?.balancePaise ?? 0;
-      if (input.amount > bal) warnings.push(`This is more than the ${formatInr(bal)} in ${from.name}.`);
-    }
+    await checkOverdraft(ctx, transferChanges({ fromAccountId: from.id, toAccountId: to.id, amountPaise: input.amount }));
     return {
       title: 'Transfer',
       summary: `Moved ${formatInr(input.amount)} from ${from.name} to ${to.name}`,
       lines: effectLines(from, to, input),
-      warnings,
     };
   },
   async execute(input, ctx): Promise<Transfer> {
@@ -144,6 +140,10 @@ export const updateTransferAction = defineAction({
       throw AppFailure.stale('This transfer changed since you opened it. Reload and try again.');
     }
     const { from, to } = await loadAccounts(input, ctx, existing);
+    await checkOverdraft(ctx, [
+      ...transferChanges(existing, -1),
+      ...transferChanges({ fromAccountId: from.id, toAccountId: to.id, amountPaise: input.amount }),
+    ]);
     return {
       title: 'Save changes',
       summary: `Update transfer to ${formatInr(input.amount)} from ${from.name} to ${to.name}`,
@@ -184,6 +184,7 @@ export const deleteTransferAction = defineAction({
   input: z.object({ id: zId }),
   async prepare(input, ctx) {
     const t = await existingTransfer(input.id, ctx);
+    await checkOverdraft(ctx, transferChanges(t, -1), { field: 'id' });
     const name = async (id: string) => (await ctx.snapshot.moneyAccount(id))?.name ?? '—';
     return {
       title: 'Delete transfer?',

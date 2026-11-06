@@ -58,7 +58,7 @@ describe('bootstrap', () => {
     expect(accounts[0]!.openingDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const b = await balances(u);
     expect(b).toMatchObject({ cashPaise: 0, creditOwedPaise: 0, openingBalancePaise: 0 });
-    expect(b.accounts).toEqual([{ accountId: 'acc_cash', balancePaise: 0, earmarkedPaise: 0, availablePaise: 0 }]);
+    expect(b.accounts).toEqual([{ accountId: 'acc_cash', isLiability: false, balancePaise: 0, earmarkedPaise: 0, availablePaise: 0 }]);
   });
 
   it('profile.update sets the Cash opening balance and date', async () => {
@@ -282,7 +282,7 @@ describe('transfers', () => {
     expect(b.byId.acc_cash).toBe(0);
   });
 
-  it('validates accounts, amount, date and channel; warns on overdraw', async () => {
+  it('validates accounts, amount, date and channel; refuses to overdraw', async () => {
     const u = await t.createUser();
     const sbi = await act(u, 'accounts.create', accountInput());
     const ok = { fromAccountId: sbi.id, toAccountId: 'acc_cash', amount: '100', date: '2026-10-02' };
@@ -291,8 +291,8 @@ describe('transfers', () => {
     expect(await fieldErrors(u, 'transfers.create', { ...ok, amount: '0' })).toBeTruthy();
     expect(await fieldErrors(u, 'transfers.create', { ...ok, date: '2026-10-11' })).toHaveProperty('date');
     expect(await fieldErrors(u, 'transfers.create', { ...ok, channel: 'x'.repeat(31) })).toHaveProperty('channel');
-    const p = await previewAction(u, 'transfers.create', { ...ok, amount: '20000' });
-    expect(p.warnings[0]).toContain('more than');
+    expect(await fieldErrors(u, 'transfers.create', { ...ok, amount: '20000' })).toHaveProperty('amount');
+    await expect(previewAction(u, 'transfers.create', { ...ok, amount: '20000' })).rejects.toMatchObject({ code: 'insufficientFunds' });
     await act(u, 'accounts.setDefault', { id: sbi.id });
     await act(u, 'accounts.archive', { id: 'acc_cash', archived: true });
     expect(await fieldErrors(u, 'transfers.create', ok)).toHaveProperty('toAccountId');
@@ -321,6 +321,7 @@ describe('transactions and linked movements', () => {
 
   it('subscriptions, loans and settlements carry accountId and channel onto their transaction', async () => {
     const u = await t.createUser();
+    await t.fund(u, 10000);
     const sbi = await act(u, 'accounts.create', accountInput());
     const sub = await act(u, 'subscriptions.create', {
       name: 'Hotstar', amount: '100', categoryId: 'cat_food', frequency: 'monthly', nextDueDate: '2026-10-08', accountId: sbi.id,
@@ -356,6 +357,7 @@ describe('transactions and linked movements', () => {
 
   it('period summary reports expense by account and by channel', async () => {
     const u = await t.createUser();
+    await t.fund(u, 1000);
     const sbi = await act(u, 'accounts.create', accountInput());
     await act(u, 'transactions.create', expense('300', { accountId: sbi.id, channel: 'UPI' }));
     await act(u, 'transactions.create', expense('200', { accountId: sbi.id, channel: 'UPI' }));
@@ -432,5 +434,124 @@ describe('sync and import', () => {
     });
     expect(res.status).toBe(422);
     expect((await read(u, (s) => s.moneyAccounts())).map((a) => a.id)).toEqual(['acc_cash']);
+  });
+});
+
+describe('no account goes below zero', () => {
+  it('refuses a full settlement larger than the account holds (25,000 owed, 21,000 in cash)', async () => {
+    const u = await t.createUser();
+    await t.fund(u, 21000);
+    const p = await act(u, 'pending.create', { counterparty: 'Ravi', direction: 'iOwe', kind: 'borrowed', amount: '25000', purpose: 'Rent', createdDate: '2026-10-01' });
+    await expect(previewAction(u, 'pending.settle', { pendingId: p.id, amount: '25000', date: '2026-10-09' })).rejects.toMatchObject({
+      code: 'insufficientFunds',
+      fieldErrors: { amount: expect.stringContaining('Not enough money in Cash') },
+    });
+    await expect(act(u, 'pending.settle', { pendingId: p.id, amount: '25000', date: '2026-10-09' })).rejects.toMatchObject({ code: 'insufficientFunds' });
+    expect((await balances(u)).byId['acc_cash']).toBe(rs(21000));
+    // Exactly what the account holds is fine.
+    await act(u, 'pending.settle', { pendingId: p.id, amount: '21000', date: '2026-10-09' });
+    expect((await balances(u)).byId['acc_cash']).toBe(0);
+  });
+
+  it('refuses expenses, edits, deletes and transfers that would overdraw', async () => {
+    const u = await t.createUser();
+    await t.fund(u, 1000);
+    await expect(act(u, 'transactions.create', expense('1500'))).rejects.toMatchObject({ code: 'insufficientFunds' });
+    const small = await act(u, 'transactions.create', expense('400'));
+    await expect(act(u, 'transactions.update', { id: small.id, expectedVersion: 1, ...expense('1200') })).rejects.toMatchObject({
+      code: 'insufficientFunds',
+    });
+    // Deleting income that was already spent would overdraw too.
+    const income = await act(u, 'transactions.create', { type: 'income', amount: '5000', categoryId: 'cat_salary', date: '2026-10-05' });
+    await act(u, 'transactions.create', expense('5000'));
+    await expect(act(u, 'transactions.delete', { id: income.id })).rejects.toMatchObject({ code: 'insufficientFunds' });
+    const sbi = await act(u, 'accounts.create', accountInput({ openingBalance: '0' }));
+    await expect(
+      act(u, 'transfers.create', { fromAccountId: 'acc_cash', toAccountId: sbi.id, amount: '700', date: '2026-10-05' }),
+    ).rejects.toMatchObject({ code: 'insufficientFunds' });
+    expect((await balances(u)).byId['acc_cash']).toBe(rs(600));
+  });
+
+  it('a credit card is not limited by a balance', async () => {
+    const u = await t.createUser();
+    const card = await act(u, 'accounts.create', accountInput({ name: 'HDFC card', kind: 'creditCard', openingBalance: '0' }));
+    await act(u, 'transactions.create', expense('3000', { accountId: card.id }));
+    expect((await balances(u)).byId[card.id]).toBe(rs(3000));
+  });
+});
+
+describe('split payments', () => {
+  it('pays 5,400 as 4,000 from a debit card and 1,400 from cash in one transaction', async () => {
+    const u = await t.createUser();
+    await t.fund(u, 2000);
+    const card = await act(u, 'accounts.create', accountInput({ name: 'Debit card', kind: 'debitCard', openingBalance: '4000' }));
+    await expect(act(u, 'transactions.create', expense('5400'))).rejects.toMatchObject({
+      code: 'insufficientFunds',
+      message: expect.stringContaining('Split the payment'),
+    });
+    const tx = await act(u, 'transactions.create', expense('5400', {
+      splits: [{ accountId: card.id, amount: '4000' }, { accountId: 'acc_cash', amount: '1400' }],
+    }));
+    expect(tx.amountPaise).toBe(rs(5400));
+    expect(tx.accountId).toBe(card.id);
+    expect(tx.splits).toEqual([
+      { accountId: card.id, amountPaise: rs(4000) },
+      { accountId: 'acc_cash', amountPaise: rs(1400) },
+    ]);
+    const b = await balances(u);
+    expect(b.byId[card.id]).toBe(0);
+    expect(b.byId['acc_cash']).toBe(rs(600));
+    const stored = (await read(u, (s) => s.transaction(tx.id)))!;
+    expect(stored.splits).toHaveLength(2);
+    const s = await read(u, (x) => x.summary(new DateRange('2026-10-01', '2026-10-31')));
+    expect(s.byAccount).toEqual(
+      expect.arrayContaining([
+        { accountId: card.id, amountPaise: rs(4000) },
+        { accountId: 'acc_cash', amountPaise: rs(1400) },
+      ]),
+    );
+  });
+
+  it('validates parts: sum, distinct accounts, and each part within its account', async () => {
+    const u = await t.createUser();
+    await t.fund(u, 2000);
+    const card = await act(u, 'accounts.create', accountInput({ name: 'Debit card', kind: 'debitCard', openingBalance: '4000' }));
+    expect(
+      await fieldErrors(u, 'transactions.create', expense('5400', {
+        splits: [{ accountId: card.id, amount: '3000' }, { accountId: 'acc_cash', amount: '1000' }],
+      })),
+    ).toHaveProperty('splits');
+    expect(
+      await fieldErrors(u, 'transactions.create', expense('2000', {
+        splits: [{ accountId: card.id, amount: '1000' }, { accountId: card.id, amount: '1000' }],
+      })),
+    ).toHaveProperty('splits');
+    await expect(
+      act(u, 'transactions.create', expense('5400', {
+        splits: [{ accountId: card.id, amount: '2400' }, { accountId: 'acc_cash', amount: '3000' }],
+      })),
+    ).rejects.toMatchObject({ code: 'insufficientFunds' });
+  });
+
+  it('settles a pending payment from two accounts; deleting an account removes the whole entry', async () => {
+    const u = await t.createUser();
+    await t.fund(u, 21000);
+    const sbi = await act(u, 'accounts.create', accountInput({ openingBalance: '10000' }));
+    const p = await act(u, 'pending.create', { counterparty: 'Ravi', direction: 'iOwe', kind: 'borrowed', amount: '25000', purpose: 'Rent', createdDate: '2026-10-01' });
+    const st = await act(u, 'pending.settle', {
+      pendingId: p.id,
+      amount: '25000',
+      date: '2026-10-09',
+      splits: [{ accountId: 'acc_cash', amount: '21000' }, { accountId: sbi.id, amount: '4000' }],
+    });
+    const stx = (await read(u, (s) => s.transaction(st.transactionId)))!;
+    expect(stx.splits).toHaveLength(2);
+    let b = await balances(u);
+    expect(b.byId['acc_cash']).toBe(0);
+    expect(b.byId[sbi.id]).toBe(rs(6000));
+    await act(u, 'accounts.delete', { id: sbi.id }, { confirm: true });
+    expect(await read(u, (s) => s.transaction(st.transactionId))).toBeNull();
+    b = await balances(u);
+    expect(b.byId['acc_cash']).toBe(rs(21000));
   });
 });

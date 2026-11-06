@@ -538,6 +538,7 @@ describe('GET /api/v1/alerts', () => {
     fixClock();
     alice = await t.createUser('alice@example.com');
     bob = await t.createUser('bob@example.com');
+    for (const u of [alice, bob]) await t.fund(u, 1_000_000);
   });
   afterAll(async () => t.close());
 

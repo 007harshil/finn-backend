@@ -9,6 +9,7 @@ import { zDate } from '../../actions/input';
 import { AppFailure } from '../../core/failure';
 import type { Tx } from '../../db/tx';
 import { TRANSACTION_ORIGINS, transactionFromRow, type Transaction } from '../../finance/models';
+import { touchesAccount } from '../../finance/ledger';
 
 const csv = <T extends string>(values: readonly T[]) =>
   z
@@ -107,7 +108,10 @@ export async function listTransactions(tx: Tx, userId: string, query: ListQuery)
   if (query.to) q = q.where('t.date', '<=', query.to);
   if (query.type) q = q.where('t.type', '=', query.type);
   if (query.categoryIds.length > 0) q = q.where('t.category_id', 'in', query.categoryIds);
-  if (query.accountIds.length > 0) q = q.where('t.account_id', 'in', query.accountIds);
+  if (query.accountIds.length > 0) {
+    const ids = query.accountIds;
+    q = q.where(sql<boolean>`(${sql.join(ids.map((id) => touchesAccount(id)), sql` or `)})`);
+  }
   if (query.channels.length > 0) q = q.where('t.channel', 'in', query.channels);
   if (query.origins.length > 0) q = q.where('t.origin', 'in', query.origins);
   if (query.minPaise !== undefined) q = q.where('t.amount_paise', '>=', query.minPaise);

@@ -44,13 +44,22 @@ const iso = (v: Date | string): Instant => (v instanceof Date ? v.toISOString() 
 
 // ---------------------------------------------------------------------------
 
+/** One account's part of a payment split across accounts. */
+export interface AccountLeg {
+  accountId: string;
+  amountPaise: Paise;
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
   amountPaise: Paise;
   categoryId: string;
   date: IsoDate;
+  /** The account it hit; for a split payment, the first part's account. */
   accountId: string;
+  /** Parts of a payment split across two or more accounts (sum = amount); empty otherwise. */
+  splits?: AccountLeg[];
   channel: string | null;
   counterparty: string | null;
   note: string | null;
@@ -61,6 +70,25 @@ export interface Transaction {
   version: number;
 }
 
+/** Split parts from the jsonb column; empty unless two or more valid parts. */
+export function legsFromJson(raw: unknown): AccountLeg[] {
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as unknown) : raw;
+  if (!Array.isArray(list)) return [];
+  const legs: AccountLeg[] = [];
+  for (const e of list) {
+    if (e && typeof e === 'object' && typeof (e as Record<string, unknown>).accountId === 'string') {
+      const amount = Number((e as Record<string, unknown>).amountPaise);
+      if (Number.isSafeInteger(amount)) legs.push({ accountId: (e as { accountId: string }).accountId, amountPaise: amount });
+    }
+  }
+  return legs.length > 1 ? legs : [];
+}
+
+/** Every account a transaction moved money through, with its part. */
+export function legsOf(t: Pick<Transaction, 'accountId' | 'amountPaise' | 'splits'>): AccountLeg[] {
+  return t.splits && t.splits.length > 1 ? t.splits : [{ accountId: t.accountId, amountPaise: t.amountPaise }];
+}
+
 export function transactionFromRow(r: Selectable<TransactionsTable>): Transaction {
   return {
     id: r.id,
@@ -69,6 +97,7 @@ export function transactionFromRow(r: Selectable<TransactionsTable>): Transactio
     categoryId: r.category_id,
     date: r.date,
     accountId: r.account_id,
+    splits: legsFromJson(r.account_splits),
     channel: r.channel,
     counterparty: r.counterparty,
     note: r.note,
@@ -88,7 +117,8 @@ export function transactionToRow(userId: string, t: Transaction) {
     amount_paise: t.amountPaise,
     category_id: t.categoryId,
     date: t.date,
-    account_id: t.accountId,
+    account_id: t.splits && t.splits.length > 1 ? t.splits[0]!.accountId : t.accountId,
+    account_splits: t.splits && t.splits.length > 1 ? JSON.stringify(t.splits.map((l) => ({ accountId: l.accountId, amountPaise: l.amountPaise }))) : null,
     channel: t.channel,
     counterparty: t.counterparty,
     note: t.note,

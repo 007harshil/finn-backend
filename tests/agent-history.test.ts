@@ -67,6 +67,7 @@ const history = (user: AuthUser, query: Record<string, string | number | undefin
 describe('agent history', () => {
   it('records the confirmed outcome of a multi-operation turn once, even when the call is retried', async () => {
     const user = await t.createUser('hist-a@example.com');
+    await t.fund(user, 1_000_000);
     const plan = threeOps('agent.c_hist_a');
     const steps = await previewAll(user, plan);
     expect(steps.map((s) => s.status)).toEqual(['ready', 'ready', 'ready']);
@@ -101,6 +102,7 @@ describe('agent history', () => {
 
   it('reports partial success, declined operations and app notes truthfully', async () => {
     const user = await t.createUser('hist-b@example.com');
+    await t.fund(user, 1_000_000);
     const plan = {
       planId: 'agent.c_hist_b',
       steps: [
@@ -136,6 +138,7 @@ describe('agent history', () => {
 
   it('stores the prompt version, model and model calls for quality tracking', async () => {
     const user = await t.createUser('hist-q@example.com');
+    await t.fund(user, 1_000_000);
     const plan = {
       planId: 'agent.c_hist_q',
       steps: [
@@ -167,6 +170,7 @@ describe('agent history', () => {
 
   it('marks a turn partial when a record changed after review and that step fails while another saves', async () => {
     const user = await t.createUser('hist-h@example.com');
+    await t.fund(user, 1_000_000);
     const pending = await act<{ id: string }>(user, 'pending.create', {
       counterparty: 'Neha',
       direction: 'owedToMe',
@@ -196,6 +200,7 @@ describe('agent history', () => {
 
   it('records a fully declined turn without writing anything', async () => {
     const user = await t.createUser('hist-c@example.com');
+    await t.fund(user, 1_000_000);
     const plan = threeOps('agent.c_hist_c');
     await previewAll(user, plan);
     const res = await execute(user, plan, [], { runId: 'run_hist_c_1', request: 'never mind' });
@@ -206,6 +211,7 @@ describe('agent history', () => {
 
   it('merges a second wave of the same turn into one entry', async () => {
     const user = await t.createUser('hist-d@example.com');
+    await t.fund(user, 1_000_000);
     const wave1 = {
       planId: 'agent.c_hist_d',
       steps: [{ stepId: 'd1', actionId: 'categories.create', input: { name: 'Pets', type: 'expense', iconKey: 'tag', colorIndex: 3 } }],
@@ -231,7 +237,9 @@ describe('agent history', () => {
 
   it('pages newest first, filters by status, isolates users and clears only the caller', async () => {
     const user = await t.createUser('hist-e@example.com');
+    await t.fund(user, 1_000_000);
     const other = await t.createUser('hist-f@example.com');
+    await t.fund(other, 1_000_000);
     for (let i = 0; i < 3; i++) {
       const plan = {
         planId: `agent.c_hist_e${i}`,
@@ -263,6 +271,7 @@ describe('agent history', () => {
   it('requires authentication and validates the history payload', async () => {
     expect((await call(historyRoute.GET, 'GET', '/api/v1/agent/history')).status).toBe(401);
     const user = await t.createUser('hist-g@example.com');
+    await t.fund(user, 1_000_000);
     const plan = threeOps('agent.c_hist_g');
     const res = await execute(user, plan, [], { runId: 'bad id!', request: 'x' });
     expect(res.status).toBe(422);
