@@ -42,6 +42,47 @@ export interface CompletionResult {
   usage: CompletionUsage | null;
   /** Set when a guardrail replaced the reply with a refusal (the rule that fired). */
   guardrail?: GuardrailRule;
+  /** The model that answered (a fallback when the primary was rate limited); the app stores it in history. */
+  model?: string;
+}
+
+/**
+ * Short hash of the client's instructions (its system message, before the
+ * server policy). Logged with every call so quality and cost can be compared
+ * per prompt; the app also sends its own version name with history entries.
+ */
+export function promptHash(req: CompletionRequest): string {
+  const first = req.messages[0];
+  return sha256Hex(first?.role === 'system' ? first.content : '').slice(0, 12);
+}
+
+const REPLY_KINDS = new Set(['greeting', 'thanks', 'help', 'advice', 'scope', 'unsupported']);
+
+/**
+ * Shape of a JSON plan for quality metrics: op count and types, whether it
+ * asked a question, and the reply kind. Never any user or model text.
+ */
+export function planStats(content: string | null): Record<string, string | number | boolean> {
+  if (!content) return { planShape: 'empty' };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return { planShape: 'notJson' };
+  }
+  if (!isRecord(parsed)) return { planShape: 'notObject' };
+  const ops = Array.isArray(parsed.ops) ? parsed.ops : [];
+  const types = ops
+    .map((o) => (isRecord(o) && typeof o.op === 'string' && /^[a-z_]{1,20}$/.test(o.op) ? o.op : 'other'))
+    .slice(0, 12);
+  const reply = typeof parsed.reply === 'string' && parsed.reply.trim() ? parsed.reply.trim() : null;
+  return {
+    planShape: 'plan',
+    planOps: ops.length,
+    planTypes: types.join(','),
+    planAsk: typeof parsed.ask === 'string' && parsed.ask.trim().length > 0,
+    planReply: reply === null ? 'none' : REPLY_KINDS.has(reply) ? reply : 'text',
+  };
 }
 
 const UNAVAILABLE = 'The assistant is unavailable right now. Please try again.';
@@ -197,8 +238,10 @@ function usageCounts(payload: unknown): Record<string, number | undefined> {
 /**
  * True when OpenAI's moderation endpoint flags [input]. Never throws: an
  * outage or timeout counts as not flagged (the other guardrails still apply).
+ * Every such failure is logged at error level as `agent.moderation.failed`,
+ * so an alert on that event shows when the rail is silently open.
  */
-async function isFlagged(input: string, config: AgentEnv, signal: AbortSignal): Promise<boolean> {
+async function isFlagged(input: string, config: AgentEnv, signal: AbortSignal, log: Record<string, string>): Promise<boolean> {
   try {
     const res = await fetch(`${config.OPENAI_BASE_URL}/moderations`, {
       method: 'POST',
@@ -208,12 +251,19 @@ async function isFlagged(input: string, config: AgentEnv, signal: AbortSignal): 
     });
     if (!res.ok) {
       await res.body?.cancel().catch(() => undefined);
+      logger.error('agent.moderation.failed', { ...log, upstreamStatus: res.status });
       return false;
     }
     const payload: unknown = await res.json();
     const first = isRecord(payload) && Array.isArray(payload.results) ? payload.results[0] : null;
+    if (!isRecord(first)) logger.error('agent.moderation.failed', { ...log, outcome: 'malformed' });
     return isRecord(first) && first.flagged === true;
-  } catch {
+  } catch (err) {
+    // A cancelled request (the app went away) is not a moderation failure.
+    if (!signal.aborted) {
+      const reason = err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'network';
+      logger.error('agent.moderation.failed', { ...log, outcome: reason });
+    }
     return false;
   }
 }
@@ -252,11 +302,12 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     });
   }
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
+  const prompt = promptHash(req);
 
   // Input rail: out-of-scope or injection requests never reach the model.
   const inputHit = checkInput(req);
   if (inputHit) {
-    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'input', rule: inputHit.rule });
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'input', rule: inputHit.rule });
     return refused(req, inputHit.rule, null);
   }
 
@@ -277,7 +328,10 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   const signal = ctx.request.signal ? AbortSignal.any([timeout, ctx.request.signal]) : timeout;
   // Moderation runs alongside the completion, so it adds no latency.
   const input = guardedInput(req);
-  const flagged = config.AGENT_MODERATION === 'on' && input ? isFlagged(input, config, signal) : Promise.resolve(false);
+  const flagged =
+    config.AGENT_MODERATION === 'on' && input
+      ? isFlagged(input, config, signal, { requestId: ctx.requestId, user })
+      : Promise.resolve(false);
 
   // Rate limits are metered per model, so a rate-limited model is skipped for
   // the next fallback (if any) instead of making the user wait. Models known
@@ -378,13 +432,13 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     throw new AppFailure('unknown', MALFORMED, { retryable: true });
   }
 
-  logger.info('agent.upstream', { requestId: ctx.requestId, user, model, upstreamStatus, ms, ...usageCounts(payload) });
+  logger.info('agent.upstream', { requestId: ctx.requestId, user, model, prompt, upstreamStatus, ms, ...usageCounts(payload) });
 
   // Moderation and output rails: a harmful request, or a reply carrying code,
   // secrets or the instructions themselves, is replaced by a refusal.
   if (await flagged) {
-    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'moderation', rule: 'moderation' });
-    return refused(req, 'moderation', result);
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'moderation', rule: 'moderation' });
+    return { ...refused(req, 'moderation', result), model };
   }
   const outputHit = checkOutput(
     withGuardrailPolicy(req.messages),
@@ -392,8 +446,13 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     result.message.tool_calls.map((c) => c.function.arguments),
   );
   if (outputHit) {
-    logger.info('agent.guardrail', { requestId: ctx.requestId, user, stage: 'output', rule: outputHit.rule });
-    return refused(req, outputHit.rule, result);
+    logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'output', rule: outputHit.rule });
+    return { ...refused(req, outputHit.rule, result), model };
   }
-  return result;
+  // Quality metrics per prompt and model (shape only, never text): op counts,
+  // question rate, reply kinds, and "text" replies that ignored the format.
+  if (req.response_format) {
+    logger.info('agent.plan', { requestId: ctx.requestId, user, model, prompt, ...planStats(result.message.content) });
+  }
+  return { ...result, model };
 }

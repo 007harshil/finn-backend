@@ -179,15 +179,44 @@ describe('accounts.* actions', () => {
     await act(u, 'accounts.archive', { id: 'acc_cash', archived: true });
     expect(await fieldErrors(u, 'accounts.archive', { id: a.id, archived: true })).toBeTruthy(); // default
     await act(u, 'accounts.archive', { id: 'acc_cash', archived: false });
-    // In use: cannot delete.
-    await act(u, 'transactions.create', expense('10', { accountId: a.id }));
-    expect(await fieldErrors(u, 'accounts.delete', { id: a.id })).toBeTruthy();
     // Unused account can be deleted; deleting the default hands the default over.
     const spare = await act(u, 'accounts.create', accountInput({ name: 'Spare' }));
     await act(u, 'accounts.delete', { id: spare.id });
     expect((await read(u, (s) => s.moneyAccounts())).map((x) => x.id)).toEqual(['acc_cash', a.id]);
     const solo = await t.createUser();
     expect(await fieldErrors(solo, 'accounts.delete', { id: 'acc_cash' })).toBeTruthy(); // last account
+  });
+
+  it('delete always asks first and removes the account records with it', async () => {
+    const u = await t.createUser();
+    const a = await act(u, 'accounts.create', accountInput());
+    const tx = await act(u, 'transactions.create', expense('10', { accountId: a.id }));
+    await act(u, 'transfers.create', { fromAccountId: a.id, toAccountId: 'acc_cash', amount: '500', date: '2026-10-02' });
+    const sub = await act(u, 'subscriptions.create', {
+      name: 'Hotstar', amount: '100', categoryId: 'cat_food', frequency: 'monthly', nextDueDate: '2026-10-08', accountId: a.id,
+    });
+    const loan = await act(u, 'loans.create', {
+      name: 'Car', counterparty: 'HDFC', direction: 'borrowed', structure: 'amortizing', principal: 60000, rateBps: 950,
+      startDate: '2026-09-01', firstDueDate: '2026-10-05', frequency: 'monthly', tenureInstallments: 12, maturityDate: null,
+      prepaymentStrategy: 'reduceTenure', recordDisbursement: true, accountId: a.id, channel: 'NEFT', note: null,
+    });
+
+    // Without a confirmation the server only returns the preview.
+    const first = await dispatch(u, 'accounts.delete', { id: a.id }, { idempotencyKey: newKey() });
+    expect(first.status).toBe('needsConfirmation');
+    const preview = await previewAction(u, 'accounts.delete', { id: a.id });
+    expect(preview.lines.find((l) => l.label === 'Transactions deleted')!.value).toBe('2'); // expense + loan disbursement
+    expect(preview.lines.find((l) => l.label === 'Transfers deleted')!.value).toBe('1');
+    expect(preview.warnings.some((w) => w.includes('1 subscription'))).toBe(true);
+
+    await act(u, 'accounts.delete', { id: a.id });
+    expect((await read(u, (s) => s.moneyAccounts())).map((x) => x.id)).toEqual(['acc_cash']);
+    expect(await read(u, (s) => s.transaction(tx.id))).toBeNull();
+    expect(await read(u, (s) => s.transfers())).toEqual([]);
+    const kept = (await read(u, (s) => s.subscriptions())).find((x) => x.id === sub.id)!;
+    expect(kept.accountId).toBeNull();
+    const keptLoan = (await read(u, (s) => s.loans())).find((x) => x.id === loan.id)!;
+    expect(keptLoan.disbursementTransactionId).toBeNull();
   });
 
   it('update: kind switch asset <-> credit card only without movements', async () => {

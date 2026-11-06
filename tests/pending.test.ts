@@ -531,7 +531,7 @@ describe('shared pending items', () => {
       }),
     ).rejects.toMatchObject({
       code: 'notPermitted',
-      message: 'Only Alice can change the details of this shared item. You can still record a settlement.',
+      message: 'Only Alice can change the details of this shared item.',
     });
     await expect(
       act(alice, 'pending.update', { id: shared.id, expectedVersion: 2, counterparty: 'Bob', direction: 'iOwe', amount: '1000', purpose: 'Dinner', createdDate: '2026-10-01', linkedUserId: carol.userId }),
@@ -561,21 +561,46 @@ describe('shared pending items', () => {
     expect((await viewOf(bob, mirId))!.purpose).toBe('Dinner at Toit');
   });
 
-  it('Alice pays the rest: her own expense; settled for both; Bob can no longer settle', async () => {
-    const s = await act<PendingSettlement>(alice, 'pending.settle', { pendingId: shared.id, amount: '600', date: '2026-10-10' });
-    const t1 = await read(alice, (snap) => snap.transaction(s.transactionId!));
-    expect(t1).toMatchObject({ type: 'expense', categoryId: 'cat_sys_settle_out', amountPaise: 60000, counterparty: 'Bob' });
-    expect((await viewOf(alice, shared.id))!.status).toBe('settled');
-    const bv = (await viewOf(bob, mirId))!;
-    expect(bv.status).toBe('settled');
-    // Bob sees his own settlement (with his transaction) and Alice's (mir_, no transaction).
-    const byAmount = Object.fromEntries(bv.settlements.map((x) => [x.amountPaise, x]));
-    expect(byAmount[60000]).toMatchObject({ id: `mir_${s.id}`, transactionId: null });
-    expect(byAmount[40000]!.transactionId).not.toBeNull();
+  it('Alice owes, so only Bob settles, even though Alice created the item', async () => {
+    const aliceTx0 = await settleTxCount(alice);
+    await expect(act(alice, 'pending.settle', { pendingId: shared.id, amount: '600', date: '2026-10-10' })).rejects.toMatchObject({
+      code: 'notPermitted',
+      message: 'This is shared with Bob, who is owed the money. Only they can settle it.',
+    });
+    // The database refuses it too, even with raw SQL (RLS).
+    await expect(
+      withUserTx(alice, (tx) =>
+        tx
+          .insertInto('pending_settlements')
+          .values({
+            user_id: alice.userId,
+            id: 'set_raw_alice',
+            pending_owner_id: alice.userId,
+            pending_id: shared.id,
+            shared_with_user_id: bob.userId,
+            amount_paise: 60000,
+            date: '2026-10-10',
+            created_at: new Date().toISOString(),
+          })
+          .execute(),
+      ),
+    ).rejects.toThrow();
+    expect((await viewOf(alice, shared.id))!.outstandingPaise).toBe(60000);
+    expect(await settleTxCount(alice)).toBe(aliceTx0);
+
+    const s = await act<PendingSettlement>(bob, 'pending.settle', { pendingId: mirId, amount: '600', date: '2026-10-10' });
+    const t1 = await read(bob, (snap) => snap.transaction(s.transactionId!));
+    expect(t1).toMatchObject({ type: 'income', categoryId: 'cat_sys_settle_in', amountPaise: 60000, counterparty: 'Alice' });
+    expect((await viewOf(bob, mirId))!.status).toBe('settled');
+    const av = (await viewOf(alice, shared.id))!;
+    expect(av.status).toBe('settled');
+    // Alice sees Bob's settlements as mir_ entries, never with a transaction of hers.
+    expect(av.settlements.map((x) => x.transactionId)).toEqual([null, null]);
+    expect(await settleTxCount(alice)).toBe(aliceTx0);
+    expect(await settleTxCount(bob)).toBe(2);
     await expect(act(bob, 'pending.settle', { pendingId: mirId, amount: '1', date: '2026-10-10' })).rejects.toMatchObject({
       message: 'This item is already settled.',
     });
-    expect(await settleTxCount(bob)).toBe(1);
   });
 
   it('the owed person may write off; the creator may delete an unsettled shared item (tombstone for both)', async () => {

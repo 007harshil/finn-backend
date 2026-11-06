@@ -98,8 +98,9 @@ with `hasMore` when any collection exceeds the limit.
 ## Shared pending items
 
 Stored once under the creator (`shared_id`, `shared_with_user_id`). The other person sees a derived, reversed view with
-id `mir_<sharedId>`; settlements recorded by the other person appear as `mir_<id>` without a transaction. Either party
-can record settlements (own linked transaction only); only the creator edits/deletes; only the owed person writes off.
+id `mir_<sharedId>`; settlements recorded by the other person appear as `mir_<id>` without a transaction. Only the owed
+person records settlements (own linked transaction only) or writes off, whoever created the item; only the creator
+edits/deletes.
 Writes lock both users in sorted order.
 
 Sharing needs an accepted friendship (`friendships`; requests in `friend_requests`, see finn/docs/FRIENDS.md).

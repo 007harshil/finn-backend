@@ -2,6 +2,7 @@
 // listed by GET /agent/history (paginated, filterable, owner-only), cleared by
 // DELETE /agent/history. Retries and second waves update one entry.
 
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as planPreviewRoute from '@/app/api/v1/plans/preview/route';
 import * as planExecuteRoute from '@/app/api/v1/plans/execute/route';
@@ -131,6 +132,37 @@ describe('agent history', () => {
     ])).toBe('partial');
     expect(runStatus([{ ref: 'x', actionId: 'a', summary: '', status: 'failed', recordIds: [] }])).toBe('failed');
     expect(runStatus([{ ref: 'x', actionId: 'a', summary: '', status: 'declined', recordIds: [] }])).toBe('declined');
+  });
+
+  it('stores the prompt version, model and model calls for quality tracking', async () => {
+    const user = await t.createUser('hist-q@example.com');
+    const plan = {
+      planId: 'agent.c_hist_q',
+      steps: [
+        { stepId: 'q1', actionId: 'transactions.create', input: { type: 'expense', amount: '40', categoryId: 'cat_food', date: '2026-10-10' } },
+      ],
+    };
+    const steps = await previewAll(user, plan);
+    await execute(user, plan, [], {
+      runId: 'run_hist_q_1',
+      request: 'chai 40',
+      labels: { q1: 'Expense ₹40 · Food & Dining' },
+      promptVersion: '2026-11-03.1',
+      model: 'gpt-6-luna',
+      modelCalls: 2,
+    });
+    // A second wave without the fields keeps the first wave's values.
+    await execute(user, plan, [steps[0].preview!.fingerprint], { runId: 'run_hist_q_1', request: 'chai 40' });
+    const row = await t.db
+      .selectFrom('agent_runs')
+      .select(['prompt_version', 'model', 'model_calls', 'status'])
+      .where('id', '=', 'run_hist_q_1')
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ prompt_version: '2026-11-03.1', model: 'gpt-6-luna', model_calls: 2, status: 'completed' });
+
+    const quality = await sql<{ turns: string; prompt_version: string }>`
+      select turns, prompt_version from private.agent_quality_daily where prompt_version = '2026-11-03.1'`.execute(t.db);
+    expect(quality.rows.map((r) => [Number(r.turns), r.prompt_version])).toEqual([[1, '2026-11-03.1']]);
   });
 
   it('marks a turn partial when a record changed after review and that step fails while another saves', async () => {

@@ -107,12 +107,13 @@ describe('release', () => {
 });
 
 describe('accounts with savings', () => {
-  it('cannot be deleted while money is set aside on them; archiving is allowed', async () => {
-    const { u, sbi } = await setup();
+  it('deleting an account removes the money set aside on it', async () => {
+    const { u, sbi, hdfc } = await setup();
     await act(u, 'emergencyFund.contribute', { amount: '100', accountId: sbi, date: '2026-10-05' });
-    const err = await act(u, 'accounts.delete', { id: sbi }).catch((e) => e);
-    expect(err.message).toMatch(/Archive it instead/);
-    await act(u, 'accounts.archive', { id: sbi, archived: true });
+    await act(u, 'emergencyFund.contribute', { amount: '50', accountId: hdfc, date: '2026-10-05' });
+    await act(u, 'accounts.delete', { id: sbi });
+    const left = await read(u, (s) => s.movements());
+    expect(left.map((m) => m.accountId)).toEqual([hdfc]);
   });
 
   it('old allocations were moved to the Cash account by the migration', async () => {

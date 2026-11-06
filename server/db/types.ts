@@ -324,6 +324,9 @@ export interface AgentRunsTable {
   summary: string;
   operations: ColumnType<unknown, string, string>;
   notes: Generated<string[]>;
+  prompt_version: string | null;
+  model: string | null;
+  model_calls: number | null;
   created_at: Ts;
   updated_at: Ts;
 }

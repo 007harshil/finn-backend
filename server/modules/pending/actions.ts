@@ -7,9 +7,10 @@
 // borrowed/lent reversed). Actions accept either id form and resolve it to
 // the underlying row. Rules (docs/BACKEND_INTEGRATION.md "Shared pending"):
 // sharing needs an accepted friendship (docs FRIENDS.md; an existing link
-// survives the friendship ending); only the creator edits details or deletes; either person records
-// settlements (a linked transaction belongs to the recorder only); only the
-// person who is owed writes the rest off; the person never changes. Before
+// survives the friendship ending); only the creator edits details or deletes; only the
+// person who is owed records settlements or writes the rest off, whoever created the
+// item, so the payer can never clear it without the lender knowing (a linked
+// transaction belongs to the recorder only); the person never changes. Before
 // touching a shared item the other user's write lock is taken, so both
 // users' writes (and their sync ordering) stay serialised.
 
@@ -134,6 +135,14 @@ async function loadItem(ctx: ActionContext, id: string): Promise<Loaded | null> 
   const p = items.find((x) => x.id === id);
   if (!p) return null;
   return { target, view: pendingView(p, settlements, ctx.today), all: pendingViews(items, settlements, ctx.today) };
+}
+
+/**
+ * Only the person who is owed settles or writes off a shared item. Private
+ * items have no other side, so their owner settles them either way.
+ */
+function canSettle(p: PendingPayment): boolean {
+  return !(p.link && p.direction === 'iOwe');
 }
 
 async function requireItem(ctx: ActionContext, id: string): Promise<Loaded> {
@@ -557,7 +566,7 @@ export const updatePending = defineAction({
     const link = v.payment.link;
     if (link && !link.createdByMe) {
       throw AppFailure.notPermitted(
-        `Only ${v.payment.counterparty} can change the details of this shared item. You can still record a settlement.`,
+        `Only ${v.payment.counterparty} can change the details of this shared item.`,
       );
     }
     if (link && input.linkedUserId != null && input.linkedUserId !== link.userId) {
@@ -664,6 +673,9 @@ export const settlePending = defineAction({
     const { view: v } = await requireItem(ctx, input.pendingId);
     if (!isActiveStatus(v.status)) {
       throw AppFailure.validation(`This item is already ${PENDING_STATUS_LABELS[v.status].toLowerCase()}.`);
+    }
+    if (!canSettle(v.payment)) {
+      throw AppFailure.notPermitted(`This is shared with ${v.payment.counterparty}, who is owed the money. Only they can settle it.`);
     }
     const e: Record<string, string> = {};
     if (input.amount <= 0) e.amount = 'Enter an amount greater than zero.';
@@ -778,7 +790,7 @@ export const cancelPending = defineAction({
   async prepare(input, ctx) {
     const { view: v } = await requireItem(ctx, input.id);
     if (!isActiveStatus(v.status)) throw AppFailure.validation('This item is already closed.');
-    if (v.payment.link && v.payment.direction === 'iOwe') {
+    if (!canSettle(v.payment)) {
       throw AppFailure.notPermitted(`This is shared with ${v.payment.counterparty}, who is owed the money. Only they can write it off.`);
     }
     return {

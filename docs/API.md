@@ -273,7 +273,7 @@ Columns: Conf. = needs confirmation on `ui` (risk `consequential`; always true o
 | `accounts.setBalance` | accounts | low | no | no | yes | `id`*; `expectedVersion`/`version`; `balance`* money >= 0 (credit card: amount owed); `asOf` date (default today, not future). Sets `openingPaise` so the computed balance on `asOf` equals `balance` (if that needs a negative opening, the opening date moves to `asOf` instead). Preview line `Balance` (or `Owed`): `old -> new` |
 | `accounts.setDefault` | accounts | low | no | no | yes | `id`* (not archived); unsets the previous default |
 | `accounts.archive` | accounts | low | no | no | yes | `id`*; `archived`* bool. 422 for the default account or the last active one |
-| `accounts.delete` | accounts | consequential | no | yes | no | `id`*. 422 when any transaction, transfer, subscription or settlement refers to it (archive instead) or it is the last active account; deleting the default hands the default to the next active account |
+| `accounts.delete` | accounts | consequential | no | yes | no | `id`*. Always `needsConfirmation` first; preview lines count the transactions, transfers and set-aside savings that are deleted with it. Subscriptions and settlements paid from it keep their rows with `accountId: null`; loans, loan payments and settlements linked to a deleted transaction keep their rows with the link cleared. 422 when it is the last active account; deleting the default hands the default to the next active account |
 | `transfers.create` | transfers | low | yes | no | yes | `fromAccountId`*, `toAccountId`* (different, existing, non-archived); `amount`* money > 0; `date`* (not future); `channel` <= 30; `note` <= 500. Not income or spending. Warning when the source (non-credit) account holds less. Result: TransferDto |
 | `transfers.update` | transfers | low | yes | no | yes | `id`*; `expectedVersion`/`version`; same fields as create (an edit may keep an archived account it already uses) |
 | `transfers.delete` | transfers | consequential | yes | yes | no | `id`* |
@@ -299,7 +299,7 @@ Response `{ steps: [{stepId, actionId, status: "ready"|"invalid", preview?, fail
 **`POST /plans/execute`** same body plus `approvedFingerprints` (string[] 1-200 chars each, max 20) and `stopOnFailure` (bool, default true). Runs steps in order; each commits on its own (no cross-step rollback). Idempotency key per step = `<planId>:<stepId>`, so retrying with the same `planId` only re-runs what is left. A step runs only if its request fingerprint matches an approved fingerprint (prefix match before `.`). `confirmedBy` = `plan:<planId>`.
 Response `{ steps: [{stepId, actionId, status, preview?, failure?, result?, replayed?}] }` with `status`: `succeeded | failed | skipped` (halted or dependency not succeeded) `| notApproved` (no approval, or state changed since approval, with `failure.code=staleData`) `| invalid`. Plan responses carry no `changes`; run a sync afterwards.
 
-Optional `history` (agent turns): `{ runId (^[A-Za-z0-9._\-]{8,64}$), request (1-2,000, stored trimmed to 500), notes?: string[] (<= 10 of <= 300), labels?: { [stepId]: summary (<= 300) } }`. After the steps run, the server records one agent history entry from its **own** step reports (see 2.23): each step's preview summary (or its label when the server did not run it), its status and the ids of the records it touched. The response then adds `history: { id, status, summary } | null` (null if the history write failed; the steps have committed regardless). The entry is keyed by `runId`: a retried call (lost reply) replays its steps and rewrites the same entry, and a later call with the same `runId` (a second wave of dependent steps) merges its steps into it by `stepId`.
+Optional `history` (agent turns): `{ runId (^[A-Za-z0-9._\-]{8,64}$), request (1-2,000, stored trimmed to 500), notes?: string[] (<= 10 of <= 300), labels?: { [stepId]: summary (<= 300) }, promptVersion?: string (^[A-Za-z0-9._-]{1,40}$), model?: string (<= 100), modelCalls?: int (0-20) }`. `promptVersion` / `model` / `modelCalls` are stored for quality tracking (`agent_runs.prompt_version`, `model`, `model_calls`; a later wave without them keeps the first wave's values) and summed per day, prompt version and model in the operator-only view `private.agent_quality_daily`. After the steps run, the server records one agent history entry from its **own** step reports (see 2.23): each step's preview summary (or its label when the server did not run it), its status and the ids of the records it touched. The response then adds `history: { id, status, summary } | null` (null if the history write failed; the steps have committed regardless). The entry is keyed by `runId`: a retried call (lost reply) replays its steps and rewrites the same entry, and a later call with the same `runId` (a second wave of dependent steps) merges its steps into it by `stepId`.
 
 ### 2.7 Transactions
 **`GET /transactions`**
@@ -443,6 +443,11 @@ call when it asks for code, app internals or secrets or tries to override the ru
 tool arguments) carries code, a secret or the instructions is replaced. A refusal is a normal 200 with
 `message.content` = `{"ops":[],"reply":"<refusal>"}` (plain text when no `response_format`), `tool_calls: []`, and
 `guardrail` = `code` | `internals` | `injection` | `moderation` | `secret` | `leak`. Only the rule name is logged.
+The input rail also covers Hinglish and Devanagari phrasings (same lists as the app's `AgentGuard`). A moderation outage
+or timeout is logged at error level as `agent.moderation.failed` (alert on it: the rail is open while it happens).
+Every call logs `prompt` (12-character hash of `messages[0]`, the client's instructions) with the model and token
+usage; JSON-mode replies also log `agent.plan` with the plan's shape only (op count and types, whether it asked, the
+reply kind, or `text` when the model wrote prose).
 
 Body (strict: any other top-level key, e.g. `model`, `user`, `safety_identifier`, `service_tier`, `stream`,
 `reasoning_effort`, `prompt_cache_options`, `prompt_cache_key`, is 422; max 600,000 bytes):
@@ -481,6 +486,7 @@ Response (trimmed from `choices[0]`; `reasoning` and any other provider fields a
 ```
 `usage.cached_tokens` / `cache_write_tokens` / `reasoning_tokens` come from the provider's token details (0 when absent).
 `message.refusal` is present only when the model refused.
+`model` is the model that answered (a fallback when the primary was rate limited); the app stores it in history.
 `message.tool_calls` is always an array (empty when the model answered in text); `usage` may be `null`. Append the
 assistant message (with its `tool_calls`) and one `role: "tool"` message per call to `messages` for the next turn.
 

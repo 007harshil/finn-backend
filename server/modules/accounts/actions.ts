@@ -10,7 +10,15 @@ import { AppFailure, throwIfErrors } from '../../core/failure';
 import { formatInr } from '../../core/money';
 import { loadBalance } from '../../finance/ledger';
 import { ACCOUNT_KINDS, ACCOUNT_KIND_LABELS, isLiabilityKind, type AccountKind, type MoneyAccount } from '../../finance/models';
-import { accountUsage, clearDefaultExcept, deleteMoneyAccount, insertMoneyAccount, updateMoneyAccount } from './repo';
+import {
+  accountRecordCounts,
+  accountUsage,
+  clearDefaultExcept,
+  deleteMoneyAccount,
+  insertMoneyAccount,
+  purgeAccountRecords,
+  updateMoneyAccount,
+} from './repo';
 
 /** Largest opening balance / limit accepted (₹1,000 crore): guards against typos. */
 export const MAX_ACCOUNT_PAISE = 10_000_000_000 * 100;
@@ -402,7 +410,7 @@ export const deleteAccountAction = defineAction({
     module: 'accounts',
     title: 'Delete an account',
     description:
-      'Removes an account that nothing refers to. Accounts with transactions, transfers, subscriptions, settlements or set-aside savings must be archived instead.',
+      'Permanently deletes an account together with its transactions, transfers and set-aside savings. Subscriptions and settlements paid from it are kept but no longer linked to an account. Cannot delete the last active account.',
     risk: 'consequential',
     movesMoney: false,
     reversible: false,
@@ -413,23 +421,36 @@ export const deleteAccountAction = defineAction({
     const a = await existingAccount(input.id, ctx);
     const others = (await ctx.snapshot.moneyAccounts()).filter((x) => x.id !== a.id && !x.isArchived);
     if (!a.isArchived && others.length === 0) throw AppFailure.validation('You need at least one active account.', { id: 'Last account' });
-    const usage = await accountUsage(ctx.tx, ctx.userId, a.id);
-    if (usage.references > 0) {
-      throw AppFailure.validation('This account has records. Archive it instead of deleting it.', { id: 'In use' });
+    const n = await accountRecordCounts(ctx.tx, ctx.userId, a.id);
+    const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+    const lines: PreviewLine[] = [
+      { label: 'Account', value: a.name },
+      { label: 'Kind', value: ACCOUNT_KIND_LABELS[a.kind] },
+    ];
+    if (n.transactions > 0) lines.push({ label: 'Transactions deleted', value: String(n.transactions) });
+    if (n.transfers > 0) lines.push({ label: 'Transfers deleted', value: String(n.transfers) });
+    if (n.savings > 0) lines.push({ label: 'Set-aside savings deleted', value: String(n.savings) });
+    const warnings: string[] = [];
+    if (n.transactions + n.transfers + n.savings > 0) {
+      warnings.push('These records are deleted with the account. Balances, budgets and goal progress update to match.');
     }
+    const unlinked = [
+      n.subscriptions > 0 ? plural(n.subscriptions, 'subscription') : null,
+      n.settlements > 0 ? plural(n.settlements, 'settlement') : null,
+    ].filter((x): x is string => x !== null);
+    if (unlinked.length > 0) warnings.push(`${unlinked.join(' and ')} paid from it will be kept without an account.`);
+    warnings.push('This cannot be undone. To keep the history, archive the account instead.');
     return {
-      title: 'Delete account?',
+      title: `Delete ${a.name}?`,
       summary: `Deleted ${a.name}`,
-      lines: [
-        { label: 'Account', value: a.name },
-        { label: 'Kind', value: ACCOUNT_KIND_LABELS[a.kind] },
-      ],
-      warnings: ['This cannot be undone.'],
-      basis: { v: a.version },
+      lines,
+      warnings,
+      basis: { v: a.version, ...n },
     };
   },
   async execute(input, ctx) {
     const a = await existingAccount(input.id, ctx);
+    await purgeAccountRecords(ctx.tx, ctx.userId, a.id);
     await deleteMoneyAccount(ctx.tx, ctx.userId, a.id);
     // Keep exactly one default: hand it to the next active account.
     if (a.isDefault) {

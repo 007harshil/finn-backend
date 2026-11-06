@@ -33,6 +33,12 @@ export const agentRunInputSchema = z.object({
   notes: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
   /** Preview summaries by step id, used for steps the server did not run (declined). */
   labels: z.record(z.string(), z.string().max(300)).default({}),
+  /** App prompt version that planned the turn (absent when the app answered on its own). */
+  promptVersion: z.string().regex(/^[A-Za-z0-9._-]{1,40}$/).optional(),
+  /** Model that planned the turn, as the relay reported it. */
+  model: z.string().trim().min(1).max(100).optional(),
+  /** Model calls the turn made. */
+  modelCalls: z.number().int().min(0).max(20).optional(),
 });
 
 export type AgentRunInput = z.infer<typeof agentRunInputSchema>;
@@ -187,6 +193,10 @@ export async function recordAgentRun(user: AuthUser, input: AgentRunInput, repor
         summary: runSummary(operations),
         operations: JSON.stringify(operations),
         notes,
+        // Quality fields: kept from the first wave when a later one has none.
+        ...(input.promptVersion ? { prompt_version: input.promptVersion } : {}),
+        ...(input.model ? { model: input.model } : {}),
+        ...(input.modelCalls !== undefined ? { model_calls: input.modelCalls } : {}),
       };
       const row = await tx
         .insertInto('agent_runs')

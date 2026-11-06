@@ -141,6 +141,8 @@ describe('POST /agent/completions', () => {
         tool_calls: [{ id: 'call_1', type: 'function', function: { name: 'list_goals', arguments: '{}' } }],
       },
       usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 2 },
+      // The model that answered, for the app's history entry.
+      model: 'test-model',
     });
     // Reasoning text is never returned (only its token count).
     expect(JSON.stringify(res.body)).not.toContain('The user wants');
@@ -212,7 +214,13 @@ describe('POST /agent/completions', () => {
       body: body({ tools: [], tool_choice: 'required', parallel_tool_calls: true, max_completion_tokens: 300 }),
     });
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ id: 'chatcmpl_2', finish_reason: 'stop', message: { content: 'Hi!', tool_calls: [] }, usage: null });
+    expect(res.body.data).toEqual({
+      id: 'chatcmpl_2',
+      finish_reason: 'stop',
+      message: { content: 'Hi!', tool_calls: [] },
+      usage: null,
+      model: 'test-model',
+    });
     expect(sent.max_completion_tokens).toBe(300);
     expect(sent).not.toHaveProperty('reasoning_effort');
     expect(sent).not.toHaveProperty('tools');

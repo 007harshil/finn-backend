@@ -82,7 +82,9 @@ privileges grant new tables to the Data API roles).
   `mir_` tombstone (security definer; skips users being deleted).
 - `private.search_users(query, max)`, `private.directory_entries(ids)` — directory lookups exposing name, handle and
   phone hint only (security definer, `search_path = ''`, executable by `finn_api` only).
-- `private.can_access_pending(owner, id)` — used by the settlements insert policy.
+- `private.can_access_pending(owner, id)` — caller is either party of the item.
+- `private.can_settle_pending(owner, id)` — used by the settlements insert policy: the owner of a private item, or
+  the owed party of a shared one.
 - `private.uid()` — caller id from `request.jwt.claims`.
 - `private.guard_pending_update()`, `private.guard_settlement_update()` — before-update guards (identity of shared
   items immutable; the other party may only bump bookkeeping fields or write off when owed; settlements immutable

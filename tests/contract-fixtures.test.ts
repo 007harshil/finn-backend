@@ -156,7 +156,8 @@ describe('contract fixtures', () => {
     // --- pending (shared Alice -> Bob) ----------------------------------------
     const shared = await run(alice, 'pending.create', pending({ counterparty: 'x', direction: 'iOwe', kind: 'borrowed', amount: '1000', purpose: 'Dinner', linkedUserId: bob.userId }));
     const mirId = `mir_${shared.link.sharedId}`;
-    await run(alice, 'pending.settle', { pendingId: shared.id, amount: '300', date: '2026-10-09', channel: 'UPI' });
+    // Alice owes: only Bob, who is owed, records settlements.
+    await run(bob, 'pending.settle', { pendingId: mirId, amount: '300', date: '2026-10-09', channel: 'UPI' });
     await run(bob, 'pending.settle', { pendingId: mirId, amount: '400', date: '2026-10-10', channel: 'UPI' });
 
     // --- loans ------------------------------------------------------------------
@@ -214,11 +215,12 @@ describe('contract fixtures', () => {
     expect(doneRes.body.data.status).toBe('completed');
     await capture('actionValidationError', post(alice, 'transactions.create', { input: { type: 'expense', amount: '0', categoryId: 'cat_food', date: '2026-10-07' } }), 422);
 
-    await capture('syncAlice', call(syncRoute.GET, 'GET', '/api/v1/sync', { user: alice }));
+    const syncAlice = await capture('syncAlice', call(syncRoute.GET, 'GET', '/api/v1/sync', { user: alice }));
     const syncBob = await capture('syncBob', call(syncRoute.GET, 'GET', '/api/v1/sync', { user: bob }));
     const bobSync = JSON.stringify(syncBob.body);
     expect(bobSync).toContain(`"${mirId}"`);
-    expect(bobSync).toContain('"id":"mir_set_');
+    // Bob's settlements reach Alice as mirrored entries.
+    expect(JSON.stringify(syncAlice.body)).toContain('"id":"mir_set_');
     await capture('dashboard', call(dashboardRoute.GET, 'GET', '/api/v1/dashboard', { user: alice }));
     await capture('analytics', call(analyticsRoute.GET, 'GET', '/api/v1/analytics', { user: alice, query: { period: 'month' } }));
     await capture('actionsList', call(actionsListRoute.GET, 'GET', '/api/v1/actions', { user: alice }));

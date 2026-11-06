@@ -96,10 +96,14 @@ describe('sharing an item that already has settlements', () => {
     const after = await call(syncRoute.GET, 'GET', '/api/v1/sync', { user: bob, query: { since: cursor } });
     expect(after.body.data.collections.settlements.upserted).toHaveLength(1);
 
-    await expect(act(bob, 'pending.settle', { pendingId: mirrored.id, amount: '1000', date: '2026-10-06' })).rejects.toMatchObject({
+    // Bob owes: only Alice, who is owed, settles; she cannot settle more than is left.
+    await expect(act(bob, 'pending.settle', { pendingId: mirrored.id, amount: '400', date: '2026-10-06' })).rejects.toMatchObject({
+      code: 'notPermitted',
+    });
+    await expect(act(alice, 'pending.settle', { pendingId: p.id, amount: '1000', date: '2026-10-06' })).rejects.toMatchObject({
       code: 'validation',
     });
-    await act(bob, 'pending.settle', { pendingId: mirrored.id, amount: '400', date: '2026-10-06' });
+    await act(alice, 'pending.settle', { pendingId: p.id, amount: '400', date: '2026-10-06' });
   });
 });
 
