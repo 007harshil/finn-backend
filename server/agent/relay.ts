@@ -143,6 +143,7 @@ export function buildUpstreamBody(
   };
   if (config.OPENAI_REASONING_EFFORT !== 'off') body.reasoning_effort = config.OPENAI_REASONING_EFFORT;
   if (explicitCache) body.prompt_cache_options = { mode: 'explicit' };
+  if (config.OPENAI_PROMPT_CACHE_KEY === 'on') body.prompt_cache_key = promptCacheKey(messages);
   if (req.response_format) body.response_format = req.response_format;
   if (req.tools.length > 0) {
     body.tools = req.tools;
@@ -150,6 +151,17 @@ export function buildUpstreamBody(
     if (req.parallel_tool_calls !== undefined) body.parallel_tool_calls = req.parallel_tool_calls;
   }
   return body;
+}
+
+/**
+ * Cache routing key for the static prefix: a hash of the system message (the
+ * server policy plus the app's instructions, identical for every user), so
+ * every request with the same instructions shares one key and a new prompt
+ * version gets a new key automatically. Holds no user data.
+ */
+export function promptCacheKey(messages: CompletionRequest['messages']): string {
+  const first = messages[0];
+  return `finn-agent-${sha256Hex(first?.role === 'system' ? first.content : '').slice(0, 16)}`;
 }
 
 /**
@@ -280,7 +292,32 @@ function refused(req: CompletionRequest, rule: GuardrailRule, from: CompletionRe
   };
 }
 
-/** Handles POST /api/v1/agent/completions for an authenticated user. */
+/**
+ * Wall-clock milliseconds per relay phase for one request, logged once as
+ * `agent.timing` (names and numbers only, never content). Phases that repeat
+ * add up. Lets the slow phase be read from logs instead of guessed.
+ */
+export class PhaseTimer {
+  private last = performance.now();
+  private readonly start = this.last;
+  readonly phases: Record<string, number> = {};
+  readonly facts: Record<string, number | string> = {};
+
+  /** Ends the current phase as [name]. */
+  lap(name: string): void {
+    const now = performance.now();
+    this.phases[name] = (this.phases[name] ?? 0) + (now - this.last);
+    this.last = now;
+  }
+
+  summary(): Record<string, number | string> {
+    const out: Record<string, number | string> = { ...this.facts };
+    for (const [name, ms] of Object.entries(this.phases)) out[`${name}Ms`] = Math.round(ms * 10) / 10;
+    out.relayMs = Math.round((performance.now() - this.start) * 10) / 10;
+    return out;
+  }
+}
+
 function tooQuickly(retryAfterSeconds: number): AppFailure {
   return new AppFailure('unavailable', "You're sending requests too quickly. Please wait a moment.", {
     retryable: true,
@@ -288,7 +325,24 @@ function tooQuickly(retryAfterSeconds: number): AppFailure {
   });
 }
 
+/** Handles POST /api/v1/agent/completions for an authenticated user. */
 export async function relayCompletion(ctx: RequestContext): Promise<CompletionResult> {
+  const timer = new PhaseTimer();
+  let outcome = 'ok';
+  try {
+    const result = await relayTimed(ctx, timer);
+    if (result.guardrail) outcome = `refused:${result.guardrail}`;
+    return result;
+  } catch (err) {
+    const reason = err instanceof AppFailure ? err.details?.reason : undefined;
+    outcome = typeof reason === 'string' ? reason : err instanceof AppFailure ? err.code : 'error';
+    throw err;
+  } finally {
+    logger.info('agent.timing', { requestId: ctx.requestId, outcome, ...timer.summary() });
+  }
+}
+
+async function relayTimed(ctx: RequestContext, timer: PhaseTimer): Promise<CompletionResult> {
   const config = agentEnv();
   if (!config.OPENAI_API_KEY) {
     throw new AppFailure('unavailable', 'The assistant is not configured on this server.', {
@@ -298,6 +352,9 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   }
 
   const req = parseWith(completionRequestSchema(config.AGENT_MAX_OUTPUT_TOKENS), await readJson(ctx.request, AGENT_MAX_BODY_BYTES));
+  timer.facts.messages = req.messages.length;
+  timer.facts.requestBytes = Buffer.byteLength(JSON.stringify(req));
+  timer.lap('parse');
 
   const takenAt = Date.now();
   const decision = takeAgentRequest(
@@ -314,11 +371,13 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     releaseAgentRequest(ctx.user.userId, takenAt);
     throw tooQuickly(shared.retryAfterSeconds);
   }
+  timer.lap('rateLimit');
   const user = sha256Hex(ctx.user.userId).slice(0, 12);
   const prompt = promptHash(req);
 
   // Input rail: out-of-scope or injection requests never reach the model.
   const inputHit = checkInput(req);
+  timer.lap('inputRail');
   if (inputHit) {
     logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'input', rule: inputHit.rule });
     return refused(req, inputHit.rule, null);
@@ -334,6 +393,7 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     newAccountDays: config.AGENT_NEW_ACCOUNT_DAYS,
     globalRequests: config.AGENT_GLOBAL_DAILY_REQUEST_LIMIT,
   });
+  timer.lap('dailyBudget');
 
   const started = Date.now();
   const timeout = AbortSignal.timeout(config.OPENAI_TIMEOUT_MS);
@@ -362,6 +422,7 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
       continue;
     }
     let attempt: Response;
+    timer.facts.attempts = Number(timer.facts.attempts ?? 0) + 1;
     try {
       attempt = await fetch(`${config.OPENAI_BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -369,7 +430,11 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
         body: JSON.stringify(buildUpstreamBody(req, config, ctx.user.userId, candidate)),
         signal,
       });
+      // Non-streamed: headers arrive once generation has finished, so this is
+      // connect + queue + time to first token + generation.
+      timer.lap('upstreamWait');
     } catch (err) {
+      timer.lap('upstreamWait');
       const reason = err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'network';
       logger.warn('agent.upstream', { requestId: ctx.requestId, user, model: candidate, outcome: reason, ms: Date.now() - started });
       throw new AppFailure('unavailable', UNAVAILABLE, { retryable: true, details: { reason } });
@@ -439,6 +504,7 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   } catch {
     payload = null;
   }
+  timer.lap('upstreamRead');
   const result = toResult(payload);
   if (!result) {
     logger.warn('agent.upstream', { requestId: ctx.requestId, user, upstreamStatus, ms, outcome: 'malformed' });
@@ -446,10 +512,15 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
   }
 
   logger.info('agent.upstream', { requestId: ctx.requestId, user, model, prompt, upstreamStatus, ms, ...usageCounts(payload) });
+  timer.facts.model = model;
+  Object.assign(timer.facts, usageCounts(payload));
 
   // Moderation and output rails: a harmful request, or a reply carrying code,
   // secrets or the instructions themselves, is replaced by a refusal.
-  if (await flagged) {
+  const isFlaggedResult = await flagged;
+  // Time the reply waited for moderation after the model had finished.
+  timer.lap('moderationWait');
+  if (isFlaggedResult) {
     logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'moderation', rule: 'moderation' });
     return { ...refused(req, 'moderation', result), model };
   }
@@ -458,6 +529,7 @@ export async function relayCompletion(ctx: RequestContext): Promise<CompletionRe
     result.message.content,
     result.message.tool_calls.map((c) => c.function.arguments),
   );
+  timer.lap('outputRail');
   if (outputHit) {
     logger.info('agent.guardrail', { requestId: ctx.requestId, user, prompt, stage: 'output', rule: outputHit.rule });
     return { ...refused(req, outputHit.rule, result), model };

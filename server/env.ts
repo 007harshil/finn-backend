@@ -70,6 +70,12 @@ const agentSchema = z.object({
    * Fallback models must accept the same request (GPT-5.6 or later).
    */
   OPENAI_PROMPT_CACHE: z.enum(['explicit', 'implicit']).default('explicit'),
+  /**
+   * `on` (default): send `prompt_cache_key` derived from the static system
+   * prefix, which GPT-5.6+ needs for reliable cache matching. Caching never
+   * changes the output. `off` is a kill switch for a provider that rejects it.
+   */
+  OPENAI_PROMPT_CACHE_KEY: z.enum(['on', 'off']).default('on'),
   /** Upstream request timeout in milliseconds. */
   OPENAI_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(60_000),
   /** Ceiling (and default) for `max_completion_tokens`. */

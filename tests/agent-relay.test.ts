@@ -581,3 +581,64 @@ describe('POST /agent/completions', () => {
     expect(res.status).toBe(204);
   });
 });
+
+describe('prompt cache key and phase timings', () => {
+  it('sends one stable cache key per system prompt, with no user data', async () => {
+    const sent: any[] = [];
+    mockFetch(async (_url, init) => {
+      sent.push(JSON.parse(String(init.body)));
+      return jsonResponse(upstreamOk);
+    });
+    const a = await t.createUser();
+    const b = await t.createUser();
+    expect((await call(relayRoute.POST, 'POST', PATH, { user: a, body: body() })).status).toBe(200);
+    expect((await call(relayRoute.POST, 'POST', PATH, { user: b, body: body() })).status).toBe(200);
+    const other = body();
+    other.messages = [{ role: 'system', content: 'You are FiNN v2.' }, ...other.messages.slice(1)];
+    expect((await call(relayRoute.POST, 'POST', PATH, { user: a, body: other })).status).toBe(200);
+
+    expect(sent[0].prompt_cache_key).toMatch(/^finn-agent-[0-9a-f]{16}$/);
+    expect(sent[1].prompt_cache_key).toBe(sent[0].prompt_cache_key);
+    expect(sent[2].prompt_cache_key).not.toBe(sent[0].prompt_cache_key);
+    for (const u of [a, b]) expect(sent[0].prompt_cache_key).not.toContain(u.userId.slice(0, 8));
+  });
+
+  it('can switch the cache key off', async () => {
+    vi.stubEnv('OPENAI_PROMPT_CACHE_KEY', 'off');
+    let sent: any;
+    mockFetch(async (_url, init) => {
+      sent = JSON.parse(String(init.body));
+      return jsonResponse(upstreamOk);
+    });
+    expect((await call(relayRoute.POST, 'POST', PATH, { user: await t.createUser(), body: body() })).status).toBe(200);
+    expect(sent).not.toHaveProperty('prompt_cache_key');
+  });
+
+  it('logs one agent.timing line per request with every phase and no content', async () => {
+    const { logger } = await import('@/server/http/logger');
+    const info = vi.spyOn(logger, 'info');
+    mockFetch(async () => jsonResponse(upstreamOk));
+    const res = await call(relayRoute.POST, 'POST', PATH, { user: await t.createUser(), body: body() });
+    expect(res.status).toBe(200);
+    const timing = info.mock.calls.filter(([event]) => event === 'agent.timing');
+    expect(timing).toHaveLength(1);
+    const fields = timing[0][1] as Record<string, unknown>;
+    expect(fields).toMatchObject({ outcome: 'ok', attempts: 1, model: 'test-model', usageIn: 10, usageOut: 5 });
+    for (const phase of ['parse', 'rateLimit', 'inputRail', 'dailyBudget', 'upstreamWait', 'upstreamRead', 'moderationWait', 'outputRail', 'relay']) {
+      expect(fields[`${phase}Ms`], phase).toEqual(expect.any(Number));
+    }
+    expect(JSON.stringify(fields)).not.toContain('FiNN');
+  });
+
+  it('logs the failure reason when the provider is unreachable', async () => {
+    const { logger } = await import('@/server/http/logger');
+    const info = vi.spyOn(logger, 'info');
+    mockFetch(async () => {
+      throw new TypeError('fetch failed');
+    });
+    const res = await call(relayRoute.POST, 'POST', PATH, { user: await t.createUser(), body: body() });
+    expect(res.status).toBe(503);
+    const fields = info.mock.calls.find(([event]) => event === 'agent.timing')![1] as Record<string, unknown>;
+    expect(fields).toMatchObject({ outcome: 'network', attempts: 1 });
+  });
+});
